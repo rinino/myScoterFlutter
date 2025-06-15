@@ -3,14 +3,16 @@ import 'package:flutter/foundation.dart';
 
 class Scooter {
   // @PrimaryKey(autoGenerate = true) -> gestito dal database al momento dell'inserimento
-  final int? id; // `id` è nullable perché non sarà presente quando crei un nuovo oggetto prima di inserirlo nel DB
+  final int?
+  id; // `id` è nullable perché non sarà presente quando crei un nuovo oggetto prima di inserirlo nel DB
   final String marca;
   final String modello;
   final int cilindrata;
   final String targa;
   final int anno;
   final bool miscelatore;
-  final String? imgPath; // Usiamo `imgPath` per essere più generici (percorso locale o URI)
+  final String?
+  imgPath; // Usiamo `imgPath` per essere più generici (percorso locale o URI)
 
   // Costruttore per creare un nuovo oggetto Scooter
   Scooter({
@@ -34,7 +36,9 @@ class Scooter {
       'cilindrata': cilindrata,
       'targa': targa,
       'anno': anno,
-      'miscelatore': miscelatore ? 1 : 0, // SQLite non ha tipo Boolean, usiamo 0 per false, 1 per true
+      'miscelatore': miscelatore
+          ? 1
+          : 0, // SQLite non ha tipo Boolean, usiamo 0 per false, 1 per true
       'imgPath': imgPath,
     };
   }

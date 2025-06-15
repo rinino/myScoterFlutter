@@ -27,11 +27,15 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     // Ottieni il percorso della directory documenti dell'app dove verrà salvato il DB
     String databasesPath = await getDatabasesPath();
-    String path = join(databasesPath, 'scooter_database.db'); // Nome del tuo file database
+    String path = join(
+      databasesPath,
+      'scooter_database.db',
+    ); // Nome del tuo file database
 
     return await openDatabase(
       path,
-      version: 1, // La versione del database. Incrementala per triggerare onUpgrade.
+      version:
+          1, // La versione del database. Incrementala per triggerare onUpgrade.
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure, // Opzionale, per configurazioni avanzate
@@ -92,7 +96,8 @@ class DatabaseHelper {
     return await db.insert(
       'scooters',
       scooter.toMap(), // Converte l'oggetto Scooter in una Map
-      conflictAlgorithm: ConflictAlgorithm.replace, // Se un'entità con lo stesso ID esiste, la sostituisce
+      conflictAlgorithm: ConflictAlgorithm
+          .replace, // Se un'entità con lo stesso ID esiste, la sostituisce
     );
   }
 
@@ -153,11 +158,7 @@ class DatabaseHelper {
   // Cancella uno scooter dal database dato il suo ID. Ritorna il numero di righe eliminate.
   Future<int> deleteScooter(int id) async {
     final db = await database;
-    return await db.delete(
-      'scooters',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('scooters', where: 'id = ?', whereArgs: [id]);
   }
 
   // Cancella tutti gli scooter dalla tabella (utile per il debug o reset)

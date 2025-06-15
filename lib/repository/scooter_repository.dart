@@ -70,7 +70,9 @@ class ScooterRepository {
       final rowsAffected = await _dbHelper.updateScooter(scooter);
       return rowsAffected;
     } catch (e) {
-      print('Errore durante l\'aggiornamento dello scooter con ID ${scooter.id}: $e');
+      print(
+        'Errore durante l\'aggiornamento dello scooter con ID ${scooter.id}: $e',
+      );
       rethrow;
     }
   }
