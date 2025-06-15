@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:myscoterflutter/models/scooter.dart';
 import 'package:myscoterflutter/repository/scooter_repository.dart';
 import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
+import 'package:flutter/cupertino.dart'; // Necessario per l'icona "two_wheeler" se non usi Material Icons
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,17 +96,32 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.only(right: 10.0, bottom: 10.0),
         child: FloatingActionButton(
           onPressed: () async {
-            final result = await Navigator.push(
+            final Scooter? resultScooter = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const AddEditScooterScreen(),
               ),
             );
-            if (result == true) {
-              _loadScooters();
+            if (resultScooter != null) {
+              try {
+                await _scooterRepository.insertScooter(resultScooter);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Scooter aggiunto!')),
+                );
+                _loadScooters();
+              } catch (e) {
+                print('Errore nell\'aggiunta dello scooter: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Errore nell\'aggiunta dello scooter.')),
+                );
+              }
             }
           },
           heroTag: 'addScooterButton',
+          // --- QUI È LA MODIFICA: Colore del FloatingActionButton ---
+          backgroundColor: Theme.of(context).colorScheme.primary, // Usa il colore primario del tema (#00bcd4)
+          foregroundColor: Theme.of(context).colorScheme.onPrimary, // Colore dell'icona sul primario (bianco)
+          // --- FINE MODIFICA ---
           child: const Icon(Icons.add),
         ),
       ),
@@ -135,7 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Titolo "I Miei Scooter"
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Align(
@@ -144,8 +160,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 'I Miei Scooter',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  // --- Rimuovi o commenta questa riga: ---
-                  // color: Colors.blueGrey[800],
                 ),
               ),
             ),
@@ -171,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Nessuno scooter disponibile.\nPremi "+" per aggiungerne uno!',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: Colors.grey[600]), // Potresti voler rendere anche questo #00bcd4 o un bianco leggermente opaco dal tema
+                        ?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7)),
                   ),
                 ],
               ),
@@ -211,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.blue,
                           ),
                           onPressed: () async {
-                            final result = await Navigator.push(
+                            final Scooter? resultScooter = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
@@ -220,8 +234,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                               ),
                             );
-                            if (result == true) {
-                              _loadScooters();
+                            if (resultScooter != null) {
+                              try {
+                                await _scooterRepository.updateScooter(resultScooter);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Scooter modificato!')),
+                                );
+                                _loadScooters();
+                              } catch (e) {
+                                print('Errore nella modifica dello scooter: $e');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Errore nella modifica dello scooter.')),
+                                );
+                              }
                             }
                           },
                         ),
