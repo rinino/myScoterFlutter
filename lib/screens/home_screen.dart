@@ -18,25 +18,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadScooters(); // Carica gli scooter all'avvio della schermata
+    _loadScooters();
   }
 
-  // Funzione per caricare gli scooter dal repository
   Future<void> _loadScooters() async {
     setState(() {
-      _isLoading = true; // Imposta lo stato di caricamento
+      _isLoading = true;
     });
     try {
       final scooters = await _scooterRepository.getAllScooters();
       setState(() {
-        _scooters = scooters; // Aggiorna la lista degli scooter
-        _isLoading = false; // Termina lo stato di caricamento
+        _scooters = scooters;
+        _isLoading = false;
       });
     } catch (e) {
       print('Errore nel caricamento degli scooter: $e');
       setState(() {
-        _isLoading =
-        false; // Termina lo stato di caricamento anche in caso di errore
+        _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Errore nel caricamento degli scooter.')),
@@ -44,7 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Funzione per eliminare uno scooter
   Future<void> _deleteScooter(int id) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -69,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirm == true) {
       try {
         await _scooterRepository.deleteScooter(id);
-        _loadScooters(); // Ricarica la lista dopo l'eliminazione
+        _loadScooters();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Scooter eliminato!')));
@@ -87,16 +84,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- Modifica: Aggiunta di AppBar per il titolo "My Scooter" ---
       appBar: AppBar(
         title: const Text('My Scooter'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        centerTitle: false, // Per allineare il titolo a sinistra come in Compose
+        centerTitle: false,
       ),
-      // --- Modifica: FloatingActionButton spostato qui ---
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 10.0, bottom: 10.0), // Offset dal bordo
+        padding: const EdgeInsets.only(right: 10.0, bottom: 10.0),
         child: FloatingActionButton(
           onPressed: () async {
             final result = await Navigator.push(
@@ -113,30 +108,28 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const Icon(Icons.add),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Posizionamento in basso a destra con un po' di margine
-
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Column(
         children: [
-          // --- Modifica: Sezione del logo con bordo e angoli arrotondati ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Container(
-              width: 115, // Dimensione fissa come in Kotlin
-              height: 115, // Dimensione fissa
+              width: 115,
+              height: 115,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.black, // Colore del bordo
-                  width: 2.0, // Spessore del bordo
+                  color: Colors.black,
+                  width: 2.0,
                 ),
-                borderRadius: BorderRadius.circular(11.0), // Angoli arrotondati
+                borderRadius: BorderRadius.circular(11.0),
               ),
-              child: ClipRRect( // Per applicare gli angoli arrotondati all'immagine stessa
-                borderRadius: BorderRadius.circular(10.0), // Leggermente meno del container per evitare sfarfallii
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10.0),
                 child: Image.asset(
                   'assets/images/loghetto1_scritta128.jpg',
-                  width: double.infinity, // L'immagine riempie il container
-                  height: double.infinity, // L'immagine riempie il container
-                  fit: BoxFit.cover, // Adatta l'immagine coprendo l'area
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -151,13 +144,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 'I Miei Scooter',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey[800],
+                  // --- Rimuovi o commenta questa riga: ---
+                  // color: Colors.blueGrey[800],
                 ),
               ),
             ),
           ),
 
-          // Sezione della Lista degli Scooter
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -178,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Nessuno scooter disponibile.\nPremi "+" per aggiungerne uno!',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: Colors.grey[600]),
+                        ?.copyWith(color: Colors.grey[600]), // Potresti voler rendere anche questo #00bcd4 o un bianco leggermente opaco dal tema
                   ),
                 ],
               ),
