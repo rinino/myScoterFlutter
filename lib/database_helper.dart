@@ -1,5 +1,5 @@
 import 'package:myscoterflutter/models/scooter.dart';
-import 'package:myscoterflutter/models/rifornimento.dart'; // Importa anche il modello Rifornimento
+import 'package:myscoterflutter/models/rifornimento.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -28,7 +28,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1, // Iniziamo con la versione 1, la incrementeremo per migrazioni
+      version: 2, // *** CORREZIONE: Incrementato a versione 2 ***
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -50,7 +50,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // --- AGGIUNGI QUI LA CREAZIONE DELLA TABELLA RIFORNIMENTI ---
+    // Creazione della tabella rifornimenti
     await db.execute('''
       CREATE TABLE rifornimenti(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,31 +65,40 @@ class DatabaseHelper {
         FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
       )
     ''');
-    print("Tabelle 'scooters' e 'rifornimenti' create o già esistenti.");
+    print("Tabelle 'scooters' e 'rifornimenti' create al primo avvio.");
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Esempio di migrazione per aggiungere percentualeOlio se necessario
-    // Se la tua app è già in produzione e "percentualeOlio" non esisteva prima,
-    // allora dovresti incrementare la 'version' del database a 2 e aggiungere questa logica qui.
-    if (oldVersion < 2 && newVersion >= 2) {
-      // Per esempio, se hai rilasciato l'app con version:1 e senza percentualeOlio
-      // e ora vuoi aggiungerlo, porti la version a 2 e metti questo:
-      try {
-        await db.execute("ALTER TABLE rifornimenti ADD COLUMN percentualeOlio REAL;");
-        print("Colonna 'percentualeOlio' aggiunta alla tabella 'rifornimenti'.");
-      } catch (e) {
-        print("Errore durante l'aggiunta della colonna 'percentualeOlio' in onUpgrade: $e");
-      }
+    // *** CORREZIONE: Aggiungi logica per creare 'rifornimenti' se si sta aggiornando da v1 a v2 ***
+    if (oldVersion < 2) {
+      // Se si aggiorna da una versione precedente che non aveva la tabella 'rifornimenti'
+      await db.execute('''
+        CREATE TABLE rifornimenti(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          idScooter INTEGER NOT NULL,
+          dataRifornimento INTEGER NOT NULL,
+          kmAttuali REAL NOT NULL,
+          litriBenzina REAL NOT NULL,
+          litriOlio REAL,
+          kmPercorsi REAL NOT NULL,
+          mediaConsumo REAL,
+          percentualeOlio REAL,
+          FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
+        )
+      ''');
+      print("Tabella 'rifornimenti' creata durante l'aggiornamento (da v1 a v2).");
     }
-    // Aggiungi qui altre logiche di migrazione per future versioni
+    // Esempio: se oldVersion è 2 e newVersion è 3, e hai aggiunto una nuova colonna
+    // if (oldVersion < 3 && newVersion >= 3) {
+    //   await db.execute("ALTER TABLE nome_tabella ADD COLUMN nuovaColonna TIPO;");
+    // }
   }
 
   Future _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  // --- Metodi CRUD per Scooter (già presenti nella tua classe) ---
+  // --- Metodi CRUD per Scooter ---
 
   Future<int> insertScooter(Scooter scooter) async {
     final db = await database;
@@ -141,6 +150,8 @@ class DatabaseHelper {
 
   Future<int> deleteScooter(int id) async {
     final db = await database;
+    // La clausola ON DELETE CASCADE nella definizione della tabella 'rifornimenti'
+    // si occuperà di eliminare i rifornimenti associati automaticamente.
     return await db.delete('scooters', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -157,7 +168,7 @@ class DatabaseHelper {
     }
   }
 
-  // --- Metodi CRUD per Rifornimento (NUOVI METODI) ---
+  // --- Metodi CRUD per Rifornimento ---
 
   Future<int?> insertRifornimento(Rifornimento rifornimento) async {
     final db = await database;
@@ -183,6 +194,7 @@ class DatabaseHelper {
       whereArgs: [scooterId],
       orderBy: 'dataRifornimento DESC, kmAttuali ASC',
     );
+    // Questo è corretto: se maps è vuoto, List.generate restituirà una lista vuota.
     return List.generate(maps.length, (i) {
       return Rifornimento.fromMap(maps[i]);
     });
