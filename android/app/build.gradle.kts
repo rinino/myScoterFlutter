@@ -32,11 +32,25 @@ android {
         versionName = flutter.versionName
     }
 
+    // NUOVO: Definizione dei signingConfigs in Kotlin DSL
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("FLUTTER_KEYSTORE") ?: (project.properties["storeFile"] as String?))
+            storePassword = System.getenv("FLUTTER_KEYSTORE_PASSWORD") ?: (project.properties["storePassword"] as String?)
+            keyAlias = System.getenv("FLUTTER_KEY_ALIAS") ?: (project.properties["keyAlias"] as String?)
+            keyPassword = System.getenv("FLUTTER_KEY_PASSWORD") ?: (project.properties["keyPassword"] as String?)
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // FIX: Associa la configurazione di firma 'release' a questo build type.
+            signingConfig = signingConfigs.getByName("release") // Usa getByName("nome_config")
+            // Queste ottimizzazioni sono consigliate per i build di release
+            isShrinkResources = true // In Kotlin DSL si usa 'is' per i booleani
+            isMinifyEnabled = true   // In Kotlin DSL si usa 'is' per i booleani
+            // Il file proguard-rules.pro serve per configurare la minificazione (se necessaria per librerie specifiche)
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro") // Parentesi per la funzione e virgola
         }
     }
 }
