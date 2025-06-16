@@ -1,10 +1,10 @@
 import 'package:myscoterflutter/models/scooter.dart';
+import 'package:myscoterflutter/models/rifornimento.dart'; // Importa anche il modello Rifornimento
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:async'; // Per gestire le operazioni asincrone
+import 'dart:async';
 
 class DatabaseHelper {
-  // --- Singleton Pattern ---
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -14,7 +14,6 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
-  // Getter per l'istanza del database. Inizializza il DB solo la prima volta che viene richiesto.
   Future<Database> get database async {
     if (_database != null) {
       return _database!;
@@ -23,110 +22,99 @@ class DatabaseHelper {
     return _database!;
   }
 
-  // --- Inizializzazione del Database ---
   Future<Database> _initDatabase() async {
-    // Ottieni il percorso della directory documenti dell'app dove verrà salvato il DB
     String databasesPath = await getDatabasesPath();
-    String path = join(
-      databasesPath,
-      'scooter_database.db',
-    ); // Nome del tuo file database
+    String path = join(databasesPath, 'scooter_database.db');
 
     return await openDatabase(
       path,
-      version:
-          1, // La versione del database. Incrementala per triggerare onUpgrade.
+      version: 1, // Iniziamo con la versione 1, la incrementeremo per migrazioni
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
-      onConfigure: _onConfigure, // Opzionale, per configurazioni avanzate
+      onConfigure: _onConfigure,
     );
   }
 
-  // --- Callback di Creazione del Database ---
-  // Chiamato solo quando il database viene creato per la prima volta.
   Future _onCreate(Database db, int version) async {
+    // Creazione della tabella scooters
     await db.execute('''
       CREATE TABLE scooters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marca TEXT NOT NULL,
         modello TEXT NOT NULL,
         cilindrata INTEGER NOT NULL,
-        targa TEXT NOT NULL UNIQUE, -- La targa è unica per ogni scooter
+        targa TEXT NOT NULL UNIQUE,
         anno INTEGER NOT NULL,
-        miscelatore INTEGER NOT NULL, -- 0 per false, 1 per true
-        imgPath TEXT -- Percorso o URI dell'immagine, può essere null
+        miscelatore INTEGER NOT NULL,
+        imgPath TEXT
       )
     ''');
-    // Aggiungi qui altre istruzioni CREATE TABLE per le tue altre entità
+
+    // --- AGGIUNGI QUI LA CREAZIONE DELLA TABELLA RIFORNIMENTI ---
+    await db.execute('''
+      CREATE TABLE rifornimenti(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        idScooter INTEGER NOT NULL,
+        dataRifornimento INTEGER NOT NULL,
+        kmAttuali REAL NOT NULL,
+        litriBenzina REAL NOT NULL,
+        litriOlio REAL,
+        kmPercorsi REAL NOT NULL,
+        mediaConsumo REAL,
+        percentualeOlio REAL,
+        FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
+      )
+    ''');
+    print("Tabelle 'scooters' e 'rifornimenti' create o già esistenti.");
   }
 
-  // --- Callback di Aggiornamento del Database (Migrazioni) ---
-  // Chiamato quando la versione del database nel codice è maggiore di quella sul dispositivo.
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Esempio di migrazione da oldVersion 1 a newVersion 2:
-    if (oldVersion < 2) {
-      // await db.execute("ALTER TABLE scooters ADD COLUMN nuova_colonna TEXT;");
+    // Esempio di migrazione per aggiungere percentualeOlio se necessario
+    // Se la tua app è già in produzione e "percentualeOlio" non esisteva prima,
+    // allora dovresti incrementare la 'version' del database a 2 e aggiungere questa logica qui.
+    if (oldVersion < 2 && newVersion >= 2) {
+      // Per esempio, se hai rilasciato l'app con version:1 e senza percentualeOlio
+      // e ora vuoi aggiungerlo, porti la version a 2 e metti questo:
+      try {
+        await db.execute("ALTER TABLE rifornimenti ADD COLUMN percentualeOlio REAL;");
+        print("Colonna 'percentualeOlio' aggiunta alla tabella 'rifornimenti'.");
+      } catch (e) {
+        print("Errore durante l'aggiunta della colonna 'percentualeOlio' in onUpgrade: $e");
+      }
     }
-    // Ogni blocco `if` gestisce una specifica transizione di versione
-    if (oldVersion < 3) {
-      // Esempio: aggiungi una nuova tabella
-      // await db.execute('''
-      //   CREATE TABLE servizi (
-      //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-      //     scooterId INTEGER NOT NULL,
-      //     descrizione TEXT,
-      //     FOREIGN KEY (scooterId) REFERENCES scooters(id) ON DELETE CASCADE
-      //   )
-      // ''');
-    }
+    // Aggiungi qui altre logiche di migrazione per future versioni
   }
 
-  // --- Callback di Configurazione del Database (Opzionale) ---
-  // Chiamato subito dopo l'apertura del database, prima di qualsiasi query.
-  // Utile per abilitare il supporto alle chiavi esterne (FOREIGN KEY).
   Future _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  // --- Metodi CRUD per Scooter ---
+  // --- Metodi CRUD per Scooter (già presenti nella tua classe) ---
 
-  // Inserisce un nuovo scooter nel database. Ritorna l'ID generato.
   Future<int> insertScooter(Scooter scooter) async {
     final db = await database;
-    return await db.insert(
-      'scooters',
-      scooter.toMap(), // Converte l'oggetto Scooter in una Map
-      conflictAlgorithm: ConflictAlgorithm
-          .replace, // Se un'entità con lo stesso ID esiste, la sostituisce
-    );
+    return await db.insert('scooters', scooter.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  // Recupera tutti gli scooter dal database.
   Future<List<Scooter>> getScooters() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('scooters');
-    // Converte la lista di Map in una lista di oggetti Scooter
     return List.generate(maps.length, (i) {
       return Scooter.fromMap(maps[i]);
     });
   }
 
-  // Recupera un singolo scooter per ID. Ritorna null se non trovato.
   Future<Scooter?> getScooterById(int id) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'scooters',
       where: 'id = ?',
       whereArgs: [id],
-      limit: 1, // Ci aspettiamo al massimo un risultato
+      limit: 1,
     );
-    if (maps.isNotEmpty) {
-      return Scooter.fromMap(maps.first);
-    }
-    return null; // Scooter non trovato
+    return maps.isNotEmpty ? Scooter.fromMap(maps.first) : null;
   }
 
-  // Recupera un singolo scooter per targa. Ritorna null se non trovato.
   Future<Scooter?> getScooterByTarga(String targa) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -135,13 +123,9 @@ class DatabaseHelper {
       whereArgs: [targa],
       limit: 1,
     );
-    if (maps.isNotEmpty) {
-      return Scooter.fromMap(maps.first);
-    }
-    return null;
+    return maps.isNotEmpty ? Scooter.fromMap(maps.first) : null;
   }
 
-  // Aggiorna uno scooter esistente nel database. Ritorna il numero di righe aggiornate.
   Future<int> updateScooter(Scooter scooter) async {
     final db = await database;
     if (scooter.id == null) {
@@ -155,26 +139,131 @@ class DatabaseHelper {
     );
   }
 
-  // Cancella uno scooter dal database dato il suo ID. Ritorna il numero di righe eliminate.
   Future<int> deleteScooter(int id) async {
     final db = await database;
     return await db.delete('scooters', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Cancella tutti gli scooter dalla tabella (utile per il debug o reset)
   Future<int> deleteAllScooters() async {
     final db = await database;
     return await db.delete('scooters');
   }
 
-  // Chiude la connessione al database.
-  // In un'applicazione mobile, spesso non è necessario chiamare esplicitamente close,
-  // ma può essere utile in scenari specifici (es. unit testing).
   Future<void> closeDb() async {
     final db = _database;
     if (db != null && db.isOpen) {
       await db.close();
-      _database = null; // Resetta l'istanza per permettere una nuova apertura
+      _database = null;
     }
+  }
+
+  // --- Metodi CRUD per Rifornimento (NUOVI METODI) ---
+
+  Future<int?> insertRifornimento(Rifornimento rifornimento) async {
+    final db = await database;
+    try {
+      final id = await db.insert(
+        'rifornimenti',
+        rifornimento.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print("Rifornimento salvato con ID: $id");
+      return id;
+    } catch (e) {
+      print("Errore durante il salvataggio del rifornimento: $e");
+      return null;
+    }
+  }
+
+  Future<List<Rifornimento>> getRifornimenti(int scooterId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'rifornimenti',
+      where: 'idScooter = ?',
+      whereArgs: [scooterId],
+      orderBy: 'dataRifornimento DESC, kmAttuali ASC',
+    );
+    return List.generate(maps.length, (i) {
+      return Rifornimento.fromMap(maps[i]);
+    });
+  }
+
+  Future<int> deleteRifornimento(int rifornimentoId) async {
+    final db = await database;
+    try {
+      final changes = await db.delete(
+        'rifornimenti',
+        where: 'id = ?',
+        whereArgs: [rifornimentoId],
+      );
+      return changes;
+    } catch (e) {
+      print("Errore durante l'eliminazione del rifornimento con ID $rifornimentoId: $e");
+      return 0;
+    }
+  }
+
+  Future<Rifornimento?> getRifornimentoById(int rifornimentoId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'rifornimenti',
+      where: 'id = ?',
+      whereArgs: [rifornimentoId],
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Rifornimento.fromMap(maps.first) : null;
+  }
+
+  Future<bool> updateRifornimento(Rifornimento rifornimento) async {
+    final db = await database;
+    if (rifornimento.id == null) {
+      print("Errore: Impossibile aggiornare un rifornimento senza ID.");
+      return false;
+    }
+    try {
+      final changes = await db.update(
+        'rifornimenti',
+        rifornimento.toMap(),
+        where: 'id = ?',
+        whereArgs: [rifornimento.id],
+      );
+      return changes > 0;
+    } catch (e) {
+      print("Errore durante l'aggiornamento del rifornimento con ID ${rifornimento.id}: $e");
+      return false;
+    }
+  }
+
+  Future<Rifornimento?> getPreviousRifornimento(int scooterId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'rifornimenti',
+      where: 'idScooter = ?',
+      whereArgs: [scooterId],
+      orderBy: 'dataRifornimento DESC',
+      limit: 1,
+    );
+    return maps.isNotEmpty ? Rifornimento.fromMap(maps.first) : null;
+  }
+
+  Future<Rifornimento?> getPreviousRifornimentoExcluding(int scooterId, int? excludingRifornimentoId) async {
+    final db = await database;
+    String whereClause = 'idScooter = ?';
+    List<dynamic> whereArgs = [scooterId];
+
+    if (excludingRifornimentoId != null) {
+      whereClause += ' AND id != ?';
+      whereArgs.add(excludingRifornimentoId);
+    }
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'rifornimenti',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: 'dataRifornimento DESC',
+      limit: 1,
+    );
+
+    return maps.isNotEmpty ? Rifornimento.fromMap(maps.first) : null;
   }
 }

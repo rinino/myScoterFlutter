@@ -37,6 +37,7 @@ dependencies:
   path_provider: ^2.1.3 # Controlla la versione più recente su pub.dev
   path: ^1.9.0
   image_picker: ^1.1.0
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
