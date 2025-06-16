@@ -5,7 +5,8 @@ import 'package:myscoterflutter/models/rifornimento.dart';
 import 'package:myscoterflutter/repository/rifornimento_repository.dart';
 import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
 import 'package:myscoterflutter/screens/add_edit_rifornimento_screen.dart';
-import 'package:intl/intl.dart'; // Importa intl per la formattazione della data
+import 'package:myscoterflutter/screens/rifornimento_detail_screen.dart'; // NUOVO: Importa la schermata di dettaglio
+import 'package:intl/intl.dart';
 
 class ScooterDetailScreen extends StatefulWidget {
   final Scooter scooter;
@@ -19,8 +20,8 @@ class ScooterDetailScreen extends StatefulWidget {
 class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
   final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
   List<Rifornimento> _rifornimenti = [];
-  bool _isLoadingRifornimenti = true; // Gestisce lo spinner per i rifornimenti
-  bool _isProcessingAction = false; // Gestisce lo spinner per azioni come navigazione/salvataggio
+  bool _isLoadingRifornimenti = true;
+  bool _isProcessingAction = false;
 
   late Scooter _currentScooter;
 
@@ -137,7 +138,8 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     }
   }
 
-  Future<void> _navigateToEditRifornimento(Rifornimento rifornimento) async {
+  // MODIFICA QUI: Naviga alla RifornimentoDetailScreen
+  Future<void> _navigateToRifornimentoDetail(Rifornimento rifornimento) async {
     if (_isProcessingAction) return;
 
     setState(() {
@@ -145,26 +147,23 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     });
 
     try {
+      // Passa sia il rifornimento che l'ID dello scooter
       final bool? result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AddEditRifornimentoScreen(
-            scooterId: _currentScooter.id!,
-            rifornimento: rifornimento, // Passa il rifornimento da modificare
+          builder: (context) => RifornimentoDetailScreen(
+            rifornimento: rifornimento,
+            scooterId: _currentScooter.id!, // Passa l'ID dello scooter
           ),
         ),
       );
 
       if (result == true) {
+        // Se RifornimentoDetailScreen ha indicato un aggiornamento, ricarica la lista
         await _loadRifornimenti();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rifornimento aggiornato con successo!')),
-          );
-        }
       }
     } catch (e) {
-      print('Errore durante la navigazione o la modifica del rifornimento: $e');
+      print('Errore durante la navigazione al dettaglio del rifornimento: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Si è verificato un errore durante l\'operazione.')),
@@ -298,7 +297,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                         const SizedBox(height: 10),
 
                         _isLoadingRifornimenti
-                            ? const Center(child: CircularProgressIndicator()) // Spinner per il caricamento dei rifornimenti
+                            ? const Center(child: CircularProgressIndicator())
                             : _rifornimenti.isEmpty
                             ? Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -335,15 +334,13 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                                   style: const TextStyle(color: Colors.white70),
                                 ),
                                 onTap: () {
-                                  print('Rifornimento tapped: ${rifornimento.id}');
-                                  _navigateToEditRifornimento(rifornimento); // Naviga alla modifica
+                                  _navigateToRifornimentoDetail(rifornimento); // Naviga al dettaglio
                                 },
                               ),
                             );
                           },
                         ),
-                        const SizedBox(height: 16), // Spazio tra la lista/messaggio e il pulsante
-                        // Il pulsante "Aggiungi rifornimento" è ora qui, dopo la lista (o il messaggio di lista vuota)
+                        const SizedBox(height: 16),
                         Center(
                           child: TextButton.icon(
                             onPressed: _isProcessingAction ? null : _navigateToAddRifornimento,
@@ -367,7 +364,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
               ),
             ),
           ),
-          // Spinner modale per _isProcessingAction
           if (_isProcessingAction)
             ModalBarrier(
               color: Colors.black.withOpacity(0.5),
