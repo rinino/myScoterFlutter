@@ -1,4 +1,3 @@
-// lib/screens/add_edit_scooter_screen.dart
 import 'package:flutter/material.dart';
 import 'package:myscoterflutter/models/scooter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -63,6 +62,14 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     }
   }
 
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   void _saveScooter() {
     if (_formKey.currentState!.validate()) {
       final String marca = _marcaController.text.trim();
@@ -83,12 +90,15 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
       );
 
       Navigator.pop(context, newOrUpdatedScooter);
+    } else {
+      _showErrorSnackBar('Controlla i campi evidenziati per errori.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final Color titleColor = Theme.of(context).textTheme.headlineMedium?.color ?? Colors.white;
+    final Color detailTextColor = Colors.white70;
 
     return Scaffold(
       appBar: AppBar(
@@ -121,13 +131,19 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                   children: [
                     TextFormField(
                       controller: _marcaController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Marca',
-                        border: OutlineInputBorder(),
+                        hintText: 'Inserisci la marca',
+                        labelStyle: TextStyle(color: detailTextColor),
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                        filled: true,
+                        fillColor: Colors.grey[800],
                       ),
+                      style: const TextStyle(color: Colors.white),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Inserisci la marca dello scooter';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'La **Marca** è obbligatoria.';
                         }
                         return null;
                       },
@@ -136,13 +152,19 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
 
                     TextFormField(
                       controller: _modelloController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Modello',
-                        border: OutlineInputBorder(),
+                        hintText: 'Inserisci il modello',
+                        labelStyle: TextStyle(color: detailTextColor),
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                        filled: true,
+                        fillColor: Colors.grey[800],
                       ),
+                      style: const TextStyle(color: Colors.white),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Inserisci il modello dello scooter';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Il **Modello** è obbligatorio.';
                         }
                         return null;
                       },
@@ -152,16 +174,29 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                     TextFormField(
                       controller: _cilindrataController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Cilindrata (cc)',
-                        border: OutlineInputBorder(),
+                        hintText: 'Inserisci la cilindrata',
+                        labelStyle: TextStyle(color: detailTextColor),
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                        filled: true,
+                        fillColor: Colors.grey[800],
                       ),
+                      style: const TextStyle(color: Colors.white),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Inserisci la cilindrata';
+                          return 'La **Cilindrata** è obbligatoria.';
                         }
-                        if (int.tryParse(value) == null) {
-                          return 'Inserisci un numero valido';
+                        final int? cilindrata = int.tryParse(value);
+                        if (cilindrata == null) {
+                          return 'Inserisci un numero intero valido.';
+                        }
+                        if (cilindrata < 25) { // Nuovo limite inferiore
+                          return 'La Cilindrata deve essere almeno **25cc**.';
+                        }
+                        if (cilindrata > 500) { // Nuovo limite superiore
+                          return 'La Cilindrata deve essere al massimo **500cc**.';
                         }
                         return null;
                       },
@@ -170,14 +205,21 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
 
                     TextFormField(
                       controller: _targaController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Targa',
-                        border: OutlineInputBorder(),
+                        hintText: 'Inserisci la targa (es. AA123BB)',
+                        labelStyle: TextStyle(color: detailTextColor),
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                        filled: true,
+                        fillColor: Colors.grey[800],
                       ),
+                      style: const TextStyle(color: Colors.white),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Inserisci la targa dello scooter';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'La **Targa** è obbligatoria.';
                         }
+                        // Puoi aggiungere qui una RegEx per il formato della targa se vuoi
                         return null;
                       },
                     ),
@@ -186,20 +228,27 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                     TextFormField(
                       controller: _annoController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Anno',
-                        border: OutlineInputBorder(),
+                        hintText: 'Inserisci l\'anno (es. 2020)',
+                        labelStyle: TextStyle(color: detailTextColor),
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                        filled: true,
+                        fillColor: Colors.grey[800],
                       ),
+                      style: const TextStyle(color: Colors.white),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Inserisci l\'anno';
+                          return 'L\'**Anno** è obbligatorio.';
                         }
-                        if (int.tryParse(value) == null) {
-                          return 'Inserisci un anno valido';
+                        final int? anno = int.tryParse(value);
+                        if (anno == null) {
+                          return 'Inserisci un numero intero valido.';
                         }
-                        final int? annoInt = int.tryParse(value);
-                        if (annoInt != null && (annoInt < 1900 || annoInt > DateTime.now().year + 1)) {
-                          return 'Anno non valido';
+                        final int currentYear = DateTime.now().year;
+                        if (anno < 1900 || anno > currentYear + 1) {
+                          return 'Inserisci un anno valido (es. **1900 - ${currentYear + 1}**).';
                         }
                         return null;
                       },
