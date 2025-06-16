@@ -4,6 +4,8 @@ import 'package:myscoterflutter/models/scooter.dart';
 import 'package:myscoterflutter/models/rifornimento.dart';
 import 'package:myscoterflutter/repository/rifornimento_repository.dart';
 import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
+import 'package:myscoterflutter/screens/add_edit_rifornimento_screen.dart';
+import 'package:intl/intl.dart'; // Importa intl per la formattazione della data
 
 class ScooterDetailScreen extends StatefulWidget {
   final Scooter scooter;
@@ -17,8 +19,8 @@ class ScooterDetailScreen extends StatefulWidget {
 class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
   final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
   List<Rifornimento> _rifornimenti = [];
-  bool _isLoadingRifornimenti = true;
-  bool _isProcessingAction = false;
+  bool _isLoadingRifornimenti = true; // Gestisce lo spinner per i rifornimenti
+  bool _isProcessingAction = false; // Gestisce lo spinner per azioni come navigazione/salvataggio
 
   late Scooter _currentScooter;
 
@@ -78,9 +80,11 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         setState(() {
           _currentScooter = updatedScooter;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Scooter modificato con successo!')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Scooter modificato con successo!')),
+          );
+        }
       }
     } catch (e) {
       print('Errore durante la navigazione o modifica dello scooter: $e');
@@ -96,12 +100,90 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     }
   }
 
+  Future<void> _navigateToAddRifornimento() async {
+    if (_isProcessingAction) return;
+
+    setState(() {
+      _isProcessingAction = true;
+    });
+
+    try {
+      final bool? result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEditRifornimentoScreen(scooterId: _currentScooter.id!),
+        ),
+      );
+
+      if (result == true) {
+        await _loadRifornimenti();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rifornimento salvato con successo!')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Errore durante la navigazione o l\'aggiunta del rifornimento: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Si è verificato un errore durante l\'operazione.')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isProcessingAction = false;
+      });
+    }
+  }
+
+  Future<void> _navigateToEditRifornimento(Rifornimento rifornimento) async {
+    if (_isProcessingAction) return;
+
+    setState(() {
+      _isProcessingAction = true;
+    });
+
+    try {
+      final bool? result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEditRifornimentoScreen(
+            scooterId: _currentScooter.id!,
+            rifornimento: rifornimento, // Passa il rifornimento da modificare
+          ),
+        ),
+      );
+
+      if (result == true) {
+        await _loadRifornimenti();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rifornimento aggiornato con successo!')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Errore durante la navigazione o la modifica del rifornimento: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Si è verificato un errore durante l\'operazione.')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isProcessingAction = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scooter = _currentScooter;
 
     final Color appBarTitleColor = Theme.of(context).colorScheme.onPrimaryContainer;
     final Color detailTextColor = Colors.white70;
+    final Color addButtonColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,9 +222,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                             Text('Modello: ${scooter.modello}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
                             Text('Cilindrata: ${scooter.cilindrata}cc', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
                             Text('Targa: ${scooter.targa}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
-                            // --- AGGIUNTA PER MOSTRARE L'ID DELLO SCOOTER ---
-                            Text('ID: ${scooter.id ?? 'N/A'}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
-                            // --- FINE AGGIUNTA ---
                             Text('Anno: ${scooter.anno}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
                             Text('Miscelatore: ${scooter.miscelatore ? 'Sì' : 'No'}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: detailTextColor)),
 
@@ -219,15 +298,17 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                         const SizedBox(height: 10),
 
                         _isLoadingRifornimenti
-                            ? const Center(child: CircularProgressIndicator())
+                            ? const Center(child: CircularProgressIndicator()) // Spinner per il caricamento dei rifornimenti
                             : _rifornimenti.isEmpty
                             ? Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20.0),
                           child: Center(
                             child: Text(
-                              'Nessun rifornimento presente.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic, color: detailTextColor),
+                              'Nessun rifornimento trovato ancora.',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: detailTextColor,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
                           ),
                         )
@@ -244,7 +325,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                               child: ListTile(
                                 leading: const Icon(Icons.local_gas_station, color: Colors.white70),
                                 title: Text(
-                                  'Data: ${rifornimento.formattedDataRifornimento} - Km: ${rifornimento.kmAttuali.toStringAsFixed(0)}',
+                                  'Data: ${DateFormat('dd/MM/yyyy').format(rifornimento.dateTime)} - Km: ${rifornimento.kmAttuali.toStringAsFixed(0)}',
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 subtitle: Text(
@@ -255,10 +336,29 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
                                 ),
                                 onTap: () {
                                   print('Rifornimento tapped: ${rifornimento.id}');
+                                  _navigateToEditRifornimento(rifornimento); // Naviga alla modifica
                                 },
                               ),
                             );
                           },
+                        ),
+                        const SizedBox(height: 16), // Spazio tra la lista/messaggio e il pulsante
+                        // Il pulsante "Aggiungi rifornimento" è ora qui, dopo la lista (o il messaggio di lista vuota)
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _isProcessingAction ? null : _navigateToAddRifornimento,
+                            icon: Icon(Icons.add_circle_outline, color: addButtonColor),
+                            label: Text(
+                              'Aggiungi rifornimento',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: addButtonColor,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: addButtonColor,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -267,6 +367,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
               ),
             ),
           ),
+          // Spinner modale per _isProcessingAction
           if (_isProcessingAction)
             ModalBarrier(
               color: Colors.black.withOpacity(0.5),

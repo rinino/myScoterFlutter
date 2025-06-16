@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.example.myscoterflutter"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // FIX: Specifica la versione NDK richiesta dai tuoi plugin.
+    // L'errore ha indicato "27.0.12077973" come la versione più alta richiesta.
+    ndkVersion = "27.0.12077973" // <--- RIGA CORRETTA
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
