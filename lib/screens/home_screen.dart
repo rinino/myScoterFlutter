@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myscoterflutter/models/scooter.dart';
 import 'package:myscoterflutter/repository/scooter_repository.dart';
 import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
-import 'package:flutter/cupertino.dart'; // Necessario per l'icona "two_wheeler" se non usi Material Icons
+// Necessario per l'icona "two_wheeler" se non usi Material Icons
 
 
 class HomeScreen extends StatefulWidget {
@@ -185,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Nessuno scooter disponibile.\nPremi "+" per aggiungerne uno!',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7)),
+                        ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                   ),
                 ],
               ),

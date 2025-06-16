@@ -1,5 +1,4 @@
 // lib/models/scooter.dart
-import 'package:flutter/foundation.dart';
 
 class Scooter {
   // @PrimaryKey(autoGenerate = true) -> gestito dal database al momento dell'inserimento

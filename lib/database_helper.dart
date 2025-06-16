@@ -171,7 +171,7 @@ class DatabaseHelper {
   // In un'applicazione mobile, spesso non è necessario chiamare esplicitamente close,
   // ma può essere utile in scenari specifici (es. unit testing).
   Future<void> closeDb() async {
-    final db = await _database;
+    final db = _database;
     if (db != null && db.isOpen) {
       await db.close();
       _database = null; // Resetta l'istanza per permettere una nuova apertura

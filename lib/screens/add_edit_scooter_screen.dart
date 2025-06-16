@@ -212,7 +212,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                         Text(
                           'Miscelatore',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -223,8 +223,8 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                               _miscelatore = newValue;
                             });
                           },
-                          activeColor: CupertinoColors.activeGreen,
-                          trackColor: CupertinoColors.systemGrey3,
+                          activeTrackColor: CupertinoColors.activeGreen,
+                          inactiveTrackColor: CupertinoColors.systemGrey3,
                         ),
                       ],
                     ),
