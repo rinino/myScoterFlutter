@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:myscoterflutter/models/rifornimento.dart';
-import 'package:myscoterflutter/models/scooter.dart'; // Importa il modello Scooter
+import 'package:myscoterflutter/models/scooter.dart';
 import 'package:myscoterflutter/repository/rifornimento_repository.dart';
-import 'package:myscoterflutter/repository/scooter_repository.dart'; // Importa il repository Scooter
+import 'package:myscoterflutter/repository/scooter_repository.dart';
 
 class AddEditRifornimentoScreen extends StatefulWidget {
   final int scooterId;
-  final Rifornimento? rifornimento; // Opzionale, per la modifica di un rifornimento esistente
+  final Rifornimento? rifornimento;
 
   const AddEditRifornimentoScreen({
     super.key,
@@ -22,7 +22,7 @@ class AddEditRifornimentoScreen extends StatefulWidget {
 class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   final _formKey = GlobalKey<FormState>();
   final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
-  final ScooterRepository _scooterRepository = ScooterRepository(); // Istanzia il ScooterRepository
+  final ScooterRepository _scooterRepository = ScooterRepository();
 
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _kmAttualiController = TextEditingController();
@@ -34,23 +34,21 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   double _mediaConsumo = 0.0;
 
   bool _isSaving = false;
-  bool _isLoadingData = true; // Unico flag per caricamento dati iniziali
-  Rifornimento? _previousRifornimento; // Il rifornimento precedente per i calcoli
+  bool _isLoadingData = true;
+  Rifornimento? _previousRifornimento;
 
-  bool _scooterHasMiscelatore = false; // Caricato dal DB
+  bool _scooterHasMiscelatore = false;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData(); // Carica dettagli scooter e rifornimento precedente
+    _loadInitialData();
     _setupControllersListeners();
 
     if (widget.rifornimento != null) {
-      // Se stiamo modificando un rifornimento esistente
-      // Modifica qui: converti il timestamp in DateTime
       _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.rifornimento!.dataRifornimento);
-      _kmAttualiController.text = widget.rifornimento!.kmAttuali.toString(); // Non formattare qui per l'editing
-      _litriBenzinaController.text = widget.rifornimento!.litriBenzina.toString(); // Non formattare qui
+      _kmAttualiController.text = widget.rifornimento!.kmAttuali.toString();
+      _litriBenzinaController.text = widget.rifornimento!.litriBenzina.toString();
 
       if (widget.rifornimento!.litriOlio != null) {
         _litriOlioController.text = widget.rifornimento!.litriOlio.toString();
@@ -58,40 +56,37 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       if (widget.rifornimento!.percentualeOlio != null) {
         _percentualeOlioController.text = widget.rifornimento!.percentualeOlio.toString();
       }
-      // I kmPercorsi e mediaConsumo verranno ricalcolati dopo il caricamento del precedente
     }
   }
 
-  // Simile a onAppear in SwiftUI: carica tutti i dati iniziali
   Future<void> _loadInitialData() async {
     setState(() {
       _isLoadingData = true;
     });
 
     try {
-      // 1. Carica i dettagli dello Scooter per il flag miscelatore
       final Scooter? scooter = await _scooterRepository.getScooterById(widget.scooterId);
       if (scooter != null) {
         _scooterHasMiscelatore = scooter.miscelatore;
       } else {
-        // Se lo scooter non esiste, c'è un problema. Gestisci l'errore.
         print("Errore: Scooter con ID ${widget.scooterId} non trovato.");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Errore: Dettagli scooter non trovati.')),
           );
-          // Forse potresti fare Navigator.pop(context, false) qui
         }
-        _isLoadingData = false; // Termina il caricamento
+        _isLoadingData = false;
         return;
       }
 
-      // 2. Carica il rifornimento precedente (escludendo quello corrente se in modifica)
+      // Carica il rifornimento precedente SOLO se stiamo aggiungendo un nuovo rifornimento
+      // O se stiamo modificando ma il rifornimento corrente NON è il più recente.
+      // Questa logica è cruciale per i calcoli.
       _previousRifornimento = await _rifornimentoRepository.getPreviousRifornimentoExcluding(
         widget.scooterId,
-        widget.rifornimento?.id,
+        widget.rifornimento?.id, // Esclude il rifornimento corrente se in modalità modifica
       );
-      _calculateStats(); // Calcola i valori iniziali dopo il caricamento dei dati
+      _calculateStats();
 
     } catch (e) {
       print("Errore nel caricamento dei dati iniziali: $e");
@@ -108,14 +103,12 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   }
 
   void _setupControllersListeners() {
-    // Aggiungi listener per ricalcolare i valori derivati in tempo reale
     _kmAttualiController.addListener(_calculateStats);
     _litriBenzinaController.addListener(_calculateStats);
-    _percentualeOlioController.addListener(_calculateCalculatedLitriOlio); // Solo per campo percentuale olio
+    _percentualeOlioController.addListener(_calculateCalculatedLitriOlio);
   }
 
   void _calculateStats() {
-    // Questa funzione calcola kmPercorsi e mediaConsumo
     final double? kmAttuali = _parseToDouble(_kmAttualiController.text);
     final double? litriBenzina = _parseToDouble(_litriBenzinaController.text);
 
@@ -123,7 +116,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       if (kmAttuali != null && _previousRifornimento != null) {
         _kmPercorsi = kmAttuali - _previousRifornimento!.kmAttuali;
         if (_kmPercorsi < 0) {
-          _kmPercorsi = 0.0; // Evita valori negativi
+          _kmPercorsi = 0.0;
         }
       } else {
         _kmPercorsi = 0.0;
@@ -138,9 +131,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   }
 
   void _calculateCalculatedLitriOlio() {
-    // Questa funzione è chiamata solo se lo scooter NON ha il miscelatore,
-    // per calcolare i litri di olio in base a benzina e percentuale.
-    if (_scooterHasMiscelatore) return; // Non calcolare se ha miscelatore (litri olio è manuale)
+    if (_scooterHasMiscelatore) return;
 
     final double? litriBenzina = _parseToDouble(_litriBenzinaController.text);
     final double? percentualeOlio = _parseToDouble(_percentualeOlioController.text);
@@ -149,11 +140,10 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       final double litriOlioCalculated = litriBenzina * (percentualeOlio / 100.0);
       _litriOlioController.text = litriOlioCalculated.toStringAsFixed(2);
     } else {
-      _litriOlioController.text = ''; // Resetta se i valori non sono validi
+      _litriOlioController.text = '';
     }
   }
 
-  // Funzione di utilità per parsare stringhe con "," o "." in double
   double? _parseToDouble(String text) {
     if (text.isEmpty) return null;
     String cleanedText = text.replaceAll(',', '.');
@@ -197,12 +187,13 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   }
 
   Future<void> _saveRifornimento() async {
+    // Il metodo validate() chiama i validator di tutti i TextFormField
     if (!_formKey.currentState!.validate()) {
-      _showErrorSnackBar('Assicurati di aver inserito valori validi per tutti i campi obbligatori.');
+      _showErrorSnackBar('Controlla i campi evidenziati per errori.');
       return;
     }
 
-    // Ulteriore validazione logica qui, come in Swift
+    // Validazioni logiche aggiuntive che non possono essere fatte solo con i validator dei TextFormField
     final double? kmAttuali = _parseToDouble(_kmAttualiController.text);
     final double? litriBenzina = _parseToDouble(_litriBenzinaController.text);
     double? litriOlio;
@@ -210,49 +201,37 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
 
     if (_scooterHasMiscelatore) {
       litriOlio = _parseToDouble(_litriOlioController.text);
-      // Se il campo litri olio è manuale, non è strettamente obbligatorio
-      // a meno che tu non voglia forzarlo.
-      // Se è vuoto, rimane null. Se c'è, deve essere valido.
+      // Se il miscelatore è presente, i litri olio sono opzionali, ma se ci sono devono essere >= 0
+      if (litriOlio != null && litriOlio < 0) {
+        _showErrorSnackBar('I litri di olio non possono essere negativi.');
+        return;
+      }
     } else {
       percentualeOlio = _parseToDouble(_percentualeOlioController.text);
-      // Assicurati che i litri olio siano calcolati se non lo sono già stati
+      // Se non ha miscelatore, percentualeOlio è obbligatoria e deve essere tra 0 e 100
+      if (percentualeOlio == null || percentualeOlio < 0 || percentualeOlio > 100) {
+        _showErrorSnackBar('La percentuale di olio deve essere un valore tra 0 e 100.');
+        return;
+      }
+      // Ricalcola i litri olio per assicurarti che siano aggiornati
       _calculateCalculatedLitriOlio();
       litriOlio = _parseToDouble(_litriOlioController.text); // Prendi il valore calcolato
     }
-
-    if (kmAttuali == null || litriBenzina == null || kmAttuali <= 0 || litriBenzina <= 0) {
-      // Questo dovrebbe essere già coperto dai validator dei TextFormField
-      _showErrorSnackBar('I campi Km Attuali e Litri Benzina devono essere numeri positivi.');
-      return;
-    }
-
-    if (!_scooterHasMiscelatore && (percentualeOlio == null || percentualeOlio < 0 || percentualeOlio > 100)) {
-      // Questo dovrebbe essere già coperto dal validator di percentualeOlio
-      _showErrorSnackBar('La percentuale di olio deve essere tra 0 e 100.');
-      return;
-    }
-
-    if (_previousRifornimento != null && kmAttuali <= _previousRifornimento!.kmAttuali) {
-      _showErrorSnackBar("I chilometri attuali non possono essere minori o uguali ai chilometri dell'ultimo rifornimento.");
-      return;
-    }
-
 
     setState(() {
       _isSaving = true;
     });
 
-    // Assicurati che kmPercorsi e mediaConsumo siano calcolati prima del salvataggio
-    _calculateStats();
+    _calculateStats(); // Assicurati che siano aggiornati prima di salvare
 
     final Rifornimento rifornimentoToSave = Rifornimento(
-      id: widget.rifornimento?.id, // Se stiamo modificando, usa l'ID esistente
+      id: widget.rifornimento?.id,
       idScooter: widget.scooterId,
-      dataRifornimento: _selectedDate.millisecondsSinceEpoch, // Modifica qui: passa il timestamp
-      kmAttuali: kmAttuali,
-      litriBenzina: litriBenzina,
-      litriOlio: litriOlio,          // Sarà null se non ha miscelatore, o il valore inserito
-      percentualeOlio: percentualeOlio, // Sarà null se ha miscelatore, o il valore inserito
+      dataRifornimento: _selectedDate.millisecondsSinceEpoch,
+      kmAttuali: kmAttuali!, // Già validato come non nullo e > 0
+      litriBenzina: litriBenzina!, // Già validato come non nullo e > 0
+      litriOlio: litriOlio,
+      percentualeOlio: percentualeOlio,
       kmPercorsi: _kmPercorsi,
       mediaConsumo: _mediaConsumo,
     );
@@ -264,7 +243,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
         await _rifornimentoRepository.updateRifornimento(rifornimentoToSave);
       }
       if (mounted) {
-        Navigator.pop(context, true); // Torna indietro e indica successo
+        Navigator.pop(context, true);
       }
     } catch (e) {
       print('Errore durante il salvataggio del rifornimento: $e');
@@ -305,7 +284,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       ),
       body: Stack(
         children: [
-          _isLoadingData // Mostra un loader finché i dati iniziali non sono caricati
+          _isLoadingData
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -314,7 +293,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Selettore Data ---
                   Text(
                     'Data Rifornimento:',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: detailTextColor),
@@ -340,7 +318,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Km Attuali ---
                   TextFormField(
                     controller: _kmAttualiController,
                     keyboardType: TextInputType.number,
@@ -355,24 +332,26 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                       prefixIcon: Icon(Icons.speed, color: detailTextColor),
                     ),
                     style: const TextStyle(color: Colors.white),
-                    enabled: !_isLoadingData, // Disabilita durante il caricamento
+                    enabled: !_isLoadingData,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Inserisci i km attuali';
+                        return 'I Km Attuali sono obbligatori.';
                       }
                       final val = _parseToDouble(value);
-                      if (val == null || val <= 0) {
-                        return 'Inserisci un valore numerico valido (> 0)';
+                      if (val == null) {
+                        return 'Inserisci un numero valido (usa . per i decimali).';
+                      }
+                      if (val <= 0) {
+                        return 'I Km Attuali devono essere maggiori di 0.';
                       }
                       if (_previousRifornimento != null && val <= _previousRifornimento!.kmAttuali) {
-                        return "Deve essere maggiore dei km dell'ultimo rifornimento (${_previousRifornimento!.kmAttuali.toStringAsFixed(0)})";
+                        return "Devono essere maggiori dei km dell'ultimo rifornimento (${_previousRifornimento!.kmAttuali.toStringAsFixed(0)}).";
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Litri Benzina ---
                   TextFormField(
                     controller: _litriBenzinaController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -390,17 +369,20 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                     enabled: !_isLoadingData,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Inserisci i litri di benzina';
+                        return 'I Litri di Benzina sono obbligatori.';
                       }
-                      if (_parseToDouble(value) == null || _parseToDouble(value)! <= 0) {
-                        return 'Inserisci un valore numerico valido (> 0)';
+                      final val = _parseToDouble(value);
+                      if (val == null) {
+                        return 'Inserisci un numero valido (usa . per i decimali).';
+                      }
+                      if (val <= 0) {
+                        return 'I Litri di Benzina devono essere maggiori di 0.';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Percentuale Olio (se NO miscelatore) ---
                   if (!_scooterHasMiscelatore)
                     TextFormField(
                       controller: _percentualeOlioController,
@@ -419,23 +401,25 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                       enabled: !_isLoadingData,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Inserisci la percentuale di olio';
+                          return 'La Percentuale Olio è obbligatoria per questo scooter.';
                         }
                         final val = _parseToDouble(value);
-                        if (val == null || val < 0 || val > 100) {
-                          return 'Inserisci un valore numerico valido (0-100)';
+                        if (val == null) {
+                          return 'Inserisci un numero valido (usa . per i decimali).';
+                        }
+                        if (val < 0 || val > 100) {
+                          return 'Il valore deve essere tra 0 e 100.';
                         }
                         return null;
                       },
                     ),
                   if (!_scooterHasMiscelatore) const SizedBox(height: 16),
 
-                  // --- Litri Olio (Condizionale, abilitato/disabilitato) ---
                   TextFormField(
                     controller: _litriOlioController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: _scooterHasMiscelatore ? 'Litri Olio' : 'Litri Olio (calcolato)',
+                      labelText: _scooterHasMiscelatore ? 'Litri Olio (Opzionale)' : 'Litri Olio (Calcolato)',
                       hintText: _scooterHasMiscelatore ? 'Inserisci i litri di olio' : 'Calcolato automaticamente',
                       labelStyle: TextStyle(color: detailTextColor),
                       hintStyle: TextStyle(color: Colors.white54),
@@ -445,15 +429,16 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                       prefixIcon: Icon(Icons.oil_barrel, color: detailTextColor),
                     ),
                     style: TextStyle(color: _scooterHasMiscelatore ? Colors.white : Colors.white54),
-                    readOnly: !_scooterHasMiscelatore, // Read-only se non ha miscelatore
-                    enabled: !_isLoadingData && _scooterHasMiscelatore, // Disabilita se è calcolato o in caricamento
+                    readOnly: !_scooterHasMiscelatore,
+                    enabled: !_isLoadingData && _scooterHasMiscelatore,
                     validator: (value) {
-                      if (_scooterHasMiscelatore) { // Solo se il campo è modificabile
-                        // Litri olio è opzionale per scooter con miscelatore, quindi non è richiesta la non-vuotaggine
-                        if (value != null && value.isNotEmpty) {
-                          if (_parseToDouble(value) == null || _parseToDouble(value)! < 0) {
-                            return 'Inserisci un valore numerico valido (>= 0)';
-                          }
+                      if (_scooterHasMiscelatore && value != null && value.isNotEmpty) {
+                        final val = _parseToDouble(value);
+                        if (val == null) {
+                          return 'Inserisci un numero valido (usa . per i decimali).';
+                        }
+                        if (val < 0) {
+                          return 'I Litri di Olio non possono essere negativi.';
                         }
                       }
                       return null;
@@ -461,7 +446,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Km Percorsi (Visualizzazione) ---
                   Text(
                     'Km Percorsi:',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: detailTextColor),
@@ -484,7 +468,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // --- Media Consumo (Visualizzazione) ---
                   Text(
                     'Media Consumo:',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: detailTextColor),
@@ -507,7 +490,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // --- Pulsante Salva ---
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -537,10 +519,14 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
               ),
             ),
           ),
-          if (_isSaving) // Copertura modale quando si salva
+          if (_isSaving)
             ModalBarrier(
               color: Colors.black.withOpacity(0.5),
               dismissible: false,
+            ),
+          if (_isSaving)
+            const Center(
+              child: CircularProgressIndicator(),
             ),
         ],
       ),
