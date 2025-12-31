@@ -38,7 +38,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     });
 
     if (_currentScooter.id == null) {
-      print("ID dello scooter nullo, impossibile caricare i rifornimenti. Visualizzo lista vuota.");
       setState(() {
         _rifornimenti = [];
         _isLoadingRifornimenti = false;
@@ -53,7 +52,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         _isLoadingRifornimenti = false;
       });
     } catch (e) {
-      print('Errore effettivo nel caricamento dei rifornimenti: $e');
       setState(() {
         _isLoadingRifornimenti = false;
       });
@@ -88,7 +86,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         }
       }
     } catch (e) {
-      print('Errore durante la navigazione o modifica dello scooter: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Si è verificato un errore durante la modifica.')),
@@ -125,7 +122,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         }
       }
     } catch (e) {
-      print('Errore durante la navigazione o l\'aggiunta del rifornimento: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Si è verificato un errore durante l\'operazione.')),
@@ -163,7 +159,6 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         await _loadRifornimenti();
       }
     } catch (e) {
-      print('Errore durante la navigazione al dettaglio del rifornimento: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Si è verificato un errore durante l\'operazione.')),

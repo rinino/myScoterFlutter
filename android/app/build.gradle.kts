@@ -1,16 +1,28 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// CARICAMENTO PROPRIETÀ
+val keystoreProperties = Properties()
+// rootProject.file punta alla cartella /android del tuo progetto
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    println("DEBUG: File key.properties trovato in: ${keystorePropertiesFile.absolutePath}")
+} else {
+    println("DEBUG: ATTENZIONE! File key.properties NON TROVATO in: ${keystorePropertiesFile.absolutePath}")
+}
+
 android {
-    namespace = "com.example.myscoterflutter"
+    namespace = "it.rinino.myscoterflutter"
     compileSdk = flutter.compileSdkVersion
-    // FIX: Specifica la versione NDK richiesta dai tuoi plugin.
-    // L'errore ha indicato "27.0.12077973" come la versione più alta richiesta.
-    ndkVersion = "27.0.12077973" // <--- RIGA CORRETTA
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -22,35 +34,44 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.myscoterflutter"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        applicationId = "it.rinino.myscoterflutter"
+
+        // FIX: Impostiamo minSdk a 21 per compatibilità con NDK 27
+        minSdk = 21
+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    // NUOVO: Definizione dei signingConfigs in Kotlin DSL
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("FLUTTER_KEYSTORE") ?: (project.properties["storeFile"] as String?))
-            storePassword = System.getenv("FLUTTER_KEYSTORE_PASSWORD") ?: (project.properties["storePassword"] as String?)
-            keyAlias = System.getenv("FLUTTER_KEY_ALIAS") ?: (project.properties["keyAlias"] as String?)
-            keyPassword = System.getenv("FLUTTER_KEY_PASSWORD") ?: (project.properties["keyPassword"] as String?)
+            val sFile = keystoreProperties.getProperty("storeFile")
+            if (sFile != null) {
+                val keystoreFile = file(sFile)
+                if (keystoreFile.exists()) {
+                    storeFile = keystoreFile
+                    storePassword = keystoreProperties.getProperty("storePassword")?.trim()
+                    keyAlias = keystoreProperties.getProperty("keyAlias")?.trim()
+                    keyPassword = keystoreProperties.getProperty("keyPassword")?.trim()
+                    println("DEBUG: Keystore caricato correttamente: ${keystoreFile.absolutePath}")
+                } else {
+                    println("DEBUG: ERRORE! Il file .jks non esiste al percorso: ${keystoreFile.absolutePath}")
+                }
+            } else {
+                println("DEBUG: ERRORE! La proprietà 'storeFile' è assente nel file key.properties")
+            }
         }
     }
 
     buildTypes {
         release {
-            // FIX: Associa la configurazione di firma 'release' a questo build type.
-            signingConfig = signingConfigs.getByName("release") // Usa getByName("nome_config")
-            // Queste ottimizzazioni sono consigliate per i build di release
-            isShrinkResources = true // In Kotlin DSL si usa 'is' per i booleani
-            isMinifyEnabled = true   // In Kotlin DSL si usa 'is' per i booleani
-            // Il file proguard-rules.pro serve per configurare la minificazione (se necessaria per librerie specifiche)
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro") // Parentesi per la funzione e virgola
+            // Associa la firma creata sopra
+            signingConfig = signingConfigs.getByName("release")
+
+            isShrinkResources = true
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
 }

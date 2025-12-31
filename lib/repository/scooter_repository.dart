@@ -22,8 +22,6 @@ class ScooterRepository {
       final id = await _dbHelper.insertScooter(scooter);
       return id;
     } catch (e) {
-      // Gestione degli errori, ad esempio loggare l'errore o lanciare un'eccezione specifica
-      print('Errore durante l\'inserimento dello scooter: $e');
       rethrow; // Rilancia l'eccezione per la gestione a un livello superiore
     }
   }
@@ -34,7 +32,6 @@ class ScooterRepository {
       final scooters = await _dbHelper.getScooters();
       return scooters;
     } catch (e) {
-      print('Errore durante il recupero degli scooter: $e');
       rethrow;
     }
   }
@@ -46,7 +43,6 @@ class ScooterRepository {
       final scooter = await _dbHelper.getScooterById(id);
       return scooter;
     } catch (e) {
-      print('Errore durante il recupero dello scooter con ID $id: $e');
       rethrow;
     }
   }
@@ -58,7 +54,6 @@ class ScooterRepository {
       final scooter = await _dbHelper.getScooterByTarga(targa);
       return scooter;
     } catch (e) {
-      print('Errore durante il recupero dello scooter con targa $targa: $e');
       rethrow;
     }
   }
@@ -70,9 +65,6 @@ class ScooterRepository {
       final rowsAffected = await _dbHelper.updateScooter(scooter);
       return rowsAffected;
     } catch (e) {
-      print(
-        'Errore durante l\'aggiornamento dello scooter con ID ${scooter.id}: $e',
-      );
       rethrow;
     }
   }
@@ -84,7 +76,6 @@ class ScooterRepository {
       final rowsAffected = await _dbHelper.deleteScooter(id);
       return rowsAffected;
     } catch (e) {
-      print('Errore durante l\'eliminazione dello scooter con ID $id: $e');
       rethrow;
     }
   }
@@ -96,7 +87,6 @@ class ScooterRepository {
       final rowsAffected = await _dbHelper.deleteAllScooters();
       return rowsAffected;
     } catch (e) {
-      print('Errore durante l\'eliminazione di tutti gli scooter: $e');
       rethrow;
     }
   }

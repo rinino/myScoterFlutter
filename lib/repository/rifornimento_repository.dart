@@ -21,7 +21,6 @@ class RifornimentoRepository {
       final id = await _dbHelper.insertRifornimento(rifornimento);
       return id;
     } catch (e) {
-      print('Errore durante l\'inserimento del rifornimento: $e');
       rethrow;
     }
   }
@@ -32,7 +31,6 @@ class RifornimentoRepository {
       final rifornimenti = await _dbHelper.getRifornimenti(scooterId);
       return rifornimenti;
     } catch (e) {
-      print('Errore durante il recupero dei rifornimenti per scooter ID $scooterId: $e');
       rethrow;
     }
   }
@@ -44,7 +42,6 @@ class RifornimentoRepository {
       final rifornimento = await _dbHelper.getRifornimentoById(rifornimentoId);
       return rifornimento;
     } catch (e) {
-      print('Errore durante il recupero del rifornimento con ID $rifornimentoId: $e');
       rethrow;
     }
   }
@@ -56,7 +53,6 @@ class RifornimentoRepository {
       final success = await _dbHelper.updateRifornimento(rifornimento);
       return success;
     } catch (e) {
-      print('Errore durante l\'aggiornamento del rifornimento con ID ${rifornimento.id}: $e');
       rethrow;
     }
   }
@@ -68,7 +64,6 @@ class RifornimentoRepository {
       final rowsAffected = await _dbHelper.deleteRifornimento(rifornimentoId);
       return rowsAffected;
     } catch (e) {
-      print('Errore durante l\'eliminazione del rifornimento con ID $rifornimentoId: $e');
       rethrow;
     }
   }
@@ -80,7 +75,6 @@ class RifornimentoRepository {
       final rifornimento = await _dbHelper.getPreviousRifornimento(scooterId);
       return rifornimento;
     } catch (e) {
-      print('Errore durante il recupero dell\'ultimo rifornimento per scooter ID $scooterId: $e');
       rethrow;
     }
   }
@@ -93,7 +87,6 @@ class RifornimentoRepository {
       final rifornimento = await _dbHelper.getPreviousRifornimentoExcluding(scooterId, excludingRifornimentoId);
       return rifornimento;
     } catch (e) {
-      print('Errore durante il recupero dell\'ultimo rifornimento per scooter ID $scooterId (escludendo $excludingRifornimentoId): $e');
       rethrow;
     }
   }

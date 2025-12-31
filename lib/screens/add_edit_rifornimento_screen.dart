@@ -69,7 +69,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       if (scooter != null) {
         _scooterHasMiscelatore = scooter.miscelatore;
       } else {
-        print("Errore: Scooter con ID ${widget.scooterId} non trovato.");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Errore: Dettagli scooter non trovati.')),
@@ -89,7 +88,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
       _calculateStats();
 
     } catch (e) {
-      print("Errore nel caricamento dei dati iniziali: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Errore nel caricamento dei dati iniziali.')),
@@ -164,8 +162,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
               onPrimary: Theme.of(context).colorScheme.onPrimary,
               surface: Colors.grey[850]!,
               onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: Colors.grey[900],
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.grey[900]),
           ),
           child: child!,
         );
@@ -246,7 +243,6 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      print('Errore durante il salvataggio del rifornimento: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Errore durante il salvataggio del rifornimento.')),
@@ -273,7 +269,7 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Color appBarTitleColor = Theme.of(context).colorScheme.onPrimaryContainer;
+    //final Color appBarTitleColor = Theme.of(context).colorScheme.onPrimaryContainer;
     final Color detailTextColor = Colors.white70;
 
     return Scaffold(

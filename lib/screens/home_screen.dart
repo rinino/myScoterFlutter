@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false; // Imposta lo stato di caricamento a false
       });
     } catch (e) {
-      print('Errore nel caricamento degli scooter: $e');
       setState(() {
         _isLoading = false; // Imposta lo stato di caricamento a false anche in caso di errore
       });
@@ -83,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       } catch (e) {
-        print('Errore nell\'eliminazione dello scooter: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -131,7 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 await _loadScooters(); // Await per assicurarsi che il ricaricamento sia completo
               } catch (e) {
-                print('Errore nell\'aggiunta dello scooter: $e');
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Errore nell\'aggiunta dello scooter.')),
@@ -297,7 +294,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     }
                                     await _loadScooters(); // Await per assicurarsi che il ricaricamento sia completo
                                   } catch (e) {
-                                    print('Errore nella modifica dello scooter: $e');
                                     if (mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Errore nella modifica dello scooter.')),

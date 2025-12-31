@@ -65,7 +65,6 @@ class DatabaseHelper {
         FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
       )
     ''');
-    print("Tabelle 'scooters' e 'rifornimenti' create al primo avvio.");
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -86,7 +85,6 @@ class DatabaseHelper {
           FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
         )
       ''');
-      print("Tabella 'rifornimenti' creata durante l'aggiornamento (da v1 a v2).");
     }
     // Esempio: se oldVersion è 2 e newVersion è 3, e hai aggiunto una nuova colonna
     // if (oldVersion < 3 && newVersion >= 3) {
@@ -178,10 +176,10 @@ class DatabaseHelper {
         rifornimento.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      print("Rifornimento salvato con ID: $id");
+
       return id;
     } catch (e) {
-      print("Errore durante il salvataggio del rifornimento: $e");
+
       return null;
     }
   }
@@ -194,7 +192,6 @@ class DatabaseHelper {
       whereArgs: [scooterId],
       orderBy: 'dataRifornimento DESC, kmAttuali ASC',
     );
-    // Questo è corretto: se maps è vuoto, List.generate restituirà una lista vuota.
     return List.generate(maps.length, (i) {
       return Rifornimento.fromMap(maps[i]);
     });
@@ -210,7 +207,6 @@ class DatabaseHelper {
       );
       return changes;
     } catch (e) {
-      print("Errore durante l'eliminazione del rifornimento con ID $rifornimentoId: $e");
       return 0;
     }
   }
@@ -229,7 +225,6 @@ class DatabaseHelper {
   Future<bool> updateRifornimento(Rifornimento rifornimento) async {
     final db = await database;
     if (rifornimento.id == null) {
-      print("Errore: Impossibile aggiornare un rifornimento senza ID.");
       return false;
     }
     try {
@@ -241,7 +236,6 @@ class DatabaseHelper {
       );
       return changes > 0;
     } catch (e) {
-      print("Errore durante l'aggiornamento del rifornimento con ID ${rifornimento.id}: $e");
       return false;
     }
   }
