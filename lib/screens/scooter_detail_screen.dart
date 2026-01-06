@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:myscoterflutter/models/scooter.dart';
-import 'package:myscoterflutter/models/rifornimento.dart';
-import 'package:myscoterflutter/repository/rifornimento_repository.dart';
-import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
-import 'package:myscoterflutter/screens/add_edit_rifornimento_screen.dart';
-import 'package:myscoterflutter/screens/rifornimento_detail_screen.dart'; // NUOVO: Importa la schermata di dettaglio
+import 'package:myscooter/models/scooter.dart';
+import 'package:myscooter/models/rifornimento.dart';
+import 'package:myscooter/repository/rifornimento_repository.dart';
+import 'package:myscooter/screens/add_edit_scooter_screen.dart';
+import 'package:myscooter/screens/add_edit_rifornimento_screen.dart';
+import 'package:myscooter/screens/rifornimento_detail_screen.dart'; // NUOVO: Importa la schermata di dettaglio
 import 'package:intl/intl.dart';
 
 class ScooterDetailScreen extends StatefulWidget {

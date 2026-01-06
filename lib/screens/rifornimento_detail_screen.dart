@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myscoterflutter/models/rifornimento.dart';
-import 'package:myscoterflutter/screens/add_edit_rifornimento_screen.dart'; // Per la navigazione alla modifica
+import 'package:myscooter/models/rifornimento.dart';
+import 'package:myscooter/screens/add_edit_rifornimento_screen.dart';
 
 class RifornimentoDetailScreen extends StatefulWidget {
   final Rifornimento rifornimento;

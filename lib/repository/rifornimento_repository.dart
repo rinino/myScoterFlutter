@@ -1,5 +1,5 @@
-import 'package:myscoterflutter/database_helper.dart';
-import 'package:myscoterflutter/models/rifornimento.dart'; // Importa il modello Rifornimento
+import 'package:myscooter/database_helper.dart';
+import 'package:myscooter/models/rifornimento.dart'; // Importa il modello Rifornimento
 
 class RifornimentoRepository {
   // --- Singleton Pattern per il Repository ---

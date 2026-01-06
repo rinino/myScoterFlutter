@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:myscoterflutter/models/scooter.dart';
-import 'package:myscoterflutter/repository/scooter_repository.dart';
-import 'package:myscoterflutter/screens/add_edit_scooter_screen.dart';
-import 'package:myscoterflutter/screens/scooter_detail_screen.dart';
+import 'package:myscooter/models/scooter.dart';
+import 'package:myscooter/repository/scooter_repository.dart';
+import 'package:myscooter/screens/add_edit_scooter_screen.dart';
+import 'package:myscooter/screens/scooter_detail_screen.dart';
 import 'dart:io';
 
 class HomeScreen extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myscoterflutter/models/scooter.dart';
+import 'package:myscooter/models/scooter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/cupertino.dart'; // Importa per CupertinoSwitch

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myscoterflutter/models/rifornimento.dart';
-import 'package:myscoterflutter/models/scooter.dart';
-import 'package:myscoterflutter/repository/rifornimento_repository.dart';
-import 'package:myscoterflutter/repository/scooter_repository.dart';
+import 'package:myscooter/models/rifornimento.dart';
+import 'package:myscooter/models/scooter.dart';
+import 'package:myscooter/repository/rifornimento_repository.dart';
+import 'package:myscooter/repository/scooter_repository.dart';
 
 class AddEditRifornimentoScreen extends StatefulWidget {
   final int scooterId;

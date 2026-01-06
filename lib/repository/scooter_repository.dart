@@ -1,9 +1,10 @@
 // lib/repositories/scooter_repository.dart
-import 'package:myscoterflutter/database_helper.dart';
-import 'package:myscoterflutter/models/scooter.dart';
+
+
+import '../database_helper.dart';
+import '../models/scooter.dart';
 
 class ScooterRepository {
-  // --- Singleton Pattern per il Repository ---
   static final ScooterRepository _instance = ScooterRepository._internal();
   static final DatabaseHelper _dbHelper = DatabaseHelper();
 

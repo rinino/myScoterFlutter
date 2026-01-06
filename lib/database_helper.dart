@@ -1,5 +1,5 @@
-import 'package:myscoterflutter/models/scooter.dart';
-import 'package:myscoterflutter/models/rifornimento.dart';
+import 'package:myscooter/models/scooter.dart';
+import 'package:myscooter/models/rifornimento.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';

@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "it.rinino.myscoterflutter"
+    namespace = "it.adr.myscooter"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -34,7 +34,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "it.rinino.myscoterflutter"
+        applicationId = "it.adr.myscooter"
 
         // FIX: Impostiamo minSdk a 21 per compatibilità con NDK 27
         minSdk = 21
