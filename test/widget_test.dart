@@ -1,30 +1,25 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:myscooter/main.dart';
+import 'package:myscooter/service/theme_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Verifica caricamento HomeScreen e Titolo', (WidgetTester tester) async {
+    // 1. Inizializziamo le SharedPreferences per i test (Mock)
+    SharedPreferences.setMockInitialValues({});
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // 2. Creiamo un'istanza reale di ThemeService
+    final themeService = ThemeService();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // 3. Avviamo l'app passando il themeService (non più null!)
+    // Nota: rimuoviamo 'const' perché themeService è un oggetto creato a runtime
+    await tester.pumpWidget(MyApp(themeService: themeService));
 
-    // Verify that our counter has incremented.
+    // 4. Verifichiamo che il titolo della AppBar sia presente
+    // Usiamo find.text('My Scooter') perché è quello che abbiamo messo nella HomeScreen
+    expect(find.text('My Scooter'), findsOneWidget);
+
+    // 5. Verifichiamo che non ci sia più il vecchio contatore del template standard
     expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
   });
 }
