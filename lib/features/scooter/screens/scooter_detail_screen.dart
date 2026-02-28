@@ -1,17 +1,21 @@
 // lib/features/scooter/screens/scooter_detail_screen.dart
 
 import 'dart:io';
+import 'dart:typed_data'; // Necessario per Uint8List
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // <-- AGGIUNTO GO_ROUTER
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
+// --- PACCHETTI PER CONDIVISIONE, SALVATAGGIO E PERMESSI ---
+import 'package:share_plus/share_plus.dart';
+
+import 'package:gal/gal.dart';
 
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
 
 import '../model/scooter.dart';
-
-// (I vecchi import alle schermate AddEditScooterScreen, AddEditRifornimentoScreen ecc. non servono più!)
 
 class ScooterDetailScreen extends ConsumerStatefulWidget {
   final Scooter scooter;
@@ -26,6 +30,7 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   List<Rifornimento> _rifornimenti = [];
   bool _isLoadingRifornimenti = true;
   bool _isProcessingAction = false;
+  bool _isExportingImage = false;
 
   late Scooter _currentScooter;
 
@@ -36,6 +41,65 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
     _loadRifornimenti();
   }
 
+  // --- LOGICA DI CONDIVISIONE (Aggiornata per l'ultimissima API) ---
+  Future<void> _shareImage(File imageFile) async {
+    try {
+      final xFile = XFile(imageFile.path);
+
+      // Utilizziamo il nuovo metodo unificato di SharePlus
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [xFile],
+          text: 'Guarda il mio ${_currentScooter.marca} ${_currentScooter.modello}!',
+          subject: 'Foto del mio Scooter',
+        ),
+      );
+    } catch (e) {
+      if (mounted) _showSnackBar('Errore durante la condivisione: $e');
+    }
+  }
+
+  // --- LOGICA DI SALVATAGGIO IN GALLERIA (Sicura per gli async gap e Android 13+) ---
+  // --- LOGICA DI SALVATAGGIO IN GALLERIA (Moderna con 'gal') ---
+  Future<void> _saveImageToGallery(File imageFile, BuildContext viewerContext) async {
+    // 1. Permessi gestiti automaticamente e intelligentemente da Gal!
+    final hasAccess = await Gal.hasAccess();
+    if (!hasAccess) {
+      final requestGranted = await Gal.requestAccess();
+      if (!requestGranted) {
+        if (mounted) _showSnackBar('Permesso negato. Abilitalo dalle impostazioni.');
+        return;
+      }
+    }
+
+    // --- FIX ASYNC GAP ---
+    if (!viewerContext.mounted) return;
+
+    // 2. Procediamo col salvataggio
+    setState(() => _isExportingImage = true);
+
+    showDialog(
+      context: viewerContext,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+
+    try {
+      // Gal fa tutto con una singola riga di codice, senza dover convertire in bytes!
+      await Gal.putImage(imageFile.path);
+
+      if (viewerContext.mounted) Navigator.of(viewerContext).pop();
+      if (mounted) _showSnackBar('Immagine salvata nella galleria!');
+
+    } catch (e) {
+      if (viewerContext.mounted) Navigator.of(viewerContext).pop();
+      if (mounted) _showSnackBar('Errore imprevisto durante il salvataggio: $e');
+    } finally {
+      if (mounted) setState(() => _isExportingImage = false);
+    }
+  }
+
+  // --- LOGICA DATI E RIFORNIMENTI ---
   Future<void> _loadRifornimenti() async {
     setState(() => _isLoadingRifornimenti = true);
 
@@ -79,7 +143,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   }
 
   Future<void> _navigateToEditScooter() async {
-    // ROUTING MODERNO: context.push passando l'oggetto da modificare come "extra"
     final Scooter? updatedScooter = await context.push<Scooter?>('/add-edit-scooter', extra: _currentScooter);
 
     if (updatedScooter != null) {
@@ -100,7 +163,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   Future<void> _navigateToAddRifornimento() async {
     if (_isProcessingAction) return;
 
-    // ROUTING MODERNO: Passiamo l'id direttamente nell'URL come parametro dinamico!
     final result = await context.push('/add-edit-rifornimento/${_currentScooter.id!}');
 
     if (result != null) {
@@ -110,7 +172,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   }
 
   Future<void> _navigateToRifornimentoDetail(Rifornimento rifornimento) async {
-    // ROUTING MODERNO: id nell'URL e oggetto Rifornimento nell'extra
     final result = await context.push('/rifornimento-detail/${_currentScooter.id!}', extra: rifornimento);
 
     if (result != null) {
@@ -118,25 +179,52 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
     }
   }
 
+  // --- VISUALIZZATORE IMMAGINE FULLSCREEN ---
   void _openImageViewer() {
     if (_currentScooter.imgPath == null || !File(_currentScooter.imgPath!).existsSync()) return;
 
-    // Lasciamo questo Navigator.push classico perché è un popup dialog full-screen interno
+    final File imageFile = File(_currentScooter.imgPath!);
+
     Navigator.push(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (context) => Scaffold(
+        builder: (viewerContext) => Scaffold(
           backgroundColor: Colors.black,
           appBar: AppBar(
             backgroundColor: Colors.black,
+            elevation: 0,
             iconTheme: const IconThemeData(color: Colors.white),
+            title: Text(
+                "${_currentScooter.marca} ${_currentScooter.modello}",
+                style: const TextStyle(color: Colors.white, fontSize: 16)
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share, color: Colors.cyanAccent),
+                onPressed: () => _shareImage(imageFile),
+                tooltip: 'Condividi foto',
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_alt, color: Colors.cyanAccent),
+                onPressed: _isExportingImage ? null : () => _saveImageToGallery(imageFile, viewerContext),
+                tooltip: 'Salva in galleria',
+              ),
+              const SizedBox(width: 10),
+            ],
           ),
           body: Center(
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Image.file(File(_currentScooter.imgPath!)),
+              clipBehavior: Clip.none,
+              child: Hero(
+                tag: 'scooter_image_${_currentScooter.id}',
+                child: Image.file(
+                  imageFile,
+                  filterQuality: FilterQuality.medium,
+                ),
+              ),
             ),
           ),
         ),
@@ -158,7 +246,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
         title: Text('${_currentScooter.marca} ${_currentScooter.modello}'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          // Router standard funziona perfettamente anche con context.pop()!
           onPressed: isUIBlocked ? null : () => context.pop(true),
         ),
         actions: [
@@ -204,15 +291,18 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
           height: 140,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.blue.withOpacity(0.5), width: 3),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.5), width: 3),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))],
           ),
           child: ClipOval(
-            child: hasImage
-                ? Image.file(File(_currentScooter.imgPath!), fit: BoxFit.cover)
-                : Container(
-              color: Colors.grey[200],
-              child: const Icon(Icons.moped, size: 50, color: Colors.blue),
+            child: Hero(
+              tag: 'scooter_image_${_currentScooter.id}',
+              child: hasImage
+                  ? Image.file(File(_currentScooter.imgPath!), fit: BoxFit.cover)
+                  : Container(
+                color: Colors.grey[200],
+                child: const Icon(Icons.moped, size: 50, color: Colors.blue),
+              ),
             ),
           ),
         ),
@@ -225,7 +315,7 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey.withOpacity(0.2))
+          side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),

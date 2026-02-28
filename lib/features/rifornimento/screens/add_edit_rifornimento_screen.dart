@@ -242,7 +242,8 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      //
       child: ListTile(
         leading: const Icon(Icons.calendar_today, color: Colors.blue),
         title: const Text("Data"),
@@ -321,9 +322,9 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [

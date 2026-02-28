@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+// --- IMPORT ARCHITETTURA FEATURE-FIRST ---
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
 
@@ -26,7 +28,6 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
 
   bool _isLoadingScooterDetails = true;
   bool _scooterHasMiscelatore = true;
-  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -66,7 +67,6 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
           actions: <Widget>[
             TextButton(
               child: const Text('OK'),
-              // I popup e i dialog vanno benissimo col Navigator standard
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -76,7 +76,6 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
   }
 
   Future<void> _navigateToEditRifornimento() async {
-
     final Rifornimento? updatedRifornimento = await context.push<Rifornimento?>(
       '/add-edit-rifornimento/${widget.scooterId}',
       extra: _currentRifornimento,
@@ -91,7 +90,7 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
 
   @override
   Widget build(BuildContext context) {
-    final bool isUIBlocked = _isLoadingScooterDetails || _isDeleting;
+    final bool isUIBlocked = _isLoadingScooterDetails;
     final Color iconColor = isUIBlocked ? Colors.grey : Theme.of(context).colorScheme.primary;
 
     return Scaffold(
@@ -101,7 +100,6 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          // Router standard per tornare indietro: usiamo context.pop()
           onPressed: isUIBlocked ? null : () => context.pop(true),
         ),
         actions: [
@@ -125,7 +123,8 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                      // Aggiornato a withValues per Flutter 3.28+
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +192,8 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
               child: Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  // Aggiornato a withValues per Flutter 3.28+
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: const CircularProgressIndicator(),
@@ -219,32 +219,5 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
         ),
       ],
     );
-  }
-
-  Future<void> _confirmAndDeleteRifornimento() async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Elimina'),
-        content: const Text('Eliminare questo record? l\'azione è irreversibile.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ANNULLA')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('ELIMINA', style: const TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
-    if (confirm == true && _currentRifornimento.id != null) {
-      setState(() => _isDeleting = true);
-      try {
-        await ref.read(rifornimentoRepoProvider).deleteRifornimento(_currentRifornimento.id!);
-        if (mounted) {
-          // Torniamo indietro indicando che c'è stata una modifica (eliminazione)
-          context.pop(true);
-        }
-      } catch (e) {
-        setState(() => _isDeleting = false);
-      }
-    }
   }
 }
