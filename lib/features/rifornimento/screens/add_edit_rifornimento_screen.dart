@@ -1,12 +1,14 @@
-// lib/screens/add_edit_rifornimento_screen.dart
+// lib/features/rifornimento/screens/add_edit_rifornimento_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // AGGIUNTO
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
-import 'package:myscooter/features/scooter/model/scooter.dart';
-import 'package:myscooter/core/providers/core_providers.dart'; // AGGIUNTO PER I PROVIDER
+import 'package:myscooter/core/providers/core_providers.dart';
 
-// 1. Cambiato in ConsumerStatefulWidget
+import '../../../l10n/app_localizations.dart';
+import '../../scooter/model/scooter.dart';
+
+
 class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
   final int scooterId;
   final Rifornimento? rifornimento;
@@ -21,13 +23,8 @@ class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
   ConsumerState<AddEditRifornimentoScreen> createState() => _AddEditRifornimentoScreenState();
 }
 
-// 2. Cambiato in ConsumerState
 class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // 3. RIMOSSE LE ISTANZE DIRETTE!
-  // final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
-  // final ScooterRepository _scooterRepository = ScooterRepository();
 
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _kmAttualiController = TextEditingController();
@@ -49,7 +46,6 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     _loadInitialData();
     _setupControllersListeners();
 
-    // Se siamo in modalità modifica, prepopoliamo i campi
     if (widget.rifornimento != null) {
       _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.rifornimento!.dataRifornimento);
       _kmAttualiController.text = widget.rifornimento!.kmAttuali.toString();
@@ -67,13 +63,11 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
   Future<void> _loadInitialData() async {
     setState(() => _isLoadingData = true);
     try {
-      // 4. USIAMO ref.read PER ACCEDERE AL REPOSITORY DEGLI SCOOTER
       final Scooter? scooter = await ref.read(scooterRepoProvider).getScooterById(widget.scooterId);
       if (scooter != null) {
         _scooterHasMiscelatore = scooter.miscelatore;
       }
 
-      // 5. USIAMO ref.read PER ACCEDERE AL REPOSITORY DEI RIFORNIMENTI
       _previousRifornimento = await ref.read(rifornimentoRepoProvider).getPreviousRifornimentoExcluding(
         widget.scooterId,
         widget.rifornimento?.id,
@@ -136,7 +130,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
 
     final Rifornimento rifornimentoToSave = Rifornimento(
       id: widget.rifornimento?.id,
-      idScooter: widget.scooterId,
+      idScooter: widget.scooterId, // Mantenuto il tuo idScooter
       dataRifornimento: _selectedDate.millisecondsSinceEpoch,
       kmAttuali: _parseToDouble(_kmAttualiController.text)!,
       litriBenzina: _parseToDouble(_litriBenzinaController.text)!,
@@ -147,7 +141,6 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
 
     try {
-      // 6. USIAMO ref.read ANCHE PER SALVARE E AGGIORNARE
       if (widget.rifornimento == null) {
         await ref.read(rifornimentoRepoProvider).insertRifornimento(rifornimentoToSave);
       } else {
@@ -175,15 +168,17 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.rifornimento == null ? 'Nuovo Rifornimento' : 'Modifica Rifornimento'),
+        title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
         centerTitle: true,
         actions: [
           if (!_isLoadingData)
             TextButton(
               onPressed: _isSaving ? null : _saveRifornimento,
-              child: const Text('SALVA', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
             )
         ],
       ),
@@ -198,21 +193,21 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel("DATA E CHILOMETRI"),
-                  _buildDatePicker(),
+                  _buildSectionLabel(l10n.date.toUpperCase() + " E CHILOMETRI"), // Mix tra l10n e il tuo stile
+                  _buildDatePicker(l10n),
                   const SizedBox(height: 16),
-                  _buildKmInput(),
+                  _buildKmInput(l10n),
                   const SizedBox(height: 24),
                   _buildSectionLabel("CARBURANTE E MISCELA"),
-                  _buildBenzinaInput(),
+                  _buildBenzinaInput(l10n),
                   const SizedBox(height: 16),
                   if (!_scooterHasMiscelatore) ...[
-                    _buildPercentualeOlioInput(),
+                    _buildPercentualeOlioInput(l10n),
                     const SizedBox(height: 16),
                   ],
-                  _buildLitriOlioInput(),
+                  _buildLitriOlioInput(l10n),
                   const SizedBox(height: 32),
-                  _buildStatsSummary(),
+                  _buildStatsSummary(l10n),
                 ],
               ),
             ),
@@ -229,8 +224,6 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
-  // --- WIDGET HELPER ---
-
   Widget _buildSectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -238,15 +231,14 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildDatePicker(AppLocalizations l10n) {
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      //
       child: ListTile(
         leading: const Icon(Icons.calendar_today, color: Colors.blue),
-        title: const Text("Data"),
+        title: Text(l10n.date),
         trailing: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
         onTap: () async {
           final picked = await showDatePicker(
@@ -261,18 +253,18 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
-  Widget _buildKmInput() {
+  Widget _buildKmInput(AppLocalizations l10n) {
     return TextFormField(
       controller: _kmAttualiController,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'Km Attuali',
-        prefixIcon: Icon(Icons.speed, color: Colors.blue),
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: l10n.currentKm,
+        prefixIcon: const Icon(Icons.speed, color: Colors.blue),
+        border: const OutlineInputBorder(),
       ),
       validator: (value) {
         final val = _parseToDouble(value ?? '');
-        if (val == null) return 'Campo obbligatorio';
+        if (val == null) return l10n.requiredField;
         if (_previousRifornimento != null && val <= _previousRifornimento!.kmAttuali) {
           return "Deve essere > del precedente (${_previousRifornimento!.kmAttuali.toInt()} km)";
         }
@@ -281,44 +273,44 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
-  Widget _buildBenzinaInput() {
+  Widget _buildBenzinaInput(AppLocalizations l10n) {
     return TextFormField(
       controller: _litriBenzinaController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        labelText: 'Litri Benzina',
-        prefixIcon: Icon(Icons.local_gas_station, color: Colors.blue),
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: l10n.gasLiters,
+        prefixIcon: const Icon(Icons.local_gas_station, color: Colors.blue),
+        border: const OutlineInputBorder(),
       ),
-      validator: (value) => _parseToDouble(value ?? '') == null ? 'Inserisci i litri' : null,
+      validator: (value) => _parseToDouble(value ?? '') == null ? l10n.insertNumber : null,
     );
   }
 
-  Widget _buildPercentualeOlioInput() {
+  Widget _buildPercentualeOlioInput(AppLocalizations l10n) {
     return TextFormField(
       controller: _percentualeOlioController,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'Percentuale Olio (%)',
-        prefixIcon: Icon(Icons.percent, color: Colors.blue),
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: l10n.oilPercentage + ' (%)',
+        prefixIcon: const Icon(Icons.percent, color: Colors.blue),
+        border: const OutlineInputBorder(),
       ),
     );
   }
 
-  Widget _buildLitriOlioInput() {
+  Widget _buildLitriOlioInput(AppLocalizations l10n) {
     return TextFormField(
       controller: _litriOlioController,
       enabled: _scooterHasMiscelatore,
       decoration: InputDecoration(
-        labelText: _scooterHasMiscelatore ? 'Litri Olio' : 'Litri Olio (Calcolato)',
+        labelText: _scooterHasMiscelatore ? l10n.oilLiters : l10n.oilLiters + ' (Calcolato)',
         prefixIcon: const Icon(Icons.oil_barrel, color: Colors.blue),
         border: const OutlineInputBorder(),
       ),
     );
   }
 
-  Widget _buildStatsSummary() {
+  Widget _buildStatsSummary(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -328,9 +320,9 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       ),
       child: Column(
         children: [
-          _buildStatRow("Percorrenza dal precedente", "${_kmPercorsi.toStringAsFixed(1)} km"),
+          _buildStatRow(l10n.kmTraveled, "${_kmPercorsi.toStringAsFixed(1)} km"),
           const Divider(height: 24),
-          _buildStatRow("Consumo medio", "${_mediaConsumo.toStringAsFixed(2)} km/L"),
+          _buildStatRow(l10n.averageConsumption, "${_mediaConsumo.toStringAsFixed(2)} km/L"),
         ],
       ),
     );

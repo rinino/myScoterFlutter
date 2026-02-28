@@ -1,10 +1,15 @@
+// lib/features/scooter/screens/add_edit_scooter_screen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:myscooter/features/scooter/model/scooter.dart';
+
+import '../../../l10n/app_localizations.dart';
+import '../model/scooter.dart';
+
 
 class AddEditScooterScreen extends StatefulWidget {
-  final Scooter? scooter; // Se è nullo, stiamo aggiungendo. Se c'è, stiamo modificando.
+  final Scooter? scooter;
 
   const AddEditScooterScreen({super.key, this.scooter});
 
@@ -15,7 +20,6 @@ class AddEditScooterScreen extends StatefulWidget {
 class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controller per i campi di testo (come i tuoi @State in Swift)
   late TextEditingController _marcaController;
   late TextEditingController _modelloController;
   late TextEditingController _cilindrataController;
@@ -29,12 +33,23 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   @override
   void initState() {
     super.initState();
-    // Inizializzazione con dati esistenti (Edit) o vuoti (Add)
     _marcaController = TextEditingController(text: widget.scooter?.marca ?? '');
     _modelloController = TextEditingController(text: widget.scooter?.modello ?? '');
-    _cilindrataController = TextEditingController(text: widget.scooter?.cilindrata?.toString() ?? '');
+
+    _cilindrataController = TextEditingController(
+        text: (widget.scooter != null && widget.scooter!.cilindrata != 0)
+            ? widget.scooter!.cilindrata.toString()
+            : ''
+    );
+
     _targaController = TextEditingController(text: widget.scooter?.targa ?? '');
-    _annoController = TextEditingController(text: widget.scooter?.anno?.toString() ?? '');
+
+    _annoController = TextEditingController(
+        text: (widget.scooter != null && widget.scooter!.anno != 0)
+            ? widget.scooter!.anno.toString()
+            : ''
+    );
+
     _miscelatore = widget.scooter?.miscelatore ?? false;
 
     if (widget.scooter?.imgPath != null) {
@@ -42,7 +57,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     }
   }
 
-  // Logica Selezione Immagine (Simula PhotosPicker)
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -57,19 +71,17 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isProcessing = true);
 
-      // Creiamo l'oggetto scooter da restituire (come il saveNewScooterToDatabase in Swift)
       final newScooter = Scooter(
         id: widget.scooter?.id,
-        marca: _marcaController.text,
-        modello: _modelloController.text,
+        marca: _marcaController.text.trim(),
+        modello: _modelloController.text.trim(),
         cilindrata: int.tryParse(_cilindrataController.text) ?? 0,
-        targa: _targaController.text,
+        targa: _targaController.text.trim().toUpperCase(),
         anno: int.tryParse(_annoController.text) ?? 0,
         miscelatore: _miscelatore,
         imgPath: _imageFile?.path,
       );
 
-      // Simuliamo un piccolo ritardo per il feedback visivo
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           Navigator.pop(context, newScooter);
@@ -80,13 +92,15 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.scooter == null ? 'Nuovo Scooter' : 'Modifica'),
+        title: Text(widget.scooter == null ? l10n.addScooter : l10n.editScooter),
         actions: [
           TextButton(
             onPressed: _isProcessing ? null : _saveForm,
-            child: const Text('Salva', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -99,7 +113,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // SEZIONE IMMAGINE
                   Center(
                     child: GestureDetector(
                       onTap: _pickImage,
@@ -118,22 +131,63 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // SEZIONE DATI TECNICI (Stile Form iOS)
-                  _buildSectionTitle('INFORMAZIONI GENERALI'),
-                  _buildTextField(_marcaController, 'Marca', Icons.branding_watermark),
-                  _buildTextField(_modelloController, 'Modello', Icons.moped),
+                  _buildSectionTitle(l10n.generalInfo),
+                  _buildTextField(_marcaController, l10n.brand, Icons.branding_watermark, l10n),
+                  _buildTextField(_modelloController, l10n.model, Icons.moped, l10n),
 
                   const SizedBox(height: 16),
-                  _buildSectionTitle('DETTAGLI'),
-                  _buildTextField(_cilindrataController, 'Cilindrata (cc)', Icons.speed, isNumber: true),
-                  _buildTextField(_targaController, 'Targa', Icons.badge),
-                  _buildTextField(_annoController, 'Anno', Icons.calendar_today, isNumber: true),
+                  _buildSectionTitle(l10n.details),
+
+                  // CILINDRATA (Il controllo > 0 è nel validatore di default di _buildTextField)
+                  _buildTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
+
+                  // TARGA (Validatore custom)
+                  _buildTextField(
+                      _targaController,
+                      l10n.licensePlate,
+                      Icons.badge,
+                      l10n,
+                      isUppercase: true, // Nuova flag per mostrare la tastiera in MAIUSCOLO
+                      customValidator: (value) {
+                        if (value == null || value.trim().isEmpty) return l10n.requiredField;
+
+                        // Simula la tua "isValidTargaScooter": rimuove spazi e controlla se è lunga 5-7 caratteri alfanumerici
+                        final cleanValue = value.replaceAll(' ', '');
+                        final targaRegex = RegExp(r'^[a-zA-Z0-9]{5,7}$');
+                        if (!targaRegex.hasMatch(cleanValue)) {
+                          return l10n.invalidLicensePlate;
+                        }
+                        return null;
+                      }
+                  ),
+
+                  // ANNO (Validatore custom)
+                  _buildTextField(
+                      _annoController,
+                      l10n.year,
+                      Icons.calendar_today,
+                      l10n,
+                      isNumber: true,
+                      customValidator: (value) {
+                        if (value == null || value.trim().isEmpty) return l10n.requiredField;
+
+                        final anno = int.tryParse(value);
+                        if (anno == null) return l10n.insertNumber;
+
+                        // guard let anno = Int(nuovoAnnoString), anno >= 1900, anno <= Calendar.current.component(...)
+                        final currentYear = DateTime.now().year;
+                        if (anno < 1900 || anno > currentYear) {
+                          return l10n.invalidYear;
+                        }
+
+                        return null;
+                      }
+                  ),
 
                   const SizedBox(height: 16),
-                  // TOGGLE MISCELATORE
                   SwitchListTile(
-                    title: const Text('Miscelatore Automatico'),
-                    subtitle: const Text('Attiva se lo scooter gestisce l\'olio da solo'),
+                    title: Text(l10n.autoMixer),
+                    subtitle: Text(l10n.autoMixerDesc),
                     value: _miscelatore,
                     secondary: const Icon(Icons.opacity),
                     onChanged: (val) => setState(() => _miscelatore = val),
@@ -156,20 +210,35 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false}) {
+  Widget _buildTextField(
+      TextEditingController controller,
+      String label,
+      IconData icon,
+      AppLocalizations l10n, {
+        bool isNumber = false,
+        bool isUppercase = false,
+        String? Function(String?)? customValidator,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        textCapitalization: isUppercase ? TextCapitalization.characters : TextCapitalization.none,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) return 'Campo obbligatorio';
-          if (isNumber && int.tryParse(value) == null) return 'Inserire un numero';
+        validator: customValidator ?? (value) {
+          // Se non passi un customValidator, esegue questa logica di base (che avevamo scritto prima)
+          if (value == null || value.trim().isEmpty) return l10n.requiredField;
+
+          if (isNumber) {
+            final parsedValue = int.tryParse(value);
+            if (parsedValue == null) return l10n.insertNumber;
+          }
+
           return null;
         },
       ),

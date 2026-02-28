@@ -3,38 +3,38 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // <-- AGGIUNTO GO_ROUTER!
+import 'package:go_router/go_router.dart';
 
-// Import corretti per l'architettura Feature-First
-
+// --- IMPORT PER LE TRADUZIONI E MESSAGGI ---
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
 import 'package:myscooter/core/theme/theme_service.dart';
+import 'package:myscooter/core/providers/message_provider.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
-
-// NOTA: Non serve più importare SettingsScreen, AddEditScooterScreen o ScooterDetailScreen!
 
 class HomeScreen extends ConsumerWidget {
   final ThemeService themeService;
 
   const HomeScreen({super.key, required this.themeService});
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   // Dialog di conferma prima dello swipe
   Future<bool?> _confirmDelete(BuildContext context, Scooter scooter) {
+    final l10n = AppLocalizations.of(context)!;
+
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Elimina Scooter'),
-        content: Text('Sei sicuro di voler eliminare lo scooter ${scooter.modello}?\nQuesta azione cancellerà anche tutti i rifornimenti.'),
+        title: Text(l10n.deleteScooterTitle),
+        content: Text(l10n.deleteScooterContent(scooter.modello)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('ELIMINA TUTTO', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -43,40 +43,62 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Ascoltiamo lo stato della lista degli scooter
-    final scooterState = ref.watch(scooterListProvider);
+    final l10n = AppLocalizations.of(context)!;
 
-    // Listener per catturare eventuali errori emessi dal provider e mostrare la Snackbar
-    ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
-      if (next.hasError && !next.isLoading) {
-        _showSnackBar(context, 'Si è verificato un errore: ${next.error}');
+    // --- 1. ASCOLTATORE MESSAGGI GLOBALI ---
+    ref.listen<UiMessage?>(messageProvider, (previous, next) {
+      if (next != null) {
+        final Color? bgColor = next.type == MessageType.error
+            ? Colors.red.shade800
+            : (next.type == MessageType.success ? Colors.green.shade800 : null);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            backgroundColor: bgColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        ref.read(messageProvider.notifier).clear();
       }
     });
 
+    // --- 2. ASCOLTATORE ERRORI SCOOTER ---
+    ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
+      if (next.hasError && !next.isLoading) {
+        // Usiamo errorLoading (da aggiungere agli .arb) o una traduzione generica
+        ref.read(messageProvider.notifier).show(
+            '${l10n.noDataPresent}: ${next.error}',
+            type: MessageType.error
+        );
+      }
+    });
+
+    final scooterState = ref.watch(scooterListProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Scooter'),
+        title: Text(l10n.appTitle),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         leading: IconButton(
           icon: const Icon(Icons.settings),
-          onPressed: scooterState.isLoading ? null : () {
-            // ROUTING MODERNO: context.push invece di Navigator.push
-            context.push('/settings');
-          },
+          onPressed: scooterState.isLoading ? null : () => context.push('/settings'),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle, size: 28),
             onPressed: scooterState.isLoading ? null : () async {
-              // ROUTING MODERNO: Usiamo context.push tipizzato per aspettarci uno Scooter in ritorno
               final Scooter? resultScooter = await context.push<Scooter?>('/add-edit-scooter');
 
               if (resultScooter != null) {
-                // Deleghiamo l'aggiunta al provider
                 await ref.read(scooterListProvider.notifier).addScooter(resultScooter);
-                if (context.mounted) _showSnackBar(context, 'Scooter aggiunto con successo!');
+                // CORRETTO: Stringa hardcoded rimossa
+                ref.read(messageProvider.notifier).show(
+                    l10n.scooterAdded,
+                    type: MessageType.success
+                );
               }
             },
           ),
@@ -90,7 +112,7 @@ class HomeScreen extends ConsumerWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'I Miei Scooter',
+                l10n.myScooters,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -98,16 +120,12 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            // Gestione automatica dei 3 stati (Caricamento, Errore, Dati)
             child: scooterState.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => const Center(child: Text('Errore di caricamento dati.')),
-              data: (scooters) {
-                if (scooters.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return _buildScooterList(context, ref, scooters);
-              },
+              error: (error, stack) => Center(child: Text(error.toString())),
+              data: (scooters) => scooters.isEmpty
+                  ? _buildEmptyState(context)
+                  : _buildScooterList(context, ref, scooters),
             ),
           ),
         ],
@@ -120,15 +138,13 @@ class HomeScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20.0),
       child: Center(
         child: Container(
-          width: 120,
-          height: 120,
+          width: 120, height: 120,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.cyan.withOpacity(0.4),
-                blurRadius: 15,
-                spreadRadius: 2,
+                color: Colors.cyan.withValues(alpha: 0.4),
+                blurRadius: 15, spreadRadius: 2,
               ),
             ],
             gradient: const RadialGradient(
@@ -154,21 +170,24 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
+  Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.two_wheeler, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Nessuno scooter trovato.', style: TextStyle(color: Colors.grey)),
-          Text('Premi "+" per aggiungerne uno!', style: TextStyle(color: Colors.grey)),
+          const Icon(Icons.two_wheeler, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(l10n.noScooterFound, style: const TextStyle(color: Colors.grey)),
+          Text(l10n.addScooterPrompt, style: const TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 
   Widget _buildScooterList(BuildContext context, WidgetRef ref, List<Scooter> scooters) {
+    final l10n = AppLocalizations.of(context)!;
+
     return ListView.builder(
       itemCount: scooters.length,
       itemBuilder: (context, index) {
@@ -180,9 +199,9 @@ class HomeScreen extends ConsumerWidget {
           direction: DismissDirection.endToStart,
           confirmDismiss: (direction) => _confirmDelete(context, scooter),
           onDismissed: (direction) {
-            // Deleghiamo l'eliminazione al provider
             ref.read(scooterListProvider.notifier).deleteScooter(scooter);
-            _showSnackBar(context, 'Scooter eliminato.');
+            // CORRETTO: Stringa hardcoded rimossa
+            ref.read(messageProvider.notifier).show(l10n.scooterDeleted);
           },
           background: Container(
             alignment: Alignment.centerRight,
@@ -201,12 +220,11 @@ class HomeScreen extends ConsumerWidget {
             child: ListTile(
               contentPadding: const EdgeInsets.all(10),
               leading: Container(
-                width: 60,
-                height: 60,
+                width: 60, height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: hasValidImage ? Colors.blue : Colors.grey.withOpacity(0.3),
+                    color: hasValidImage ? Colors.blue : Colors.grey.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
@@ -217,12 +235,11 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Targa: ${scooter.targa}'),
+              // CORRETTO: Aggiunta label tradotta per la targa
+              subtitle: Text('${l10n.licensePlateShort}: ${scooter.targa}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // ROUTING MODERNO: Passiamo l'oggetto scooter tramite la proprietà "extra"
                 context.push('/scooter-detail', extra: scooter).then((_) {
-                  // Quando torniamo dai dettagli, aggiorniamo la lista nel caso ci siano state modifiche
                   ref.read(scooterListProvider.notifier).refreshScooters();
                 });
               },

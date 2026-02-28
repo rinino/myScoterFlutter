@@ -5,9 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// --- IMPORT ARCHITETTURA FEATURE-FIRST ---
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
+
+import '../../../l10n/app_localizations.dart';
 
 class RifornimentoDetailScreen extends ConsumerStatefulWidget {
   final Rifornimento rifornimento;
@@ -37,9 +38,8 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
   }
 
   Future<void> _loadScooterDetails() async {
+    if (!mounted) return;
     setState(() => _isLoadingScooterDetails = true);
-
-    await Future.delayed(const Duration(milliseconds: 600));
 
     try {
       final scooter = await ref.read(scooterRepoProvider).getScooterById(widget.scooterId);
@@ -56,14 +56,13 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
   }
 
   void _showMediaConsumoInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Calcolo Consumo Medio'),
-          content: const Text(
-            'Il consumo medio viene calcolato dividendo i chilometri percorsi dall\'ultimo rifornimento per i litri di benzina inseriti in questo rifornimento. Si assume che ad ogni rifornimento venga fatto il pieno.',
-          ),
+          title: Text(l10n.averageConsumptionCalcTitle),
+          content: Text(l10n.averageConsumptionCalcDesc),
           actions: <Widget>[
             TextButton(
               child: const Text('OK'),
@@ -90,12 +89,21 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toString();
+
     final bool isUIBlocked = _isLoadingScooterDetails;
     final Color iconColor = isUIBlocked ? Colors.grey : Theme.of(context).colorScheme.primary;
 
+    // --- FIX NULL SAFETY PER MEDIA CONSUMO ---
+    final double? mediaValue = _currentRifornimento.mediaConsumo;
+    final String mediaDisplayText = (mediaValue != null && mediaValue > 0)
+        ? '${mediaValue.toStringAsFixed(2)} Km/L'
+        : 'N/A';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dettaglio'),
+        title: Text(l10n.refuelingDetails),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         leading: IconButton(
@@ -123,53 +131,62 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12.0),
-                      // Aggiornato a withValues per Flutter 3.28+
                       border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Dettagli Rifornimento',
+                          l10n.refuelingDetails,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 20),
 
-                        _buildDetailRow(Icons.calendar_today, 'Data', DateFormat('dd/MM/yyyy HH:mm').format(_currentRifornimento.dateTime), iconColor),
+                        // DATA LOCALIZZATA
+                        _buildDetailRow(
+                            Icons.calendar_today,
+                            l10n.date,
+                            DateFormat.yMMMd(locale).add_Hm().format(
+                                DateTime.fromMillisecondsSinceEpoch(_currentRifornimento.dataRifornimento)
+                            ),
+                            iconColor
+                        ),
                         const Divider(height: 24),
 
-                        _buildDetailRow(Icons.speed, 'Km Attuali', '${_currentRifornimento.kmAttuali.toStringAsFixed(0)}', iconColor),
+                        _buildDetailRow(Icons.speed, l10n.currentKm, '${_currentRifornimento.kmAttuali.toInt()} km', iconColor),
                         const Divider(height: 24),
 
-                        _buildDetailRow(Icons.local_gas_station, 'Litri Benzina', '${_currentRifornimento.litriBenzina.toStringAsFixed(2)}', iconColor),
+                        _buildDetailRow(Icons.local_gas_station, l10n.gasLiters, '${_currentRifornimento.litriBenzina.toStringAsFixed(2)} L', iconColor),
                         const Divider(height: 24),
 
+                        // LITRI OLIO (Gestito con null-check sicuro)
                         if (_currentRifornimento.litriOlio != null)
-                          _buildDetailRow(Icons.water_drop, 'Litri Olio', '${_currentRifornimento.litriOlio!.toStringAsFixed(2)} L', iconColor)
+                          _buildDetailRow(Icons.water_drop, l10n.oilLiters, '${_currentRifornimento.litriOlio!.toStringAsFixed(2)} L', iconColor)
                         else if (!isUIBlocked)
-                          _buildDetailRow(Icons.water_drop, 'Litri Olio', 'Nessuno', iconColor),
+                          _buildDetailRow(Icons.water_drop, l10n.oilLiters, l10n.none, iconColor),
 
+                        // PERCENTUALE OLIO (SOLO SE NON HA MISCELATORE)
                         if (!_scooterHasMiscelatore) ...[
                           const Divider(height: 24),
                           if (_currentRifornimento.percentualeOlio != null)
-                            _buildDetailRow(Icons.percent, 'Percentuale Olio', '${_currentRifornimento.percentualeOlio!.toStringAsFixed(2)} %', iconColor)
+                            _buildDetailRow(Icons.percent, l10n.oilPercentage, '${_currentRifornimento.percentualeOlio!.toStringAsFixed(1)} %', iconColor)
                           else
-                            _buildDetailRow(Icons.percent, 'Percentuale Olio', 'N/A', iconColor),
+                            _buildDetailRow(Icons.percent, l10n.oilPercentage, 'N/A', iconColor),
                         ],
                         const Divider(height: 24),
 
-                        _buildDetailRow(Icons.add_road, 'Km Percorsi', '${_currentRifornimento.kmPercorsi.toStringAsFixed(2)}', iconColor),
+                        _buildDetailRow(Icons.add_road, l10n.kmTraveled, '${_currentRifornimento.kmPercorsi.toStringAsFixed(1)} km', iconColor),
                         const Divider(height: 24),
 
                         Row(
                           children: [
                             Icon(Icons.bar_chart, color: iconColor, size: 22),
                             const SizedBox(width: 12),
-                            const Text('Media Consumo:', style: TextStyle(fontSize: 16)),
+                            Text('${l10n.averageConsumption}:', style: const TextStyle(fontSize: 16)),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _currentRifornimento.mediaConsumo != null ? '${_currentRifornimento.mediaConsumo!.toStringAsFixed(2)} Km/L' : 'N/A',
+                                mediaDisplayText,
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                             ),
@@ -192,7 +209,6 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
               child: Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  // Aggiornato a withValues per Flutter 3.28+
                   color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(15),
                 ),
