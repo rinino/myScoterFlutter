@@ -1,27 +1,28 @@
+// lib/features/scooter/screens/scooter_detail_screen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:myscooter/models/scooter.dart';
-import 'package:myscooter/models/rifornimento.dart';
-import 'package:myscooter/repository/rifornimento_repository.dart';
-import 'package:myscooter/repository/scooter_repository.dart';
-import 'package:myscooter/screens/add_edit_scooter_screen.dart';
-import 'package:myscooter/screens/add_edit_rifornimento_screen.dart';
-import 'package:myscooter/screens/rifornimento_detail_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // <-- AGGIUNTO GO_ROUTER
 import 'package:intl/intl.dart';
 
-class ScooterDetailScreen extends StatefulWidget {
+import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
+import 'package:myscooter/core/providers/core_providers.dart';
+
+import '../model/scooter.dart';
+
+// (I vecchi import alle schermate AddEditScooterScreen, AddEditRifornimentoScreen ecc. non servono più!)
+
+class ScooterDetailScreen extends ConsumerStatefulWidget {
   final Scooter scooter;
 
   const ScooterDetailScreen({super.key, required this.scooter});
 
   @override
-  State<ScooterDetailScreen> createState() => _ScooterDetailScreenState();
+  ConsumerState<ScooterDetailScreen> createState() => _ScooterDetailScreenState();
 }
 
-class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
-  final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
-  final ScooterRepository _scooterRepository = ScooterRepository();
-
+class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   List<Rifornimento> _rifornimenti = [];
   bool _isLoadingRifornimenti = true;
   bool _isProcessingAction = false;
@@ -47,9 +48,9 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     }
 
     try {
-      final rifornimenti = await _rifornimentoRepository.getRifornimentiForScooter(_currentScooter.id!);
+      final repo = ref.read(rifornimentoRepoProvider);
+      final rifornimenti = await repo.getRifornimentiForScooter(_currentScooter.id!);
 
-      // Piccolo delay per fluidità UI
       await Future.delayed(const Duration(milliseconds: 300));
 
       setState(() {
@@ -65,7 +66,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
   Future<void> _deleteRifornimento(int id) async {
     setState(() => _isProcessingAction = true);
     try {
-      await _rifornimentoRepository.deleteRifornimento(id);
+      await ref.read(rifornimentoRepoProvider).deleteRifornimento(id);
       setState(() {
         _rifornimenti.removeWhere((r) => r.id == id);
       });
@@ -78,17 +79,13 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
   }
 
   Future<void> _navigateToEditScooter() async {
-    final Scooter? updatedScooter = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEditScooterScreen(scooter: _currentScooter),
-      ),
-    );
+    // ROUTING MODERNO: context.push passando l'oggetto da modificare come "extra"
+    final Scooter? updatedScooter = await context.push<Scooter?>('/add-edit-scooter', extra: _currentScooter);
 
     if (updatedScooter != null) {
       setState(() => _isProcessingAction = true);
       try {
-        await _scooterRepository.updateScooter(updatedScooter);
+        await ref.read(scooterRepoProvider).updateScooter(updatedScooter);
         setState(() => _currentScooter = updatedScooter);
         await _loadRifornimenti();
         if (mounted) _showSnackBar('Scooter aggiornato!');
@@ -100,35 +97,21 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
     }
   }
 
-  // --- CORREZIONE QUI: rimosso il vincolo 'bool?' che causava il crash ---
   Future<void> _navigateToAddRifornimento() async {
     if (_isProcessingAction) return;
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEditRifornimentoScreen(scooterId: _currentScooter.id!),
-      ),
-    );
+    // ROUTING MODERNO: Passiamo l'id direttamente nell'URL come parametro dinamico!
+    final result = await context.push('/add-edit-rifornimento/${_currentScooter.id!}');
 
-    // Se result non è nullo, significa che è stato salvato un rifornimento
     if (result != null) {
       await _loadRifornimenti();
       if (mounted) _showSnackBar('Rifornimento salvato!');
     }
   }
 
-  // --- CORREZIONE QUI: rimosso il vincolo 'bool?' ---
   Future<void> _navigateToRifornimentoDetail(Rifornimento rifornimento) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RifornimentoDetailScreen(
-          rifornimento: rifornimento,
-          scooterId: _currentScooter.id!,
-        ),
-      ),
-    );
+    // ROUTING MODERNO: id nell'URL e oggetto Rifornimento nell'extra
+    final result = await context.push('/rifornimento-detail/${_currentScooter.id!}', extra: rifornimento);
 
     if (result != null) {
       await _loadRifornimenti();
@@ -138,6 +121,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
   void _openImageViewer() {
     if (_currentScooter.imgPath == null || !File(_currentScooter.imgPath!).existsSync()) return;
 
+    // Lasciamo questo Navigator.push classico perché è un popup dialog full-screen interno
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -174,7 +158,8 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         title: Text('${_currentScooter.marca} ${_currentScooter.modello}'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: isUIBlocked ? null : () => Navigator.pop(context, true),
+          // Router standard funziona perfettamente anche con context.pop()!
+          onPressed: isUIBlocked ? null : () => context.pop(true),
         ),
         actions: [
           IconButton(
@@ -220,7 +205,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: Colors.blue.withOpacity(0.5), width: 3),
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))],
           ),
           child: ClipOval(
             child: hasImage
@@ -330,7 +315,7 @@ class _ScooterDetailScreenState extends State<ScooterDetailScreen> {
         content: const Text('Vuoi eliminare questo record?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ELIMINA', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ELIMINA', style: const TextStyle(color: Colors.red))),
         ],
       ),
     );

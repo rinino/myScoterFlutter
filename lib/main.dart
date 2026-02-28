@@ -1,46 +1,43 @@
-import 'package:flutter/cupertino.dart';
+// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart'; // Risolve 'WidgetsFlutterBinding' e 'runApp'
-import 'package:myscooter/screens/home_screen.dart';
-import 'package:myscooter/service/theme_service.dart'; // Risolve 'HomeScreen'
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'core/routing/app_router.dart';
+import 'core/theme/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inizializziamo il servizio temi
   final themeService = ThemeService();
+  final router = createRouter(themeService); // 1. Inizializziamo il router
 
-  runApp(MyApp(themeService: themeService));
+  runApp(
+    ProviderScope(
+      child: MyApp(themeService: themeService, router: router), // 2. Lo passiamo all'app
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final ThemeService themeService;
-  const MyApp({super.key, required this.themeService});
+  final GoRouter router; // Riceviamo il router
+
+  const MyApp({super.key, required this.themeService, required this.router});
 
   @override
   Widget build(BuildContext context) {
-    // ListenableBuilder ricostruisce MaterialApp ogni volta che il tema cambia
     return ListenableBuilder(
       listenable: themeService,
       builder: (context, _) {
-        return MaterialApp(
+        return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'My Scooter',
-          // Configurazione Temi
           themeMode: themeService.themeMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorSchemeSeed: Colors.blue,
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorSchemeSeed: Colors.blue,
-          ),
-          // Passiamo il servizio alla HomeScreen per poterlo poi passare ai Settings
-          home: HomeScreen(themeService: themeService),
+          theme: ThemeData(useMaterial3: true, brightness: Brightness.light, colorSchemeSeed: Colors.blue),
+          darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark, colorSchemeSeed: Colors.blue),
+
+          routerConfig: router, // 4. Assegniamo la configurazione
         );
       },
     );

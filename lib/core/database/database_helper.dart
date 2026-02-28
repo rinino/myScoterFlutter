@@ -1,18 +1,16 @@
-import 'package:myscooter/models/scooter.dart';
-import 'package:myscooter/models/rifornimento.dart';
+import 'package:myscooter/features/scooter/model/scooter.dart';
+import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
 
 class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
+  // RIMOSSO IL SINGLETON! Niente più _instance o factory.
 
-  factory DatabaseHelper() {
-    return _instance;
-  }
+  Database? _database;
 
-  DatabaseHelper._internal();
+  // Costruttore semplice
+  DatabaseHelper();
 
   Future<Database> get database async {
     if (_database != null) {

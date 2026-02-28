@@ -1,29 +1,22 @@
-// lib/repositories/scooter_repository.dart
-
-
-import '../database_helper.dart';
-import '../models/scooter.dart';
+import '../../../core/database/database_helper.dart';
+import '../model/scooter.dart';
 
 class ScooterRepository {
-  static final ScooterRepository _instance = ScooterRepository._internal();
-  static final DatabaseHelper _dbHelper = DatabaseHelper();
+  // 1. Variabile per il DatabaseHelper che verrà iniettata
+  final DatabaseHelper _dbHelper;
 
-  factory ScooterRepository() {
-    return _instance;
-  }
-
-  ScooterRepository._internal();
+  // 2. Costruttore che richiede il DatabaseHelper
+  ScooterRepository(this._dbHelper);
 
   // --- Implementazione dei Metodi CRUD ---
+  // (Lascia tutto il resto identico, i metodi useranno _dbHelper normalmente!)
 
-  /// Inserisce un nuovo scooter nel database.
-  /// Ritorna l'ID dello scooter inserito.
   Future<int> insertScooter(Scooter scooter) async {
     try {
       final id = await _dbHelper.insertScooter(scooter);
       return id;
     } catch (e) {
-      rethrow; // Rilancia l'eccezione per la gestione a un livello superiore
+      rethrow;
     }
   }
 

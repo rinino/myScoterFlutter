@@ -1,11 +1,13 @@
+// lib/screens/add_edit_rifornimento_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myscooter/models/rifornimento.dart';
-import 'package:myscooter/models/scooter.dart';
-import 'package:myscooter/repository/rifornimento_repository.dart';
-import 'package:myscooter/repository/scooter_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // AGGIUNTO
+import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
+import 'package:myscooter/features/scooter/model/scooter.dart';
+import 'package:myscooter/core/providers/core_providers.dart'; // AGGIUNTO PER I PROVIDER
 
-class AddEditRifornimentoScreen extends StatefulWidget {
+// 1. Cambiato in ConsumerStatefulWidget
+class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
   final int scooterId;
   final Rifornimento? rifornimento;
 
@@ -16,13 +18,16 @@ class AddEditRifornimentoScreen extends StatefulWidget {
   });
 
   @override
-  State<AddEditRifornimentoScreen> createState() => _AddEditRifornimentoScreenState();
+  ConsumerState<AddEditRifornimentoScreen> createState() => _AddEditRifornimentoScreenState();
 }
 
-class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
+// 2. Cambiato in ConsumerState
+class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoScreen> {
   final _formKey = GlobalKey<FormState>();
-  final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
-  final ScooterRepository _scooterRepository = ScooterRepository();
+
+  // 3. RIMOSSE LE ISTANZE DIRETTE!
+  // final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
+  // final ScooterRepository _scooterRepository = ScooterRepository();
 
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _kmAttualiController = TextEditingController();
@@ -62,13 +67,14 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
   Future<void> _loadInitialData() async {
     setState(() => _isLoadingData = true);
     try {
-      final Scooter? scooter = await _scooterRepository.getScooterById(widget.scooterId);
+      // 4. USIAMO ref.read PER ACCEDERE AL REPOSITORY DEGLI SCOOTER
+      final Scooter? scooter = await ref.read(scooterRepoProvider).getScooterById(widget.scooterId);
       if (scooter != null) {
         _scooterHasMiscelatore = scooter.miscelatore;
       }
 
-      // Carichiamo il rifornimento precedente ESCLUDENDO quello attuale (fondamentale per Edit)
-      _previousRifornimento = await _rifornimentoRepository.getPreviousRifornimentoExcluding(
+      // 5. USIAMO ref.read PER ACCEDERE AL REPOSITORY DEI RIFORNIMENTI
+      _previousRifornimento = await ref.read(rifornimentoRepoProvider).getPreviousRifornimentoExcluding(
         widget.scooterId,
         widget.rifornimento?.id,
       );
@@ -141,14 +147,13 @@ class _AddEditRifornimentoScreenState extends State<AddEditRifornimentoScreen> {
     );
 
     try {
+      // 6. USIAMO ref.read ANCHE PER SALVARE E AGGIORNARE
       if (widget.rifornimento == null) {
-        await _rifornimentoRepository.insertRifornimento(rifornimentoToSave);
+        await ref.read(rifornimentoRepoProvider).insertRifornimento(rifornimentoToSave);
       } else {
-        await _rifornimentoRepository.updateRifornimento(rifornimentoToSave);
+        await ref.read(rifornimentoRepoProvider).updateRifornimento(rifornimentoToSave);
       }
 
-      // RISOLUZIONE ERRORE: Restituiamo l'oggetto Rifornimento, non un bool.
-      // Usiamo microtask per evitare il lock del Navigator (_debugLocked).
       if (mounted) {
         Future.microtask(() {
           if (mounted) {

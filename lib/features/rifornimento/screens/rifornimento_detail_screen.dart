@@ -1,11 +1,13 @@
+// lib/features/rifornimento/screens/rifornimento_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:myscooter/models/rifornimento.dart';
-import 'package:myscooter/screens/add_edit_rifornimento_screen.dart';
-import 'package:myscooter/repository/rifornimento_repository.dart';
-import 'package:myscooter/repository/scooter_repository.dart'; // NUOVO: Serve per leggere il miscelatore
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
+import 'package:myscooter/core/providers/core_providers.dart';
 
-class RifornimentoDetailScreen extends StatefulWidget {
+class RifornimentoDetailScreen extends ConsumerStatefulWidget {
   final Rifornimento rifornimento;
   final int scooterId;
 
@@ -16,43 +18,35 @@ class RifornimentoDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<RifornimentoDetailScreen> createState() => _RifornimentoDetailScreenState();
+  ConsumerState<RifornimentoDetailScreen> createState() => _RifornimentoDetailScreenState();
 }
 
-class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
+class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScreen> {
   late Rifornimento _currentRifornimento;
 
-  final RifornimentoRepository _rifornimentoRepository = RifornimentoRepository();
-  final ScooterRepository _scooterRepository = ScooterRepository(); // NUOVO
-
-  // Variabili di stato allineate a Swift
   bool _isLoadingScooterDetails = true;
   bool _scooterHasMiscelatore = true;
-
-  // (Mantenuta nel codice ma non usata nell'interfaccia per allineamento a iOS)
   bool _isDeleting = false;
 
   @override
   void initState() {
     super.initState();
     _currentRifornimento = widget.rifornimento;
-    _loadScooterDetails(); // NUOVO: Carica i dettagli dello scooter all'avvio
+    _loadScooterDetails();
   }
 
-  // NUOVO: Funzione per recuperare lo stato del miscelatore (come in Swift)
   Future<void> _loadScooterDetails() async {
     setState(() => _isLoadingScooterDetails = true);
 
-    // Ritardo simulato per fluidità come in Swift (DispatchQueue.main.asyncAfter)
     await Future.delayed(const Duration(milliseconds: 600));
 
     try {
-      final scooter = await _scooterRepository.getScooterById(widget.scooterId);
+      final scooter = await ref.read(scooterRepoProvider).getScooterById(widget.scooterId);
       if (scooter != null) {
         _scooterHasMiscelatore = scooter.miscelatore;
       }
     } catch (e) {
-      _scooterHasMiscelatore = true; // Valore di default in caso di errore
+      _scooterHasMiscelatore = true;
     } finally {
       if (mounted) {
         setState(() => _isLoadingScooterDetails = false);
@@ -72,6 +66,7 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
           actions: <Widget>[
             TextButton(
               child: const Text('OK'),
+              // I popup e i dialog vanno benissimo col Navigator standard
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],
@@ -81,17 +76,12 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
   }
 
   Future<void> _navigateToEditRifornimento() async {
-    final Rifornimento? updatedRifornimento = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEditRifornimentoScreen(
-          scooterId: widget.scooterId,
-          rifornimento: _currentRifornimento,
-        ),
-      ),
+
+    final Rifornimento? updatedRifornimento = await context.push<Rifornimento?>(
+      '/add-edit-rifornimento/${widget.scooterId}',
+      extra: _currentRifornimento,
     );
 
-    // Se torniamo con un dato aggiornato, ricarichiamo la UI
     if (updatedRifornimento != null) {
       setState(() {
         _currentRifornimento = updatedRifornimento;
@@ -101,7 +91,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Gestione del blocco interfaccia (come .allowsHitTesting in Swift)
     final bool isUIBlocked = _isLoadingScooterDetails || _isDeleting;
     final Color iconColor = isUIBlocked ? Colors.grey : Theme.of(context).colorScheme.primary;
 
@@ -112,10 +101,10 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: isUIBlocked ? null : () => Navigator.pop(context, true),
+          // Router standard per tornare indietro: usiamo context.pop()
+          onPressed: isUIBlocked ? null : () => context.pop(true),
         ),
         actions: [
-          // Tasto modifica allineato a Swift
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: isUIBlocked ? null : _navigateToEditRifornimento,
@@ -131,7 +120,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // CARD DETTAGLI (Stile Form iOS)
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
@@ -157,7 +145,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
                         _buildDetailRow(Icons.local_gas_station, 'Litri Benzina', '${_currentRifornimento.litriBenzina.toStringAsFixed(2)}', iconColor),
                         const Divider(height: 24),
 
-                        // SEZIONE OLIO (Logica allineata a Swift)
                         if (_currentRifornimento.litriOlio != null)
                           _buildDetailRow(Icons.water_drop, 'Litri Olio', '${_currentRifornimento.litriOlio!.toStringAsFixed(2)} L', iconColor)
                         else if (!isUIBlocked)
@@ -175,7 +162,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
                         _buildDetailRow(Icons.add_road, 'Km Percorsi', '${_currentRifornimento.kmPercorsi.toStringAsFixed(2)}', iconColor),
                         const Divider(height: 24),
 
-                        // Riga Consumo Medio con icona Info
                         Row(
                           children: [
                             Icon(Icons.bar_chart, color: iconColor, size: 22),
@@ -202,7 +188,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
             ),
           ),
 
-          // Spinner Centrale di caricamento
           if (isUIBlocked)
             Center(
               child: Container(
@@ -219,7 +204,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
     );
   }
 
-  // Riga helper per icone e testi (Stile Swift HStack)
   Widget _buildDetailRow(IconData icon, String label, String value, Color iconColor) {
     return Row(
       children: [
@@ -237,10 +221,6 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
     );
   }
 
-  // --- FUNZIONE DI ELIMINAZIONE NASCOSTA ---
-  // In Swift questa schermata non ha il tasto elimina (si elimina dalla lista tramite swipe).
-  // Se vuoi rimettere il tasto elimina nella AppBar, de-commenta il tasto nella build
-  // e chiama questa funzione.
   Future<void> _confirmAndDeleteRifornimento() async {
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -249,7 +229,7 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
         content: const Text('Eliminare questo record? l\'azione è irreversibile.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ANNULLA')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('ELIMINA', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('ELIMINA', style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -257,9 +237,10 @@ class _RifornimentoDetailScreenState extends State<RifornimentoDetailScreen> {
     if (confirm == true && _currentRifornimento.id != null) {
       setState(() => _isDeleting = true);
       try {
-        await _rifornimentoRepository.deleteRifornimento(_currentRifornimento.id!);
+        await ref.read(rifornimentoRepoProvider).deleteRifornimento(_currentRifornimento.id!);
         if (mounted) {
-          Navigator.pop(context, true);
+          // Torniamo indietro indicando che c'è stata una modifica (eliminazione)
+          context.pop(true);
         }
       } catch (e) {
         setState(() => _isDeleting = false);

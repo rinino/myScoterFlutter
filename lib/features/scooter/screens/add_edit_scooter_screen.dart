@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:myscooter/models/scooter.dart';
+import 'package:myscooter/features/scooter/model/scooter.dart';
 
 class AddEditScooterScreen extends StatefulWidget {
   final Scooter? scooter; // Se è nullo, stiamo aggiungendo. Se c'è, stiamo modificando.

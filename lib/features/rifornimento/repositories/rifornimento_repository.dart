@@ -1,16 +1,11 @@
-import 'package:myscooter/database_helper.dart';
-import 'package:myscooter/models/rifornimento.dart'; // Importa il modello Rifornimento
+import 'package:myscooter/core/database/database_helper.dart';
+import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 
 class RifornimentoRepository {
-  // --- Singleton Pattern per il Repository ---
-  static final RifornimentoRepository _instance = RifornimentoRepository._internal();
-  static final DatabaseHelper _dbHelper = DatabaseHelper(); // Utilizza l'unica istanza di DatabaseHelper
 
-  factory RifornimentoRepository() {
-    return _instance;
-  }
+  final DatabaseHelper _dbHelper;
 
-  RifornimentoRepository._internal();
+  RifornimentoRepository(this._dbHelper);
 
   // --- Implementazione dei Metodi CRUD per Rifornimento ---
 
