@@ -96,5 +96,14 @@
     }
   },
   "shareSubject": "Scooter Photo",
-  "refuelingData": "Refueling Data"
+  "refuelingData": "Refueling Data",
+  "dateAndKm": "DATE AND KILOMETERS",
+  "fuelAndMix": "FUEL AND MIX",
+  "calculatedLabel": "(Calculated)",
+  "errorInitialData": "Error loading initial data.",
+  "mustBeGreaterThan": "Must be > than previous ({km} km)",
+  "@mustBeGreaterThan": {
+    "placeholders": { "km": { "type": "String" } }
+  },
+  "cantOpenBrowser": "Cannot open browser"
 }

@@ -281,4 +281,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refuelingData => 'Refueling Data';
+
+  @override
+  String get dateAndKm => 'DATE AND KILOMETERS';
+
+  @override
+  String get fuelAndMix => 'FUEL AND MIX';
+
+  @override
+  String get calculatedLabel => '(Calculated)';
+
+  @override
+  String get errorInitialData => 'Error loading initial data.';
+
+  @override
+  String mustBeGreaterThan(String km) {
+    return 'Must be > than previous ($km km)';
+  }
+
+  @override
+  String get cantOpenBrowser => 'Cannot open browser';
 }

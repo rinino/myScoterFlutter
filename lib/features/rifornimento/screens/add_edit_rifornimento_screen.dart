@@ -75,7 +75,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
 
       _calculateStats();
     } catch (e) {
-      _showErrorSnackBar('Errore nel caricamento dei dati iniziali.');
+      _showErrorSnackBar(AppLocalizations.of(context)!.errorInitialData);
     } finally {
       if (mounted) setState(() => _isLoadingData = false);
     }
@@ -156,7 +156,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Errore durante il salvataggio.');
+        _showErrorSnackBar(AppLocalizations.of(context)!.errorSaving);
         setState(() => _isSaving = false);
       }
     }
@@ -200,12 +200,12 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel("${l10n.date.toUpperCase()} E CHILOMETRI"), // Mix tra l10n e il tuo stile
+                  _buildSectionLabel(l10n.dateAndKm), // Mix tra l10n e il tuo stile
                   _buildDatePicker(l10n),
                   const SizedBox(height: 16),
                   _buildKmInput(l10n),
                   const SizedBox(height: 24),
-                  _buildSectionLabel("CARBURANTE E MISCELA"),
+                  _buildSectionLabel(l10n.fuelAndMix),
                   _buildBenzinaInput(l10n),
                   const SizedBox(height: 16),
                   if (!_scooterHasMiscelatore) ...[
@@ -275,7 +275,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
         final val = _parseToDouble(value ?? '');
         if (val == null) return l10n.requiredField;
         if (_previousRifornimento != null && val <= _previousRifornimento!.kmAttuali) {
-          return "Deve essere > del precedente (${_previousRifornimento!.kmAttuali.toInt()} km)";
+          return l10n.mustBeGreaterThan(_previousRifornimento!.kmAttuali.toInt().toString());
         }
         return null;
       },
@@ -312,7 +312,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       controller: _litriOlioController,
       enabled: _scooterHasMiscelatore,
       decoration: InputDecoration(
-        labelText: _scooterHasMiscelatore ? l10n.oilLiters : '${l10n.oilLiters} (Calcolato)',
+        labelText: _scooterHasMiscelatore ? l10n.oilLiters : '${l10n.oilLiters} ${l10n.calculatedLabel}',
         prefixIcon: const Icon(Icons.oil_barrel, color: Colors.blue),
         border: const OutlineInputBorder(),
       ),

@@ -631,6 +631,42 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Dati rifornimenti'**
   String get refuelingData;
+
+  /// No description provided for @dateAndKm.
+  ///
+  /// In it, this message translates to:
+  /// **'DATA E CHILOMETRI'**
+  String get dateAndKm;
+
+  /// No description provided for @fuelAndMix.
+  ///
+  /// In it, this message translates to:
+  /// **'CARBURANTE E MISCELA'**
+  String get fuelAndMix;
+
+  /// No description provided for @calculatedLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'(Calcolato)'**
+  String get calculatedLabel;
+
+  /// No description provided for @errorInitialData.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore nel caricamento dei dati iniziali.'**
+  String get errorInitialData;
+
+  /// No description provided for @mustBeGreaterThan.
+  ///
+  /// In it, this message translates to:
+  /// **'Deve essere > del precedente ({km} km)'**
+  String mustBeGreaterThan(String km);
+
+  /// No description provided for @cantOpenBrowser.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile aprire il browser'**
+  String get cantOpenBrowser;
 }
 
 class _AppLocalizationsDelegate

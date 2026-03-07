@@ -72,16 +72,10 @@ class TermsAndConditionsView extends ConsumerWidget {
                             await launchUrl(uri, mode: LaunchMode.externalApplication);
                           } else {
                             // Errore se il sistema rifiuta l'apertura
-                            ref.read(messageProvider.notifier).show(
-                                "Impossibile aprire il browser",
-                                type: MessageType.error
-                            );
+                            ref.read(messageProvider.notifier).show(l10n.cantOpenBrowser, type: MessageType.error);
                           }
                         } catch (e) {
-                          ref.read(messageProvider.notifier).show(
-                              "Errore: $e",
-                              type: MessageType.error
-                          );
+                          ref.read(messageProvider.notifier).show(e.toString(), type: MessageType.error);
                         }
                       },
                       icon: const Icon(Icons.open_in_new, color: Colors.white),

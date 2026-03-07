@@ -282,4 +282,24 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get refuelingData => 'Dati rifornimenti';
+
+  @override
+  String get dateAndKm => 'DATA E CHILOMETRI';
+
+  @override
+  String get fuelAndMix => 'CARBURANTE E MISCELA';
+
+  @override
+  String get calculatedLabel => '(Calcolato)';
+
+  @override
+  String get errorInitialData => 'Errore nel caricamento dei dati iniziali.';
+
+  @override
+  String mustBeGreaterThan(String km) {
+    return 'Deve essere > del precedente ($km km)';
+  }
+
+  @override
+  String get cantOpenBrowser => 'Impossibile aprire il browser';
 }
