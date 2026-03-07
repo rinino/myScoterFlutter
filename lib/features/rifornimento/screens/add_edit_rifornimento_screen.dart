@@ -193,7 +193,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel(l10n.date.toUpperCase() + " E CHILOMETRI"), // Mix tra l10n e il tuo stile
+                  _buildSectionLabel("${l10n.date.toUpperCase()} E CHILOMETRI"), // Mix tra l10n e il tuo stile
                   _buildDatePicker(l10n),
                   const SizedBox(height: 16),
                   _buildKmInput(l10n),
@@ -291,7 +291,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       controller: _percentualeOlioController,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: l10n.oilPercentage + ' (%)',
+        labelText: '${l10n.oilPercentage} (%)',
         prefixIcon: const Icon(Icons.percent, color: Colors.blue),
         border: const OutlineInputBorder(),
       ),
@@ -303,7 +303,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       controller: _litriOlioController,
       enabled: _scooterHasMiscelatore,
       decoration: InputDecoration(
-        labelText: _scooterHasMiscelatore ? l10n.oilLiters : l10n.oilLiters + ' (Calcolato)',
+        labelText: _scooterHasMiscelatore ? l10n.oilLiters : '${l10n.oilLiters} (Calcolato)',
         prefixIcon: const Icon(Icons.oil_barrel, color: Colors.blue),
         border: const OutlineInputBorder(),
       ),
