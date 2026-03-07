@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// --- IMPORT PER LE TRADUZIONI E MESSAGGI ---
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
 import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
@@ -13,12 +12,19 @@ import 'package:myscooter/core/providers/message_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final ThemeService themeService;
 
   const HomeScreen({super.key, required this.themeService});
 
-  // Dialog di conferma prima dello swipe
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  // Lucchetto anti-doppio tocco!
+  bool _isNavigating = false;
+
   Future<bool?> _confirmDelete(BuildContext context, Scooter scooter) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -42,10 +48,9 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    // --- 1. ASCOLTATORE MESSAGGI GLOBALI ---
     ref.listen<UiMessage?>(messageProvider, (previous, next) {
       if (next != null) {
         final Color? bgColor = next.type == MessageType.error
@@ -63,10 +68,8 @@ class HomeScreen extends ConsumerWidget {
       }
     });
 
-    // --- 2. ASCOLTATORE ERRORI SCOOTER ---
     ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
       if (next.hasError && !next.isLoading) {
-        // Usiamo errorLoading (da aggiungere agli .arb) o una traduzione generica
         ref.read(messageProvider.notifier).show(
             '${l10n.noDataPresent}: ${next.error}',
             type: MessageType.error
@@ -84,21 +87,30 @@ class HomeScreen extends ConsumerWidget {
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         leading: IconButton(
           icon: const Icon(Icons.settings),
-          onPressed: scooterState.isLoading ? null : () => context.push('/settings'),
+          onPressed: (scooterState.isLoading || _isNavigating) ? null : () => context.push('/settings'),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle, size: 28),
-            onPressed: scooterState.isLoading ? null : () async {
-              final Scooter? resultScooter = await context.push<Scooter?>('/add-edit-scooter');
+            // Blocchiamo il bottone se sta caricando o se stiamo già aprendo la pagina
+            onPressed: (scooterState.isLoading || _isNavigating) ? null : () async {
+              setState(() => _isNavigating = true);
 
-              if (resultScooter != null) {
-                await ref.read(scooterListProvider.notifier).addScooter(resultScooter);
-                // CORRETTO: Stringa hardcoded rimossa
-                ref.read(messageProvider.notifier).show(
-                    l10n.scooterAdded,
-                    type: MessageType.success
-                );
+              try {
+                final Scooter? resultScooter = await context.push<Scooter?>('/add-edit-scooter');
+
+                if (resultScooter != null) {
+                  await ref.read(scooterListProvider.notifier).addScooter(resultScooter);
+                  if (mounted) {
+                    ref.read(messageProvider.notifier).show(
+                        l10n.scooterAdded,
+                        type: MessageType.success
+                    );
+                  }
+                }
+              } finally {
+                // Sblocchiamo il pulsante solo quando la modale viene chiusa
+                if (mounted) setState(() => _isNavigating = false);
               }
             },
           ),
@@ -125,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
               error: (error, stack) => Center(child: Text(error.toString())),
               data: (scooters) => scooters.isEmpty
                   ? _buildEmptyState(context)
-                  : _buildScooterList(context, ref, scooters),
+                  : _buildScooterList(context, scooters),
             ),
           ),
         ],
@@ -185,7 +197,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildScooterList(BuildContext context, WidgetRef ref, List<Scooter> scooters) {
+  Widget _buildScooterList(BuildContext context, List<Scooter> scooters) {
     final l10n = AppLocalizations.of(context)!;
 
     return ListView.builder(
@@ -200,7 +212,6 @@ class HomeScreen extends ConsumerWidget {
           confirmDismiss: (direction) => _confirmDelete(context, scooter),
           onDismissed: (direction) {
             ref.read(scooterListProvider.notifier).deleteScooter(scooter);
-            // CORRETTO: Stringa hardcoded rimossa
             ref.read(messageProvider.notifier).show(l10n.scooterDeleted);
           },
           background: Container(
@@ -235,7 +246,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              // CORRETTO: Aggiunta label tradotta per la targa
               subtitle: Text('${l10n.licensePlateShort}: ${scooter.targa}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {

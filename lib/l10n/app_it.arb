@@ -105,5 +105,16 @@
     "@mustBeGreaterThan": {
         "placeholders": { "km": { "type": "String" } }
     },
-    "cantOpenBrowser": "Impossibile aprire il browser"
+    "cantOpenBrowser": "Impossibile aprire il browser",
+    "dati": "DATI",
+    "backupRestoreTitle": "Backup e Ripristino",
+    "backupSection": "ESPORTA BACKUP",
+    "backupDesc": "Salva una copia sicura dei tuoi dati. Puoi salvare il file su Google Drive, iCloud, inviartelo per email o tenerlo sul telefono.",
+    "createBackupBtn": "Crea Backup",
+    "restoreSection": "RIPRISTINA BACKUP",
+    "restoreDesc": "ATTENZIONE: Il ripristino sovrascriverà tutti i dati attuali presenti nell'app con quelli del backup. L'operazione non è reversibile.",
+    "restoreBtn": "Scegli file di backup",
+    "restoreSuccess": "Dati ripristinati con successo!",
+    "errorBackup": "Errore durante il backup",
+    "errorRestore": "Errore durante il ripristino o file non valido"
 }

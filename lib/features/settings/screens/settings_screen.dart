@@ -1,14 +1,14 @@
-// lib/features/scooter/screens/settings_screen.dart
+// lib/features/settings/screens/settings_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/theme_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../scooter/widgets/terms_and_conditions_view.dart';
-
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final ThemeService themeService;
@@ -82,6 +82,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: _buildThemePicker(l10n),
               ),
               const SizedBox(height: 10),
+
               _buildSectionHeader(l10n.lingua.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -91,6 +92,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: _buildLanguagePicker(l10n),
               ),
               const SizedBox(height: 10),
+
+              // NUOVA SEZIONE: DATI (Backup e Ripristino)
+              _buildSectionHeader(l10n.dati.toUpperCase()),
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                elevation: 0,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: ListTile(
+                  leading: const Icon(Icons.cloud_sync, color: Colors.blue),
+                  title: Text(l10n.backupRestoreTitle),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+                  onTap: () => context.push('/backup-restore'),
+                ),
+              ),
+              const SizedBox(height: 10),
+
               _buildSectionHeader(l10n.informazioni.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -120,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // --- HELPERS (Inalterati nel funzionamento, tradotti) ---
+  // --- HELPERS ---
 
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -189,7 +207,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const TermsAndConditionsView(), // Ora importata esternamente
+      builder: (context) => const TermsAndConditionsView(),
     );
   }
 }

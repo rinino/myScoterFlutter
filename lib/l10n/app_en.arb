@@ -105,5 +105,16 @@
   "@mustBeGreaterThan": {
     "placeholders": { "km": { "type": "String" } }
   },
-  "cantOpenBrowser": "Cannot open browser"
+  "cantOpenBrowser": "Cannot open browser",
+  "dati": "DATA",
+  "backupRestoreTitle": "Backup and Restore",
+  "backupSection": "EXPORT BACKUP",
+  "backupDesc": "Save a secure copy of your data. You can save the file to Google Drive, iCloud, email it to yourself, or keep it on your phone.",
+  "createBackupBtn": "Create Backup",
+  "restoreSection": "RESTORE BACKUP",
+  "restoreDesc": "WARNING: Restoring will overwrite all current app data with the backup data. This operation cannot be undone.",
+  "restoreBtn": "Choose backup file",
+  "restoreSuccess": "Data successfully restored!",
+  "errorBackup": "Error during backup",
+  "errorRestore": "Error during restore or invalid file"
 }

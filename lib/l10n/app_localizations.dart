@@ -667,6 +667,72 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Impossibile aprire il browser'**
   String get cantOpenBrowser;
+
+  /// No description provided for @dati.
+  ///
+  /// In it, this message translates to:
+  /// **'DATI'**
+  String get dati;
+
+  /// No description provided for @backupRestoreTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup e Ripristino'**
+  String get backupRestoreTitle;
+
+  /// No description provided for @backupSection.
+  ///
+  /// In it, this message translates to:
+  /// **'ESPORTA BACKUP'**
+  String get backupSection;
+
+  /// No description provided for @backupDesc.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva una copia sicura dei tuoi dati. Puoi salvare il file su Google Drive, iCloud, inviartelo per email o tenerlo sul telefono.'**
+  String get backupDesc;
+
+  /// No description provided for @createBackupBtn.
+  ///
+  /// In it, this message translates to:
+  /// **'Crea Backup'**
+  String get createBackupBtn;
+
+  /// No description provided for @restoreSection.
+  ///
+  /// In it, this message translates to:
+  /// **'RIPRISTINA BACKUP'**
+  String get restoreSection;
+
+  /// No description provided for @restoreDesc.
+  ///
+  /// In it, this message translates to:
+  /// **'ATTENZIONE: Il ripristino sovrascriverà tutti i dati attuali presenti nell\'app con quelli del backup. L\'operazione non è reversibile.'**
+  String get restoreDesc;
+
+  /// No description provided for @restoreBtn.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli file di backup'**
+  String get restoreBtn;
+
+  /// No description provided for @restoreSuccess.
+  ///
+  /// In it, this message translates to:
+  /// **'Dati ripristinati con successo!'**
+  String get restoreSuccess;
+
+  /// No description provided for @errorBackup.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore durante il backup'**
+  String get errorBackup;
+
+  /// No description provided for @errorRestore.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore durante il ripristino o file non valido'**
+  String get errorRestore;
 }
 
 class _AppLocalizationsDelegate

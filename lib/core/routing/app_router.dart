@@ -8,6 +8,7 @@ import '../../features/scooter/model/scooter.dart';
 import '../../features/scooter/screens/add_edit_scooter_screen.dart';
 import '../../features/scooter/screens/home_screen.dart';
 import '../../features/scooter/screens/scooter_detail_screen.dart';
+import '../../features/settings/screens/backup_restore_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../theme/theme_service.dart';
 
@@ -25,6 +26,10 @@ GoRouter createRouter(ThemeService themeService) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => SettingsScreen(themeService: themeService),
+      ),
+      GoRoute(
+        path: '/backup-restore',
+        builder: (context, state) => const BackupRestoreScreen(),
       ),
       // Rotta 3: Aggiungi o Modifica Scooter
       GoRoute(

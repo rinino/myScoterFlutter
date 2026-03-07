@@ -2,8 +2,8 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-// Nuovi import necessari per gestire i file in modo permanente
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -60,14 +60,13 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     }
   }
 
-  // Compressione nativa dell'immagine al momento della selezione
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70, // Compressione JPEG al 70%
-      maxWidth: 1024,   // Limita la larghezza massima a 1024px
-      maxHeight: 1024,  // Limita l'altezza massima a 1024px
+      imageQuality: 70,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
 
     if (pickedFile != null) {
@@ -78,25 +77,23 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   }
 
   Future<void> _saveForm() async {
+    // LUCCHETTO ANTI RIMBALZO: se sto già salvando, ignoro altri tocchi
+    if (_isProcessing) return;
+
     if (_formKey.currentState!.validate()) {
       setState(() => _isProcessing = true);
 
       String? finalImagePath = widget.scooter?.imgPath;
 
       try {
-        // Se c'è un'immagine ed è DIVERSA da quella già salvata nello scooter
         if (_imageFile != null && _imageFile!.path != widget.scooter?.imgPath) {
-          // 1. Otteniamo la cartella permanente dell'app
           final appDir = await getApplicationDocumentsDirectory();
-          // 2. Creiamo un nome univoco usando il timestamp
           final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(_imageFile!.path)}';
           final savedImage = File('${appDir.path}/$fileName');
 
-          // 3. Copiamo il file compresso dalla cache alla cartella permanente
           await _imageFile!.copy(savedImage.path);
           finalImagePath = savedImage.path;
 
-          // 4. Pulizia: se c'era una VECCHIA immagine, la cancelliamo per non sprecare spazio!
           if (widget.scooter?.imgPath != null) {
             final oldImage = File(widget.scooter!.imgPath!);
             if (await oldImage.exists()) {
@@ -106,7 +103,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         }
       } catch (e) {
         debugPrint("Errore nel salvataggio dell'immagine: $e");
-        // Procediamo comunque salvando lo scooter, ma senza la nuova foto in caso di errore
       }
 
       final newScooter = Scooter(
@@ -117,12 +113,12 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         targa: _targaController.text.trim().toUpperCase(),
         anno: int.tryParse(_annoController.text) ?? 0,
         miscelatore: _miscelatore,
-        imgPath: finalImagePath, // Usiamo il path permanente appena generato
+        imgPath: finalImagePath,
       );
 
-      // Usiamo microtask per assicurarci che il pop avvenga in modo sicuro dopo i calcoli
       if (mounted) {
-        Navigator.pop(context, newScooter);
+        // Uso corretto della chiusura modale con go_router
+        context.pop(newScooter);
       }
     }
   }
@@ -134,13 +130,12 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.scooter == null ? l10n.addScooter : l10n.editScooter),
-        // TASTO ANNULLA (Icona X)
+        // Chiusura corretta con go_router
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
         actions: [
-          // TASTO SALVA (Icona Spunta)
           IconButton(
             icon: const Icon(Icons.check, size: 28),
             color: Theme.of(context).colorScheme.primary,
@@ -182,10 +177,8 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                   const SizedBox(height: 16),
                   _buildSectionTitle(l10n.details),
 
-                  // CILINDRATA
                   _buildTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
 
-                  // TARGA
                   _buildTextField(
                       _targaController,
                       l10n.licensePlate,
@@ -204,7 +197,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                       }
                   ),
 
-                  // ANNO
                   _buildTextField(
                       _annoController,
                       l10n.year,

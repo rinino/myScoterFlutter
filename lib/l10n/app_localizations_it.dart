@@ -302,4 +302,39 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get cantOpenBrowser => 'Impossibile aprire il browser';
+
+  @override
+  String get dati => 'DATI';
+
+  @override
+  String get backupRestoreTitle => 'Backup e Ripristino';
+
+  @override
+  String get backupSection => 'ESPORTA BACKUP';
+
+  @override
+  String get backupDesc =>
+      'Salva una copia sicura dei tuoi dati. Puoi salvare il file su Google Drive, iCloud, inviartelo per email o tenerlo sul telefono.';
+
+  @override
+  String get createBackupBtn => 'Crea Backup';
+
+  @override
+  String get restoreSection => 'RIPRISTINA BACKUP';
+
+  @override
+  String get restoreDesc =>
+      'ATTENZIONE: Il ripristino sovrascriverà tutti i dati attuali presenti nell\'app con quelli del backup. L\'operazione non è reversibile.';
+
+  @override
+  String get restoreBtn => 'Scegli file di backup';
+
+  @override
+  String get restoreSuccess => 'Dati ripristinati con successo!';
+
+  @override
+  String get errorBackup => 'Errore durante il backup';
+
+  @override
+  String get errorRestore => 'Errore durante il ripristino o file non valido';
 }

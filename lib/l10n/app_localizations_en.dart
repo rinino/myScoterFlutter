@@ -301,4 +301,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cantOpenBrowser => 'Cannot open browser';
+
+  @override
+  String get dati => 'DATA';
+
+  @override
+  String get backupRestoreTitle => 'Backup and Restore';
+
+  @override
+  String get backupSection => 'EXPORT BACKUP';
+
+  @override
+  String get backupDesc =>
+      'Save a secure copy of your data. You can save the file to Google Drive, iCloud, email it to yourself, or keep it on your phone.';
+
+  @override
+  String get createBackupBtn => 'Create Backup';
+
+  @override
+  String get restoreSection => 'RESTORE BACKUP';
+
+  @override
+  String get restoreDesc =>
+      'WARNING: Restoring will overwrite all current app data with the backup data. This operation cannot be undone.';
+
+  @override
+  String get restoreBtn => 'Choose backup file';
+
+  @override
+  String get restoreSuccess => 'Data successfully restored!';
+
+  @override
+  String get errorBackup => 'Error during backup';
+
+  @override
+  String get errorRestore => 'Error during restore or invalid file';
 }
