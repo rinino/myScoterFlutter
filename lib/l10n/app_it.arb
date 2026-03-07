@@ -95,5 +95,6 @@
             "scooter": { "type": "String" }
         }
     },
-    "shareSubject": "Foto Scooter"
+    "shareSubject": "Foto Scooter",
+    "refuelingData": "Dati rifornimenti"
 }

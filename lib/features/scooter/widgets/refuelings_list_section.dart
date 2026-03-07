@@ -58,7 +58,7 @@ class RefuelingsListSection extends StatelessWidget {
               },
               child: ListTile(
                 leading: const Icon(Icons.local_gas_station),
-                title: Text(DateFormat.yMd(locale).format(DateTime.fromMillisecondsSinceEpoch(rif.dataRifornimento))),
+                title: Text(DateFormat.yMMMd(locale).format(DateTime.fromMillisecondsSinceEpoch(rif.dataRifornimento))),
                 subtitle: Text('${rif.kmAttuali.toInt()} km - ${rif.mediaConsumo?.toStringAsFixed(2) ?? "N/A"} km/L'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => onRifornimentoTap(rif),

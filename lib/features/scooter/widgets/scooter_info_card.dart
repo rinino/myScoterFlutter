@@ -26,6 +26,12 @@ class ScooterInfoCard extends StatelessWidget {
             const Divider(),
             _detailRow(Icons.moped, l10n.model, scooter.modello, iconColor),
             const Divider(),
+            // Aggiunto l'anno
+            _detailRow(Icons.calendar_today, l10n.year, scooter.anno.toString(), iconColor),
+            const Divider(),
+            // Aggiunta la targa
+            _detailRow(Icons.badge, l10n.licensePlate, scooter.targa, iconColor),
+            const Divider(),
             _detailRow(Icons.engineering, l10n.displacement, '${scooter.cilindrata} cc', iconColor),
             const Divider(),
             _detailRow(Icons.water_drop, l10n.mixer, scooter.miscelatore ? l10n.yes : l10n.no, iconColor),

@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/rifornimento/models/rifornimento.dart';
 import '../../features/rifornimento/screens/add_edit_rifornimento_screen.dart';
+import '../../features/rifornimento/screens/refuelings_screen.dart';
 import '../../features/rifornimento/screens/rifornimento_detail_screen.dart';
 import '../../features/scooter/model/scooter.dart';
 import '../../features/scooter/screens/add_edit_scooter_screen.dart';
@@ -40,6 +41,13 @@ GoRouter createRouter(ThemeService themeService) {
         builder: (context, state) {
           final scooter = state.extra as Scooter;
           return ScooterDetailScreen(scooter: scooter);
+        },
+      ),
+      GoRoute(
+        path: '/refuelings/:scooterId',
+        builder: (context, state) {
+          final scooter = state.extra as Scooter;
+          return RefuelingsScreen(scooter: scooter);
         },
       ),
       // Rotta 5: Aggiungi o Modifica Rifornimento (passiamo l'id nello URL e l'oggetto in extra)

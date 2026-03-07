@@ -51,16 +51,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text(l10n.impostazioni),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        // TASTO CHIUDI SENZA SALVARE (Icona X)
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
-          TextButton(
+          // TASTO SALVA E CHIUDI (Icona Spunta)
+          IconButton(
+            icon: const Icon(Icons.check, size: 28),
+            color: Theme.of(context).colorScheme.primary,
             onPressed: () {
               ref.read(localeProvider.notifier).setLocale(_tempLanguageCode);
               Navigator.pop(context);
             },
-            child: Text(
-              l10n.fatto,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
           ),
         ],
       ),

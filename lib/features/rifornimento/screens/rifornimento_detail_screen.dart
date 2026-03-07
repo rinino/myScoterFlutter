@@ -90,7 +90,7 @@ class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScr
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final locale = Localizations.localeOf(context).toString();
+    final locale = Localizations.localeOf(context).languageCode;
 
     final bool isUIBlocked = _isLoadingScooterDetails;
     final Color iconColor = isUIBlocked ? Colors.grey : Theme.of(context).colorScheme.primary;

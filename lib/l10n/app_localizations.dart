@@ -625,6 +625,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Foto Scooter'**
   String get shareSubject;
+
+  /// No description provided for @refuelingData.
+  ///
+  /// In it, this message translates to:
+  /// **'Dati rifornimenti'**
+  String get refuelingData;
 }
 
 class _AppLocalizationsDelegate

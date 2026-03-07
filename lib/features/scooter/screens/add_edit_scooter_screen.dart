@@ -3,6 +3,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+// Nuovi import necessari per gestire i file in modo permanente
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
@@ -57,9 +60,16 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     }
   }
 
+  // Compressione nativa dell'immagine al momento della selezione
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70, // Compressione JPEG al 70%
+      maxWidth: 1024,   // Limita la larghezza massima a 1024px
+      maxHeight: 1024,  // Limita l'altezza massima a 1024px
+    );
+
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -67,9 +77,37 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     }
   }
 
-  void _saveForm() {
+  Future<void> _saveForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isProcessing = true);
+
+      String? finalImagePath = widget.scooter?.imgPath;
+
+      try {
+        // Se c'è un'immagine ed è DIVERSA da quella già salvata nello scooter
+        if (_imageFile != null && _imageFile!.path != widget.scooter?.imgPath) {
+          // 1. Otteniamo la cartella permanente dell'app
+          final appDir = await getApplicationDocumentsDirectory();
+          // 2. Creiamo un nome univoco usando il timestamp
+          final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(_imageFile!.path)}';
+          final savedImage = File('${appDir.path}/$fileName');
+
+          // 3. Copiamo il file compresso dalla cache alla cartella permanente
+          await _imageFile!.copy(savedImage.path);
+          finalImagePath = savedImage.path;
+
+          // 4. Pulizia: se c'era una VECCHIA immagine, la cancelliamo per non sprecare spazio!
+          if (widget.scooter?.imgPath != null) {
+            final oldImage = File(widget.scooter!.imgPath!);
+            if (await oldImage.exists()) {
+              await oldImage.delete();
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint("Errore nel salvataggio dell'immagine: $e");
+        // Procediamo comunque salvando lo scooter, ma senza la nuova foto in caso di errore
+      }
 
       final newScooter = Scooter(
         id: widget.scooter?.id,
@@ -79,14 +117,13 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         targa: _targaController.text.trim().toUpperCase(),
         anno: int.tryParse(_annoController.text) ?? 0,
         miscelatore: _miscelatore,
-        imgPath: _imageFile?.path,
+        imgPath: finalImagePath, // Usiamo il path permanente appena generato
       );
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.pop(context, newScooter);
-        }
-      });
+      // Usiamo microtask per assicurarci che il pop avvenga in modo sicuro dopo i calcoli
+      if (mounted) {
+        Navigator.pop(context, newScooter);
+      }
     }
   }
 
@@ -97,10 +134,17 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.scooter == null ? l10n.addScooter : l10n.editScooter),
+        // TASTO ANNULLA (Icona X)
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
-          TextButton(
-            onPressed: _isProcessing ? null : _saveForm,
-            child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
+          // TASTO SALVA (Icona Spunta)
+          IconButton(
+            icon: const Icon(Icons.check, size: 28),
+            color: Theme.of(context).colorScheme.primary,
+            onPressed: _isProcessing ? null : () => _saveForm(),
           ),
         ],
       ),
@@ -138,20 +182,19 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                   const SizedBox(height: 16),
                   _buildSectionTitle(l10n.details),
 
-                  // CILINDRATA (Il controllo > 0 è nel validatore di default di _buildTextField)
+                  // CILINDRATA
                   _buildTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
 
-                  // TARGA (Validatore custom)
+                  // TARGA
                   _buildTextField(
                       _targaController,
                       l10n.licensePlate,
                       Icons.badge,
                       l10n,
-                      isUppercase: true, // Nuova flag per mostrare la tastiera in MAIUSCOLO
+                      isUppercase: true,
                       customValidator: (value) {
                         if (value == null || value.trim().isEmpty) return l10n.requiredField;
 
-                        // Simula la tua "isValidTargaScooter": rimuove spazi e controlla se è lunga 5-7 caratteri alfanumerici
                         final cleanValue = value.replaceAll(' ', '');
                         final targaRegex = RegExp(r'^[a-zA-Z0-9]{5,7}$');
                         if (!targaRegex.hasMatch(cleanValue)) {
@@ -161,7 +204,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                       }
                   ),
 
-                  // ANNO (Validatore custom)
+                  // ANNO
                   _buildTextField(
                       _annoController,
                       l10n.year,
@@ -174,7 +217,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                         final anno = int.tryParse(value);
                         if (anno == null) return l10n.insertNumber;
 
-                        // guard let anno = Int(nuovoAnnoString), anno >= 1900, anno <= Calendar.current.component(...)
                         final currentYear = DateTime.now().year;
                         if (anno < 1900 || anno > currentYear) {
                           return l10n.invalidYear;
@@ -231,7 +273,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         validator: customValidator ?? (value) {
-          // Se non passi un customValidator, esegue questa logica di base (che avevamo scritto prima)
           if (value == null || value.trim().isEmpty) return l10n.requiredField;
 
           if (isNumber) {

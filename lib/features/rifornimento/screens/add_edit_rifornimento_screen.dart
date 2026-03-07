@@ -171,17 +171,24 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
-        centerTitle: true,
-        actions: [
-          if (!_isLoadingData)
-            TextButton(
-              onPressed: _isSaving ? null : _saveRifornimento,
-              child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
-            )
-        ],
-      ),
+        appBar: AppBar(
+          title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
+          centerTitle: true,
+          // TASTO ANNULLA (Icona X)
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          actions: [
+            // TASTO SALVA (Icona Spunta)
+            if (!_isLoadingData)
+              IconButton(
+                icon: const Icon(Icons.check, size: 28),
+                color: Theme.of(context).colorScheme.primary,
+                onPressed: _isSaving ? null : _saveRifornimento,
+              )
+          ],
+        ),
       body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -232,6 +239,8 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
   }
 
   Widget _buildDatePicker(AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
@@ -239,7 +248,7 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       child: ListTile(
         leading: const Icon(Icons.calendar_today, color: Colors.blue),
         title: Text(l10n.date),
-        trailing: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
+        trailing: Text(DateFormat.yMMMd(locale).format(_selectedDate)),
         onTap: () async {
           final picked = await showDatePicker(
             context: context,

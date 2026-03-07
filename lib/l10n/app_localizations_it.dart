@@ -279,4 +279,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shareSubject => 'Foto Scooter';
+
+  @override
+  String get refuelingData => 'Dati rifornimenti';
 }
