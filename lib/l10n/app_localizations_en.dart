@@ -336,4 +336,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorRestore => 'Error during restore or invalid file';
+
+  @override
+  String get costoLabel => 'Cost';
+
+  @override
+  String get noteLabel => 'Notes';
+
+  @override
+  String get placeholderNote => 'Add notes (e.g., station name)';
+
+  @override
+  String get posizioneGPSLabel => 'GPS Location';
+
+  @override
+  String get aggiungiPosizione => 'Add location';
+
+  @override
+  String get posizioneSalvata => 'Location saved';
+
+  @override
+  String get selezionaSullaMappa => 'Select on map';
+
+  @override
+  String get confermaPosizione => 'Confirm location';
+
+  @override
+  String get erroreCostoNonValido => 'Please enter a valid cost';
+
+  @override
+  String get apriInGoogleMaps => 'Open in Google Maps';
+
+  @override
+  String get apriInWaze => 'Open in Waze';
+
+  @override
+  String get distributorePin => 'Gas Station';
 }

@@ -11,6 +11,7 @@ import '../../features/scooter/screens/scooter_detail_screen.dart';
 import '../../features/settings/screens/backup_restore_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../theme/theme_service.dart';
+import 'package:myscooter/features/rifornimento/screens/location_picker_screen.dart';
 
 // Creiamo una funzione che restituisce il router configurato
 GoRouter createRouter(ThemeService themeService) {
@@ -40,6 +41,18 @@ GoRouter createRouter(ThemeService themeService) {
           return AddEditScooterScreen(scooter: scooter);
         },
       ),
+      GoRoute(
+        path: '/location-picker',
+        name: 'location-picker',
+        builder: (context, state) {
+          // Estraiamo le coordinate iniziali se ci sono (passate come 'extra')
+          final extra = state.extra as Map<String, double?>?;
+          final lat = extra?['lat'];
+          final lon = extra?['lon'];
+
+          return LocationPickerScreen(initialLat: lat, initialLon: lon);
+        },
+      ),
       // Rotta 4: Dettaglio Scooter
       GoRoute(
         path: '/scooter-detail',
@@ -58,6 +71,7 @@ GoRouter createRouter(ThemeService themeService) {
       // Rotta 5: Aggiungi o Modifica Rifornimento (passiamo l'id nello URL e l'oggetto in extra)
       GoRoute(
         path: '/add-edit-rifornimento/:scooterId',
+        name: 'add-edit-rifornimento',
         builder: (context, state) {
           final scooterId = int.parse(state.pathParameters['scooterId']!);
           final rifornimento = state.extra as Rifornimento?;
@@ -67,6 +81,7 @@ GoRouter createRouter(ThemeService themeService) {
       // Rotta 6: Dettaglio Rifornimento
       GoRoute(
         path: '/rifornimento-detail/:scooterId',
+        name: 'rifornimento-detail',
         builder: (context, state) {
           final scooterId = int.parse(state.pathParameters['scooterId']!);
           final rifornimento = state.extra as Rifornimento;

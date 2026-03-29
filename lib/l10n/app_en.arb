@@ -116,5 +116,18 @@
   "restoreBtn": "Choose backup file",
   "restoreSuccess": "Data successfully restored!",
   "errorBackup": "Error during backup",
-  "errorRestore": "Error during restore or invalid file"
+  "errorRestore": "Error during restore or invalid file",
+
+  "costoLabel": "Cost",
+  "noteLabel": "Notes",
+  "placeholderNote": "Add notes (e.g., station name)",
+  "posizioneGPSLabel": "GPS Location",
+  "aggiungiPosizione": "Add location",
+  "posizioneSalvata": "Location saved",
+  "selezionaSullaMappa": "Select on map",
+  "confermaPosizione": "Confirm location",
+  "erroreCostoNonValido": "Please enter a valid cost",
+  "apriInGoogleMaps": "Open in Google Maps",
+  "apriInWaze": "Open in Waze",
+  "distributorePin": "Gas Station"
 }

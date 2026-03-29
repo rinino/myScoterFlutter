@@ -5,7 +5,6 @@ import 'package:path/path.dart';
 import 'dart:async';
 
 class DatabaseHelper {
-  // RIMOSSO IL SINGLETON! Niente più _instance o factory.
 
   Database? _database;
 
@@ -26,7 +25,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2, // *** CORREZIONE: Incrementato a versione 2 ***
+      version: 3, // *** INCREMENTATO A VERSIONE 3 ***
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -48,7 +47,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Creazione della tabella rifornimenti
+    // Creazione della tabella rifornimenti AGGIORNATA
     await db.execute('''
       CREATE TABLE rifornimenti(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,15 +59,18 @@ class DatabaseHelper {
         kmPercorsi REAL NOT NULL,
         mediaConsumo REAL,
         percentualeOlio REAL,
+        costo REAL,
+        note TEXT,
+        latitudine REAL,
+        longitudine REAL,
         FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
       )
     ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // *** CORREZIONE: Aggiungi logica per creare 'rifornimenti' se si sta aggiornando da v1 a v2 ***
+    // Migrazione da v1 a v2 (Creazione tabella rifornimenti se non esisteva)
     if (oldVersion < 2) {
-      // Se si aggiorna da una versione precedente che non aveva la tabella 'rifornimenti'
       await db.execute('''
         CREATE TABLE rifornimenti(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,10 +86,18 @@ class DatabaseHelper {
         )
       ''');
     }
-    // Esempio: se oldVersion è 2 e newVersion è 3, e hai aggiunto una nuova colonna
-    // if (oldVersion < 3 && newVersion >= 3) {
-    //   await db.execute("ALTER TABLE nome_tabella ADD COLUMN nuovaColonna TIPO;");
-    // }
+
+    // Migrazione da v2 a v3 (Aggiunta colonne costo, note, GPS ai rifornimenti)
+    if (oldVersion < 3) {
+      // Usiamo una transazione in modo che se un'aggiunta fallisce, falliscono tutte
+      await db.transaction((txn) async {
+        await txn.execute("ALTER TABLE rifornimenti ADD COLUMN costo REAL;");
+        await txn.execute("ALTER TABLE rifornimenti ADD COLUMN note TEXT;");
+        await txn.execute("ALTER TABLE rifornimenti ADD COLUMN latitudine REAL;");
+        await txn.execute("ALTER TABLE rifornimenti ADD COLUMN longitudine REAL;");
+      });
+      print("Migrazione a V3 completata: aggiunte colonne costo, note, latitudine e longitudine.");
+    }
   }
 
   Future _onConfigure(Database db) async {
@@ -177,7 +187,6 @@ class DatabaseHelper {
 
       return id;
     } catch (e) {
-
       return null;
     }
   }

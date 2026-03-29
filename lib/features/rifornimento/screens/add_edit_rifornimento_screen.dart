@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // Aggiunto per context.pushNamed
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Aggiunto per leggere LatLng
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../scooter/model/scooter.dart';
-
 
 class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
   final int scooterId;
@@ -31,6 +32,12 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
   final TextEditingController _litriBenzinaController = TextEditingController();
   final TextEditingController _litriOlioController = TextEditingController();
   final TextEditingController _percentualeOlioController = TextEditingController();
+
+  // NUOVI CONTROLLER E STATI
+  final TextEditingController _costoController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+  double? _latitudine;
+  double? _longitudine;
 
   double _kmPercorsi = 0.0;
   double _mediaConsumo = 0.0;
@@ -57,6 +64,16 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       if (widget.rifornimento!.percentualeOlio != null) {
         _percentualeOlioController.text = widget.rifornimento!.percentualeOlio.toString();
       }
+
+      // Inizializzazione Nuovi Campi
+      if (widget.rifornimento!.costo != null) {
+        _costoController.text = widget.rifornimento!.costo.toString();
+      }
+      if (widget.rifornimento!.note != null) {
+        _noteController.text = widget.rifornimento!.note!;
+      }
+      _latitudine = widget.rifornimento!.latitudine;
+      _longitudine = widget.rifornimento!.longitudine;
     }
   }
 
@@ -128,9 +145,13 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
 
     setState(() => _isSaving = true);
 
+    // Preparazione della stringa note (null se vuota)
+    final String noteText = _noteController.text.trim();
+    final String? noteFinali = noteText.isEmpty ? null : noteText;
+
     final Rifornimento rifornimentoToSave = Rifornimento(
       id: widget.rifornimento?.id,
-      idScooter: widget.scooterId, // Mantenuto il tuo idScooter
+      idScooter: widget.scooterId,
       dataRifornimento: _selectedDate.millisecondsSinceEpoch,
       kmAttuali: _parseToDouble(_kmAttualiController.text)!,
       litriBenzina: _parseToDouble(_litriBenzinaController.text)!,
@@ -138,6 +159,11 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       percentualeOlio: _parseToDouble(_percentualeOlioController.text),
       kmPercorsi: _kmPercorsi,
       mediaConsumo: _mediaConsumo,
+      // Passaggio Nuovi Campi
+      costo: _parseToDouble(_costoController.text),
+      note: noteFinali,
+      latitudine: _latitudine,
+      longitudine: _longitudine,
     );
 
     try {
@@ -171,24 +197,22 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
-          centerTitle: true,
-          // TASTO ANNULLA (Icona X)
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            // TASTO SALVA (Icona Spunta)
-            if (!_isLoadingData)
-              IconButton(
-                icon: const Icon(Icons.check, size: 28),
-                color: Theme.of(context).colorScheme.primary,
-                onPressed: _isSaving ? null : _saveRifornimento,
-              )
-          ],
+      appBar: AppBar(
+        title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          if (!_isLoadingData)
+            IconButton(
+              icon: const Icon(Icons.check, size: 28),
+              color: Theme.of(context).colorScheme.primary,
+              onPressed: _isSaving ? null : _saveRifornimento,
+            )
+        ],
+      ),
       body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -200,11 +224,12 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel(l10n.dateAndKm), // Mix tra l10n e il tuo stile
+                  _buildSectionLabel(l10n.dateAndKm),
                   _buildDatePicker(l10n),
                   const SizedBox(height: 16),
                   _buildKmInput(l10n),
                   const SizedBox(height: 24),
+
                   _buildSectionLabel(l10n.fuelAndMix),
                   _buildBenzinaInput(l10n),
                   const SizedBox(height: 16),
@@ -213,8 +238,22 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
                     const SizedBox(height: 16),
                   ],
                   _buildLitriOlioInput(l10n),
+                  const SizedBox(height: 24),
+
+                  // NUOVA SEZIONE: Costi e Note
+                  _buildSectionLabel(l10n.costoLabel),
+                  _buildCostoInput(l10n),
+                  const SizedBox(height: 16),
+                  _buildNoteInput(l10n),
+                  const SizedBox(height: 24),
+
+                  // NUOVA SEZIONE: GPS
+                  _buildSectionLabel(l10n.posizioneGPSLabel),
+                  _buildGPSInput(l10n),
                   const SizedBox(height: 32),
+
                   _buildStatsSummary(l10n),
+                  const SizedBox(height: 40), // Margine extra alla fine
                 ],
               ),
             ),
@@ -319,6 +358,81 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
+  // --- WIDGET NUOVI ---
+
+  Widget _buildCostoInput(AppLocalizations l10n) {
+    return TextFormField(
+      controller: _costoController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: l10n.costoLabel,
+        // Usiamo un'icona generica come su Swift, la valuta apparirà in base al locale del dispositivo se lo desideri in futuro
+        prefixIcon: const Icon(Icons.payments_outlined, color: Colors.blue),
+        border: const OutlineInputBorder(),
+      ),
+      validator: (value) {
+        if (value != null && value.trim().isNotEmpty) {
+          if (_parseToDouble(value) == null) return l10n.erroreCostoNonValido;
+        }
+        return null; // Opzionale, quindi valido se vuoto
+      },
+    );
+  }
+
+  Widget _buildNoteInput(AppLocalizations l10n) {
+    return TextFormField(
+      controller: _noteController,
+      maxLines: 3,
+      maxLength: 250, // Flutter mostra automaticamente il contatore in basso!
+      decoration: InputDecoration(
+        labelText: l10n.noteLabel,
+        hintText: l10n.placeholderNote,
+        alignLabelWithHint: true,
+        prefixIcon: const Padding(
+          padding: EdgeInsets.only(bottom: 45.0), // Spinge l'icona in alto
+          child: Icon(Icons.notes, color: Colors.blue),
+        ),
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  Widget _buildGPSInput(AppLocalizations l10n) {
+    final bool hasLocation = _latitudine != null && _longitudine != null;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      child: ListTile(
+        leading: Icon(
+          hasLocation ? Icons.map : Icons.map_outlined,
+          color: hasLocation ? Colors.green : Colors.blue,
+        ),
+        title: Text(hasLocation ? l10n.posizioneSalvata : l10n.aggiungiPosizione),
+        trailing: hasLocation
+            ? const Icon(Icons.check_circle, color: Colors.green)
+            : const Icon(Icons.chevron_right),
+        onTap: () async {
+          // Apre la mappa usando GoRouter e aspetta il LatLng di ritorno
+          final result = await context.pushNamed<LatLng>(
+            'location-picker',
+            extra: {'lat': _latitudine, 'lon': _longitudine},
+          );
+
+          if (result != null) {
+            setState(() {
+              _latitudine = result.latitude;
+              _longitudine = result.longitude;
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  // --------------------
+
   Widget _buildStatsSummary(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -353,6 +467,8 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     _litriBenzinaController.dispose();
     _litriOlioController.dispose();
     _percentualeOlioController.dispose();
+    _costoController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 }

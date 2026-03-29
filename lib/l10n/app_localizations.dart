@@ -733,6 +733,78 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Errore durante il ripristino o file non valido'**
   String get errorRestore;
+
+  /// No description provided for @costoLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Costo'**
+  String get costoLabel;
+
+  /// No description provided for @noteLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Note'**
+  String get noteLabel;
+
+  /// No description provided for @placeholderNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi note (es. nome distributore)'**
+  String get placeholderNote;
+
+  /// No description provided for @posizioneGPSLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Posizione GPS'**
+  String get posizioneGPSLabel;
+
+  /// No description provided for @aggiungiPosizione.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi posizione'**
+  String get aggiungiPosizione;
+
+  /// No description provided for @posizioneSalvata.
+  ///
+  /// In it, this message translates to:
+  /// **'Posizione salvata'**
+  String get posizioneSalvata;
+
+  /// No description provided for @selezionaSullaMappa.
+  ///
+  /// In it, this message translates to:
+  /// **'Seleziona sulla mappa'**
+  String get selezionaSullaMappa;
+
+  /// No description provided for @confermaPosizione.
+  ///
+  /// In it, this message translates to:
+  /// **'Conferma posizione'**
+  String get confermaPosizione;
+
+  /// No description provided for @erroreCostoNonValido.
+  ///
+  /// In it, this message translates to:
+  /// **'Inserisci un costo valido'**
+  String get erroreCostoNonValido;
+
+  /// No description provided for @apriInGoogleMaps.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri in Google Maps'**
+  String get apriInGoogleMaps;
+
+  /// No description provided for @apriInWaze.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri in Waze'**
+  String get apriInWaze;
+
+  /// No description provided for @distributorePin.
+  ///
+  /// In it, this message translates to:
+  /// **'Distributore'**
+  String get distributorePin;
 }
 
 class _AppLocalizationsDelegate

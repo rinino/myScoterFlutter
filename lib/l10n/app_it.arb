@@ -116,5 +116,18 @@
     "restoreBtn": "Scegli file di backup",
     "restoreSuccess": "Dati ripristinati con successo!",
     "errorBackup": "Errore durante il backup",
-    "errorRestore": "Errore durante il ripristino o file non valido"
+    "errorRestore": "Errore durante il ripristino o file non valido",
+
+    "costoLabel": "Costo",
+    "noteLabel": "Note",
+    "placeholderNote": "Aggiungi note (es. nome distributore)",
+    "posizioneGPSLabel": "Posizione GPS",
+    "aggiungiPosizione": "Aggiungi posizione",
+    "posizioneSalvata": "Posizione salvata",
+    "selezionaSullaMappa": "Seleziona sulla mappa",
+    "confermaPosizione": "Conferma posizione",
+    "erroreCostoNonValido": "Inserisci un costo valido",
+    "apriInGoogleMaps": "Apri in Google Maps",
+    "apriInWaze": "Apri in Waze",
+    "distributorePin": "Distributore"
 }

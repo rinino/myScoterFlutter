@@ -11,6 +11,12 @@ class Rifornimento {
   double kmPercorsi;
   double? mediaConsumo;
 
+  // NUOVI CAMPI
+  double? costo;
+  String? note;
+  double? latitudine;
+  double? longitudine;
+
   Rifornimento({
     this.id,
     required this.idScooter,
@@ -21,6 +27,10 @@ class Rifornimento {
     this.percentualeOlio,
     required this.kmPercorsi,
     this.mediaConsumo,
+    this.costo,
+    this.note,
+    this.latitudine,
+    this.longitudine,
   });
 
   // Converti un Rifornimento in una Map. Utile per l'inserimento nel DB.
@@ -35,6 +45,10 @@ class Rifornimento {
       'percentualeOlio': percentualeOlio,
       'kmPercorsi': kmPercorsi,
       'mediaConsumo': mediaConsumo,
+      'costo': costo,
+      'note': note,
+      'latitudine': latitudine,
+      'longitudine': longitudine,
     };
   }
 
@@ -50,6 +64,10 @@ class Rifornimento {
       percentualeOlio: map['percentualeOlio'] as double?,
       kmPercorsi: map['kmPercorsi'] as double,
       mediaConsumo: map['mediaConsumo'] as double?,
+      costo: map['costo'] as double?,
+      note: map['note'] as String?,
+      latitudine: map['latitudine'] as double?,
+      longitudine: map['longitudine'] as double?,
     );
   }
 

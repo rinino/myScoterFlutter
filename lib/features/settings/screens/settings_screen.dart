@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:myscooter/core/providers/currency_provider.dart'; // Import del provider valuta
 
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/theme_service.dart';
@@ -22,13 +23,19 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = "1.0 (1)";
   final String _currentYear = DateTime.now().year.toString();
+
+  // STATI TEMPORANEI (Per salvare solo alla pressione della spunta)
   String? _tempLanguageCode;
+  String? _tempCurrency;
 
   @override
   void initState() {
     super.initState();
     _initPackageInfo();
+
+    // Inizializzazione stati temporanei dai provider attuali
     _tempLanguageCode = ref.read(localeProvider)?.languageCode;
+    _tempCurrency = ref.read(currencyProvider);
   }
 
   Future<void> _initPackageInfo() async {
@@ -62,7 +69,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: const Icon(Icons.check, size: 28),
             color: Theme.of(context).colorScheme.primary,
             onPressed: () {
+              // Salvataggio Lingua
               ref.read(localeProvider.notifier).setLocale(_tempLanguageCode);
+
+              // Salvataggio Valuta (Default a EUR se nullo)
+              ref.read(currencyProvider.notifier).setCurrency(_tempCurrency ?? 'EUR');
+
               Navigator.pop(context);
             },
           ),
@@ -73,6 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         builder: (context, _) {
           return ListView(
             children: [
+              // --- SEZIONE ASPETTO ---
               _buildSectionHeader(l10n.aspetto.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -83,17 +96,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 10),
 
+              // --- SEZIONE PREFERENZE (Lingua e Valuta) ---
               _buildSectionHeader(l10n.lingua.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 elevation: 0,
                 color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                child: _buildLanguagePicker(l10n),
+                child: Column(
+                  children: [
+                    _buildLanguagePicker(l10n),
+                    const Divider(height: 1, indent: 55),
+                    _buildCurrencyPicker(l10n), // Nuova implementazione valuta
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
 
-              // NUOVA SEZIONE: DATI (Backup e Ripristino)
+              // --- SEZIONE DATI ---
               _buildSectionHeader(l10n.dati.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -109,6 +129,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 10),
 
+              // --- SEZIONE INFORMAZIONI ---
               _buildSectionHeader(l10n.informazioni.toUpperCase()),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -189,6 +210,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           DropdownMenuItem(value: null, child: Text(l10n.sistema)),
           const DropdownMenuItem(value: 'it', child: Text("Italiano")),
           const DropdownMenuItem(value: 'en', child: Text("English")),
+        ],
+      ),
+    );
+  }
+
+  // NUOVO PICKER VALUTA
+  Widget _buildCurrencyPicker(AppLocalizations l10n) {
+    return ListTile(
+      leading: const Icon(Icons.payments_outlined, color: Colors.blue),
+      title: Text(l10n.costoLabel), // O usa l10n.valuta se hai la chiave
+      trailing: DropdownButton<String>(
+        value: _tempCurrency,
+        underline: const SizedBox(),
+        icon: const Icon(Icons.unfold_more, size: 20),
+        onChanged: (String? newCurr) {
+          if (newCurr != null) {
+            setState(() => _tempCurrency = newCurr);
+          }
+        },
+        items: const [
+          DropdownMenuItem(value: 'EUR', child: Text("€ (EUR)")),
+          DropdownMenuItem(value: 'USD', child: Text("\$ (USD)")),
+          DropdownMenuItem(value: 'GBP', child: Text("£ (GBP)")),
         ],
       ),
     );
