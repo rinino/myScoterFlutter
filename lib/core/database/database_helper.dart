@@ -1,5 +1,6 @@
 import 'package:myscooter/features/scooter/model/scooter.dart';
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
+import 'package:myscooter/features/manutenzione/models/manutenzione.dart'; // <-- Nuovo import
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -25,7 +26,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3, // *** INCREMENTATO A VERSIONE 3 ***
+      version: 4, // *** INCREMENTATO A VERSIONE 4 ***
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -66,6 +67,27 @@ class DatabaseHelper {
         FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
       )
     ''');
+
+    // Creazione della tabella manutenzioni NUOVA
+    await _createManutenzioniTable(db);
+  }
+
+  Future _createManutenzioniTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE manutenzioni(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        idScooter INTEGER NOT NULL,
+        data INTEGER NOT NULL,
+        km REAL NOT NULL,
+        categoria TEXT NOT NULL,
+        categoriaCustom TEXT,
+        titolo TEXT NOT NULL,
+        costo REAL,
+        note TEXT,
+        nomeFoto TEXT,
+        FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
+      )
+    ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -98,14 +120,19 @@ class DatabaseHelper {
       });
       print("Migrazione a V3 completata: aggiunte colonne costo, note, latitudine e longitudine.");
     }
+
+    // Migrazione da v3 a v4 (Nuova tabella manutenzioni)
+    if (oldVersion < 4) {
+      await _createManutenzioniTable(db);
+      print("Migrazione a V4 completata: creata tabella manutenzioni.");
+    }
   }
 
   Future _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  // --- Metodi CRUD per Scooter ---
-
+  // --- Metodi CRUD per Scooter (INVARIATI) ---
   Future<int> insertScooter(Scooter scooter) async {
     final db = await database;
     return await db.insert('scooters', scooter.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -156,8 +183,6 @@ class DatabaseHelper {
 
   Future<int> deleteScooter(int id) async {
     final db = await database;
-    // La clausola ON DELETE CASCADE nella definizione della tabella 'rifornimenti'
-    // si occuperà di eliminare i rifornimenti associati automaticamente.
     return await db.delete('scooters', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -167,15 +192,14 @@ class DatabaseHelper {
   }
 
   Future<void> closeDb() async {
-    final db = _database;
-    if (db != null && db.isOpen) {
+    if (_database != null) {
+      final db = _database!;
+      _database = null; // Fondamentale!
       await db.close();
-      _database = null;
+      print("Database chiuso in sicurezza."); // Usa print normale
     }
   }
-
-  // --- Metodi CRUD per Rifornimento ---
-
+  // --- Metodi CRUD per Rifornimento (INVARIATI) ---
   Future<int?> insertRifornimento(Rifornimento rifornimento) async {
     final db = await database;
     try {
@@ -184,7 +208,6 @@ class DatabaseHelper {
         rifornimento.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-
       return id;
     } catch (e) {
       return null;
@@ -278,5 +301,62 @@ class DatabaseHelper {
     );
 
     return maps.isNotEmpty ? Rifornimento.fromMap(maps.first) : null;
+  }
+
+  // --- NUOVI Metodi CRUD per Manutenzione ---
+
+  Future<int?> insertManutenzione(Manutenzione manutenzione) async {
+    final db = await database;
+    try {
+      return await db.insert(
+        'manutenzioni',
+        manutenzione.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Manutenzione>> getManutenzioni(int scooterId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'manutenzioni',
+      where: 'idScooter = ?',
+      whereArgs: [scooterId],
+      orderBy: 'data DESC',
+    );
+    return List.generate(maps.length, (i) {
+      return Manutenzione.fromMap(maps[i]);
+    });
+  }
+
+  Future<bool> updateManutenzione(Manutenzione manutenzione) async {
+    final db = await database;
+    if (manutenzione.id == null) return false;
+    try {
+      final changes = await db.update(
+        'manutenzioni',
+        manutenzione.toMap(),
+        where: 'id = ?',
+        whereArgs: [manutenzione.id],
+      );
+      return changes > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<int> deleteManutenzione(int id) async {
+    final db = await database;
+    try {
+      return await db.delete(
+        'manutenzioni',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      return 0;
+    }
   }
 }

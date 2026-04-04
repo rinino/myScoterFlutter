@@ -1,5 +1,3 @@
-// lib/features/scooter/screens/home_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    // Listener per i messaggi (SnackBar)
     ref.listen<UiMessage?>(messageProvider, (previous, next) {
       if (next != null) {
         final Color? bgColor = next.type == MessageType.error
@@ -68,6 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
+    // Listener per errori di caricamento lista
     ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
       if (next.hasError && !next.isLoading) {
         ref.read(messageProvider.notifier).show(
@@ -92,7 +92,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle, size: 28),
-            // Blocchiamo il bottone se sta caricando o se stiamo già aprendo la pagina
             onPressed: (scooterState.isLoading || _isNavigating) ? null : () async {
               setState(() => _isNavigating = true);
 
@@ -109,38 +108,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }
                 }
               } finally {
-                // Sblocchiamo il pulsante solo quando la modale viene chiusa
                 if (mounted) setState(() => _isNavigating = false);
               }
             },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildTopLogo(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                l10n.myScooters,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+      // FIX EDGE-TO-EDGE: SafeArea aggiunta qui
+      body: SafeArea(
+        top: false, // L'AppBar protegge già la parte alta
+        bottom: true, // Protegge il contenuto dalla barra delle gesture in basso
+        child: Column(
+          children: [
+            _buildTopLogo(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.myScooters,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: scooterState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text(error.toString())),
-              data: (scooters) => scooters.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildScooterList(context, scooters),
+            Expanded(
+              child: scooterState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(child: Text(error.toString())),
+                data: (scooters) => scooters.isEmpty
+                    ? _buildEmptyState(context)
+                    : _buildScooterList(context, scooters),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -202,6 +205,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return ListView.builder(
       itemCount: scooters.length,
+      // Aggiunto un piccolo padding extra in fondo per pulizia visiva con Edge-to-Edge
+      padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (context, index) {
         final scooter = scooters[index];
         bool hasValidImage = scooter.imgPath != null && File(scooter.imgPath!).existsSync();

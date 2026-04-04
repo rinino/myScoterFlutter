@@ -805,6 +805,210 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Distributore'**
   String get distributorePin;
+
+  /// No description provided for @registroManutenzione.
+  ///
+  /// In it, this message translates to:
+  /// **'Registro Manutenzione'**
+  String get registroManutenzione;
+
+  /// No description provided for @nessunaManutenzione.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna manutenzione registrata.'**
+  String get nessunaManutenzione;
+
+  /// No description provided for @aggiungiIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi Intervento'**
+  String get aggiungiIntervento;
+
+  /// No description provided for @nuovoIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Nuovo Intervento'**
+  String get nuovoIntervento;
+
+  /// No description provided for @dettagliIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Dettagli Intervento'**
+  String get dettagliIntervento;
+
+  /// No description provided for @modificaIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Modifica Intervento'**
+  String get modificaIntervento;
+
+  /// No description provided for @titoloIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Titolo (es. Sostituzione candela)'**
+  String get titoloIntervento;
+
+  /// No description provided for @dataIntervento.
+  ///
+  /// In it, this message translates to:
+  /// **'Data'**
+  String get dataIntervento;
+
+  /// No description provided for @categoria.
+  ///
+  /// In it, this message translates to:
+  /// **'Categoria'**
+  String get categoria;
+
+  /// No description provided for @specificaAltro.
+  ///
+  /// In it, this message translates to:
+  /// **'Specifica categoria'**
+  String get specificaAltro;
+
+  /// No description provided for @costoOpzionale.
+  ///
+  /// In it, this message translates to:
+  /// **'Costo (Opzionale)'**
+  String get costoOpzionale;
+
+  /// No description provided for @noteDettagli.
+  ///
+  /// In it, this message translates to:
+  /// **'Note / Dettagli'**
+  String get noteDettagli;
+
+  /// No description provided for @fotoRicevuta.
+  ///
+  /// In it, this message translates to:
+  /// **'Foto / Ricevuta'**
+  String get fotoRicevuta;
+
+  /// No description provided for @selezionaFoto.
+  ///
+  /// In it, this message translates to:
+  /// **'Seleziona un\'immagine'**
+  String get selezionaFoto;
+
+  /// No description provided for @rimuoviFoto.
+  ///
+  /// In it, this message translates to:
+  /// **'Rimuovi foto'**
+  String get rimuoviFoto;
+
+  /// No description provided for @datiMancanti.
+  ///
+  /// In it, this message translates to:
+  /// **'Dati mancanti'**
+  String get datiMancanti;
+
+  /// No description provided for @erroreDatiMessaggio.
+  ///
+  /// In it, this message translates to:
+  /// **'Inserisci un titolo e i chilometri validi per continuare.'**
+  String get erroreDatiMessaggio;
+
+  /// No description provided for @infoPrincipali.
+  ///
+  /// In it, this message translates to:
+  /// **'Informazioni Principali'**
+  String get infoPrincipali;
+
+  /// No description provided for @dettagliAggiuntivi.
+  ///
+  /// In it, this message translates to:
+  /// **'Dettagli Aggiuntivi'**
+  String get dettagliAggiuntivi;
+
+  /// No description provided for @notePlaceholder.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi note sull\'intervento...'**
+  String get notePlaceholder;
+
+  /// No description provided for @cat_motore.
+  ///
+  /// In it, this message translates to:
+  /// **'Motore'**
+  String get cat_motore;
+
+  /// No description provided for @cat_accensione.
+  ///
+  /// In it, this message translates to:
+  /// **'Accensione / Elettrica'**
+  String get cat_accensione;
+
+  /// No description provided for @cat_alimentazione.
+  ///
+  /// In it, this message translates to:
+  /// **'Alimentazione'**
+  String get cat_alimentazione;
+
+  /// No description provided for @cat_olio_cambio.
+  ///
+  /// In it, this message translates to:
+  /// **'Olio Cambio'**
+  String get cat_olio_cambio;
+
+  /// No description provided for @cat_trasmissione.
+  ///
+  /// In it, this message translates to:
+  /// **'Trasmissione / Cavi'**
+  String get cat_trasmissione;
+
+  /// No description provided for @cat_freni_gomme.
+  ///
+  /// In it, this message translates to:
+  /// **'Freni / Gomme'**
+  String get cat_freni_gomme;
+
+  /// No description provided for @cat_carrozzeria.
+  ///
+  /// In it, this message translates to:
+  /// **'Carrozzeria / Telaio'**
+  String get cat_carrozzeria;
+
+  /// No description provided for @cat_altro.
+  ///
+  /// In it, this message translates to:
+  /// **'Altro'**
+  String get cat_altro;
+
+  /// No description provided for @confirmTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Conferma'**
+  String get confirmTitle;
+
+  /// No description provided for @confirmDeleteMaintenance.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei sicuro di voler eliminare questo intervento?'**
+  String get confirmDeleteMaintenance;
+
+  /// No description provided for @maintenanceSaved.
+  ///
+  /// In it, this message translates to:
+  /// **'Intervento salvato!'**
+  String get maintenanceSaved;
+
+  /// No description provided for @maintenanceDeleted.
+  ///
+  /// In it, this message translates to:
+  /// **'Intervento eliminato'**
+  String get maintenanceDeleted;
+
+  /// No description provided for @backupShareSubject.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup MyScooter'**
+  String get backupShareSubject;
+
+  /// No description provided for @backupShareText.
+  ///
+  /// In it, this message translates to:
+  /// **'Backup MyScooter (Dati + Foto)'**
+  String get backupShareText;
 }
 
 class _AppLocalizationsDelegate

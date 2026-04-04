@@ -372,4 +372,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get distributorePin => 'Gas Station';
+
+  @override
+  String get registroManutenzione => 'Maintenance Log';
+
+  @override
+  String get nessunaManutenzione => 'No maintenance recorded.';
+
+  @override
+  String get aggiungiIntervento => 'Add Service';
+
+  @override
+  String get nuovoIntervento => 'New Service';
+
+  @override
+  String get dettagliIntervento => 'Service Details';
+
+  @override
+  String get modificaIntervento => 'Edit Service';
+
+  @override
+  String get titoloIntervento => 'Title (e.g. Spark plug replacement)';
+
+  @override
+  String get dataIntervento => 'Date';
+
+  @override
+  String get categoria => 'Category';
+
+  @override
+  String get specificaAltro => 'Specify category';
+
+  @override
+  String get costoOpzionale => 'Cost (Optional)';
+
+  @override
+  String get noteDettagli => 'Notes / Details';
+
+  @override
+  String get fotoRicevuta => 'Photo / Receipt';
+
+  @override
+  String get selezionaFoto => 'Select an image';
+
+  @override
+  String get rimuoviFoto => 'Remove photo';
+
+  @override
+  String get datiMancanti => 'Missing data';
+
+  @override
+  String get erroreDatiMessaggio =>
+      'Please enter a valid title and mileage to continue.';
+
+  @override
+  String get infoPrincipali => 'Main Information';
+
+  @override
+  String get dettagliAggiuntivi => 'Additional Details';
+
+  @override
+  String get notePlaceholder => 'Add notes about the service...';
+
+  @override
+  String get cat_motore => 'Engine';
+
+  @override
+  String get cat_accensione => 'Ignition / Electrical';
+
+  @override
+  String get cat_alimentazione => 'Fuel System';
+
+  @override
+  String get cat_olio_cambio => 'Gear Oil';
+
+  @override
+  String get cat_trasmissione => 'Transmission / Cables';
+
+  @override
+  String get cat_freni_gomme => 'Brakes / Tires';
+
+  @override
+  String get cat_carrozzeria => 'Body / Frame';
+
+  @override
+  String get cat_altro => 'Other';
+
+  @override
+  String get confirmTitle => 'Confirm';
+
+  @override
+  String get confirmDeleteMaintenance =>
+      'Are you sure you want to delete this service?';
+
+  @override
+  String get maintenanceSaved => 'Service saved!';
+
+  @override
+  String get maintenanceDeleted => 'Service deleted';
+
+  @override
+  String get backupShareSubject => 'MyScooter Backup';
+
+  @override
+  String get backupShareText => 'MyScooter Backup (Data + Photos)';
 }

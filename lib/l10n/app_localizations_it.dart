@@ -373,4 +373,108 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get distributorePin => 'Distributore';
+
+  @override
+  String get registroManutenzione => 'Registro Manutenzione';
+
+  @override
+  String get nessunaManutenzione => 'Nessuna manutenzione registrata.';
+
+  @override
+  String get aggiungiIntervento => 'Aggiungi Intervento';
+
+  @override
+  String get nuovoIntervento => 'Nuovo Intervento';
+
+  @override
+  String get dettagliIntervento => 'Dettagli Intervento';
+
+  @override
+  String get modificaIntervento => 'Modifica Intervento';
+
+  @override
+  String get titoloIntervento => 'Titolo (es. Sostituzione candela)';
+
+  @override
+  String get dataIntervento => 'Data';
+
+  @override
+  String get categoria => 'Categoria';
+
+  @override
+  String get specificaAltro => 'Specifica categoria';
+
+  @override
+  String get costoOpzionale => 'Costo (Opzionale)';
+
+  @override
+  String get noteDettagli => 'Note / Dettagli';
+
+  @override
+  String get fotoRicevuta => 'Foto / Ricevuta';
+
+  @override
+  String get selezionaFoto => 'Seleziona un\'immagine';
+
+  @override
+  String get rimuoviFoto => 'Rimuovi foto';
+
+  @override
+  String get datiMancanti => 'Dati mancanti';
+
+  @override
+  String get erroreDatiMessaggio =>
+      'Inserisci un titolo e i chilometri validi per continuare.';
+
+  @override
+  String get infoPrincipali => 'Informazioni Principali';
+
+  @override
+  String get dettagliAggiuntivi => 'Dettagli Aggiuntivi';
+
+  @override
+  String get notePlaceholder => 'Aggiungi note sull\'intervento...';
+
+  @override
+  String get cat_motore => 'Motore';
+
+  @override
+  String get cat_accensione => 'Accensione / Elettrica';
+
+  @override
+  String get cat_alimentazione => 'Alimentazione';
+
+  @override
+  String get cat_olio_cambio => 'Olio Cambio';
+
+  @override
+  String get cat_trasmissione => 'Trasmissione / Cavi';
+
+  @override
+  String get cat_freni_gomme => 'Freni / Gomme';
+
+  @override
+  String get cat_carrozzeria => 'Carrozzeria / Telaio';
+
+  @override
+  String get cat_altro => 'Altro';
+
+  @override
+  String get confirmTitle => 'Conferma';
+
+  @override
+  String get confirmDeleteMaintenance =>
+      'Sei sicuro di voler eliminare questo intervento?';
+
+  @override
+  String get maintenanceSaved => 'Intervento salvato!';
+
+  @override
+  String get maintenanceDeleted => 'Intervento eliminato';
+
+  @override
+  String get backupShareSubject => 'Backup MyScooter';
+
+  @override
+  String get backupShareText => 'Backup MyScooter (Dati + Foto)';
 }

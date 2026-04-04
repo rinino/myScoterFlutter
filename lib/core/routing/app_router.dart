@@ -12,6 +12,10 @@ import '../../features/settings/screens/backup_restore_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../theme/theme_service.dart';
 import 'package:myscooter/features/rifornimento/screens/location_picker_screen.dart';
+import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
+import 'package:myscooter/features/manutenzione/screens/maintenance_list_screen.dart';
+import 'package:myscooter/features/manutenzione/screens/add_edit_maintenance_screen.dart';
+import 'package:myscooter/features/manutenzione/screens/maintenance_detail_screen.dart';
 
 // Creiamo una funzione che restituisce il router configurato
 GoRouter createRouter(ThemeService themeService) {
@@ -88,6 +92,35 @@ GoRouter createRouter(ThemeService themeService) {
           return RifornimentoDetailScreen(scooterId: scooterId, rifornimento: rifornimento);
         },
       ),
+
+      // --- ROTTE MANUTENZIONE ---
+      GoRoute(
+        path: '/maintenance/:scooterId',
+        builder: (context, state) {
+          final scooter = state.extra as Scooter;
+          return MaintenanceListScreen(scooter: scooter);
+        },
+      ),
+      GoRoute(
+        path: '/add-edit-maintenance',
+        builder: (context, state) {
+          // Passiamo sia l'ID dello scooter che l'eventuale manutenzione da modificare
+          final extra = state.extra as Map<String, dynamic>;
+          final scooterId = extra['scooterId'] as int;
+          final manutenzione = extra['manutenzione'] as Manutenzione?;
+          return AddEditMaintenanceScreen(scooterId: scooterId, manutenzione: manutenzione);
+        },
+      ),
+      GoRoute(
+        path: '/maintenance-detail',
+        builder: (context, state) {
+          final manutenzione = state.extra as Manutenzione;
+          return MaintenanceDetailScreen(manutenzione: manutenzione);
+        },
+      ),
+
+
+
     ],
   );
 }

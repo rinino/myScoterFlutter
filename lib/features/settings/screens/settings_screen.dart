@@ -84,6 +84,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         listenable: widget.themeService,
         builder: (context, _) {
           return ListView(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 24),
             children: [
               // --- SEZIONE ASPETTO ---
               _buildSectionHeader(l10n.aspetto.toUpperCase()),

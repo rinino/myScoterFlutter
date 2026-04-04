@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart'; // Necessario per SystemChrome
 
 // Import corretti per l'architettura
 import 'package:myscooter/core/theme/theme_service.dart';
@@ -10,11 +11,23 @@ import 'package:myscooter/core/providers/locale_provider.dart';
 
 import 'l10n/app_localizations.dart';
 
-
-
 void main() async {
   // ADR: Necessario per SharedPreferences e l'inizializzazione nativa
   WidgetsFlutterBinding.ensureInitialized();
+
+  // FIX EDGE-TO-EDGE:
+  // 1. Abilitiamo la modalità edge-to-edge a livello di sistema.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // 2. Impostiamo lo stile iniziale (Barre trasparenti).
+  // Flutter 3.10+ e Android 14+ preferiscono la trasparenza gestita dal framework.
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
 
   final themeService = ThemeService();
   final router = createRouter(themeService);
@@ -26,7 +39,6 @@ void main() async {
   );
 }
 
-// 1. Cambiato in ConsumerWidget per "ascoltare" i provider
 class MyApp extends ConsumerWidget {
   final ThemeService themeService;
   final GoRouter router;
@@ -35,8 +47,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 2. ASCOLTIAMO il localeProvider.
-    // Quando chiamerai .setLocale() nelle impostazioni, questa riga farà scattare il rebuild.
     final selectedLocale = ref.watch(localeProvider);
 
     return ListenableBuilder(
@@ -44,30 +54,42 @@ class MyApp extends ConsumerWidget {
       builder: (context, _) {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
-
-          // 3. APPLICHIAMO LA LINGUA DINAMICA
           locale: selectedLocale,
-
           onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-
           themeMode: themeService.themeMode,
+
+          // TEMA CHIARO
           theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              colorSchemeSeed: Colors.blue
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorSchemeSeed: Colors.blue,
+            // FIX: Gestione corretta delle icone status bar nel tema chiaro
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarIconBrightness: Brightness.dark, // Icone nere su sfondo chiaro
+                statusBarBrightness: Brightness.light,    // Per iOS
+                systemNavigationBarIconBrightness: Brightness.dark,
+              ),
+            ),
           ),
+
+          // TEMA SCURO
           darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              colorSchemeSeed: Colors.blue
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorSchemeSeed: Colors.blue,
+            // FIX: Gestione corretta delle icone status bar nel tema scuro
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarIconBrightness: Brightness.light, // Icone bianche su sfondo scuro
+                statusBarBrightness: Brightness.dark,     // Per iOS
+                systemNavigationBarIconBrightness: Brightness.light,
+              ),
+            ),
           ),
 
           routerConfig: router,
-
-          // 4. CONFIGURAZIONE DELEGATES (Semplificata)
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-
-          // Legge le lingue supportate dai file .arb (it, en)
           supportedLocales: AppLocalizations.supportedLocales,
         );
       },
