@@ -14,7 +14,7 @@ void main() {
     final themeService = ThemeService();
 
     // 3. Creiamo l'istanza del router che abbiamo definito in app_router.dart
-    final router = createRouter(themeService);
+    final router = createRouter(themeService, true);
 
     // 4. Avviamo l'app avvolgendola in ProviderScope e passando il router valido
     await tester.pumpWidget(

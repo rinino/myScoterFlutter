@@ -185,5 +185,24 @@
     "docPatente": "Patente",
     "documentSaved": "Documento salvato!",
     "documentDeleted": "Documento eliminato",
-    "aggiungi": "Aggiungi"
+    "aggiungi": "Aggiungi",
+
+    "esportaPDF": "Esporta Report PDF",
+    "reportDi": "Report di",
+    "totaleManutenzioni": "Totale Manutenzioni:",
+    "totaleRifornimenti": "Totale Rifornimenti:",
+    "litriConsumati": "Litri Consumati",
+    "costoTotaleGestione": "Costo Totale Gestione",
+    "generatoDa": "Generato da myScooter",
+    "pag": "Pag.",
+
+    "onboardingTitle1": "Il tuo Garage Virtuale",
+    "onboardingDesc1": "Gestisci tutte le tue Vespe e i tuoi scooter in un'unica app, sempre a portata di mano.",
+    "onboardingTitle2": "Tieni traccia dei Rifornimenti",
+    "onboardingDesc2": "Registra i pieni e monitora i consumi. Calcola automaticamente litri, costi e medie.",
+    "onboardingTitle3": "Il tuo Portadocumenti",
+    "onboardingDesc3": "Salva libretto, assicurazione e altri documenti. Ricevi notifiche automatiche prima delle scadenze!",
+    "salta": "Salta",
+    "avanti": "Avanti",
+    "inizia": "Inizia"
 }

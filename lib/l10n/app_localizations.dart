@@ -1117,6 +1117,108 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Aggiungi'**
   String get aggiungi;
+
+  /// No description provided for @esportaPDF.
+  ///
+  /// In it, this message translates to:
+  /// **'Esporta Report PDF'**
+  String get esportaPDF;
+
+  /// No description provided for @reportDi.
+  ///
+  /// In it, this message translates to:
+  /// **'Report di'**
+  String get reportDi;
+
+  /// No description provided for @totaleManutenzioni.
+  ///
+  /// In it, this message translates to:
+  /// **'Totale Manutenzioni:'**
+  String get totaleManutenzioni;
+
+  /// No description provided for @totaleRifornimenti.
+  ///
+  /// In it, this message translates to:
+  /// **'Totale Rifornimenti:'**
+  String get totaleRifornimenti;
+
+  /// No description provided for @litriConsumati.
+  ///
+  /// In it, this message translates to:
+  /// **'Litri Consumati'**
+  String get litriConsumati;
+
+  /// No description provided for @costoTotaleGestione.
+  ///
+  /// In it, this message translates to:
+  /// **'Costo Totale Gestione'**
+  String get costoTotaleGestione;
+
+  /// No description provided for @generatoDa.
+  ///
+  /// In it, this message translates to:
+  /// **'Generato da myScooter'**
+  String get generatoDa;
+
+  /// No description provided for @pag.
+  ///
+  /// In it, this message translates to:
+  /// **'Pag.'**
+  String get pag;
+
+  /// No description provided for @onboardingTitle1.
+  ///
+  /// In it, this message translates to:
+  /// **'Il tuo Garage Virtuale'**
+  String get onboardingTitle1;
+
+  /// No description provided for @onboardingDesc1.
+  ///
+  /// In it, this message translates to:
+  /// **'Gestisci tutte le tue Vespe e i tuoi scooter in un\'unica app, sempre a portata di mano.'**
+  String get onboardingDesc1;
+
+  /// No description provided for @onboardingTitle2.
+  ///
+  /// In it, this message translates to:
+  /// **'Tieni traccia dei Rifornimenti'**
+  String get onboardingTitle2;
+
+  /// No description provided for @onboardingDesc2.
+  ///
+  /// In it, this message translates to:
+  /// **'Registra i pieni e monitora i consumi. Calcola automaticamente litri, costi e medie.'**
+  String get onboardingDesc2;
+
+  /// No description provided for @onboardingTitle3.
+  ///
+  /// In it, this message translates to:
+  /// **'Il tuo Portadocumenti'**
+  String get onboardingTitle3;
+
+  /// No description provided for @onboardingDesc3.
+  ///
+  /// In it, this message translates to:
+  /// **'Salva libretto, assicurazione e altri documenti. Ricevi notifiche automatiche prima delle scadenze!'**
+  String get onboardingDesc3;
+
+  /// No description provided for @salta.
+  ///
+  /// In it, this message translates to:
+  /// **'Salta'**
+  String get salta;
+
+  /// No description provided for @avanti.
+  ///
+  /// In it, this message translates to:
+  /// **'Avanti'**
+  String get avanti;
+
+  /// No description provided for @inizia.
+  ///
+  /// In it, this message translates to:
+  /// **'Inizia'**
+  String get inizia;
 }
 
 class _AppLocalizationsDelegate

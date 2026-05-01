@@ -531,4 +531,58 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aggiungi => 'Aggiungi';
+
+  @override
+  String get esportaPDF => 'Esporta Report PDF';
+
+  @override
+  String get reportDi => 'Report di';
+
+  @override
+  String get totaleManutenzioni => 'Totale Manutenzioni:';
+
+  @override
+  String get totaleRifornimenti => 'Totale Rifornimenti:';
+
+  @override
+  String get litriConsumati => 'Litri Consumati';
+
+  @override
+  String get costoTotaleGestione => 'Costo Totale Gestione';
+
+  @override
+  String get generatoDa => 'Generato da myScooter';
+
+  @override
+  String get pag => 'Pag.';
+
+  @override
+  String get onboardingTitle1 => 'Il tuo Garage Virtuale';
+
+  @override
+  String get onboardingDesc1 =>
+      'Gestisci tutte le tue Vespe e i tuoi scooter in un\'unica app, sempre a portata di mano.';
+
+  @override
+  String get onboardingTitle2 => 'Tieni traccia dei Rifornimenti';
+
+  @override
+  String get onboardingDesc2 =>
+      'Registra i pieni e monitora i consumi. Calcola automaticamente litri, costi e medie.';
+
+  @override
+  String get onboardingTitle3 => 'Il tuo Portadocumenti';
+
+  @override
+  String get onboardingDesc3 =>
+      'Salva libretto, assicurazione e altri documenti. Ricevi notifiche automatiche prima delle scadenze!';
+
+  @override
+  String get salta => 'Salta';
+
+  @override
+  String get avanti => 'Avanti';
+
+  @override
+  String get inizia => 'Inizia';
 }

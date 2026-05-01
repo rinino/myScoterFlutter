@@ -9,18 +9,18 @@ import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/routing/app_router.dart';
 import 'package:myscooter/core/providers/locale_provider.dart';
 
+import 'core/notifications/notification_service.dart';
 import 'l10n/app_localizations.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 void main() async {
-  // ADR: Necessario per SharedPreferences e l'inizializzazione nativa
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FIX EDGE-TO-EDGE:
-  // 1. Abilitiamo la modalità edge-to-edge a livello di sistema.
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Inizializza notifiche e impostazioni grafiche...
+  await NotificationService().init();
 
-  // 2. Impostiamo lo stile iniziale (Barre trasparenti).
-  // Flutter 3.10+ e Android 14+ preferiscono la trasparenza gestita dal framework.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.transparent,
@@ -29,8 +29,14 @@ void main() async {
     ),
   );
 
+  // LEGGE LA PREFERENZA DELL'ONBOARDING
+  final prefs = await SharedPreferences.getInstance();
+  final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
   final themeService = ThemeService();
-  final router = createRouter(themeService);
+
+  // PASSALA AL ROUTER
+  final router = createRouter(themeService, hasSeenOnboarding);
 
   runApp(
     ProviderScope(

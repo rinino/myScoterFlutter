@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
+import 'package:myscooter/core/providers/currency_provider.dart';
+import 'package:myscooter/core/services/pdf_service.dart';
 
 // IMPORT WIDGETS
 import '../widgets/scooter_header_image.dart';
@@ -12,7 +14,7 @@ import '../widgets/scooter_info_card.dart';
 import '../widgets/image_viewer_page.dart';
 import '../widgets/refuelings_action_card.dart';
 import '../widgets/maintenance_action_card.dart';
-// ADR: Import aggiunto per la Fase 1
+// Integrazione Fase 1: Carosello Documenti
 import '../../documenti/widgets/documenti_carousel_view.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -29,6 +31,7 @@ class ScooterDetailScreen extends ConsumerStatefulWidget {
 
 class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   bool _isProcessingAction = false;
+  bool _isGeneratingPDF = false; // Stato per il caricamento del PDF
   late Scooter _currentScooter;
 
   @override
@@ -55,7 +58,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
 
   Future<void> _navigateToEditScooter() async {
     final l10n = AppLocalizations.of(context)!;
-    // La schermata di modifica restituisce lo scooter aggiornato
     final Scooter? updatedScooter = await context.push<Scooter?>('/add-edit-scooter', extra: _currentScooter);
 
     if (updatedScooter != null) {
@@ -73,6 +75,33 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
       } finally {
         if (mounted) setState(() => _isProcessingAction = false);
       }
+    }
+  }
+
+  // Logica Fase 2: Generazione e condivisione del PDF
+  Future<void> _generaPDF() async {
+    setState(() => _isGeneratingPDF = true);
+    try {
+      final l10n = AppLocalizations.of(context)!;
+      final localeCode = Localizations.localeOf(context).languageCode;
+      final currency = ref.read(currencyProvider);
+
+      // Recupero dati per il report
+      final rifornimenti = await ref.read(rifornimentoRepoProvider).getRifornimentiForScooter(_currentScooter.id!);
+      final manutenzioni = await ref.read(manutenzioneRepoProvider).getManutenzioni(_currentScooter.id!);
+
+      await PdfService.generateAndShareReport(
+        scooter: _currentScooter,
+        rifornimenti: rifornimenti,
+        manutenzioni: manutenzioni,
+        currencySymbol: currency,
+        l10n: l10n,
+        localeCode: localeCode,
+      );
+    } catch (e) {
+      if (mounted) ref.read(messageProvider.notifier).show(e.toString(), type: MessageType.error);
+    } finally {
+      if (mounted) setState(() => _isGeneratingPDF = false);
     }
   }
 
@@ -114,7 +143,7 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
                     // Card Informazioni Generali
                     ScooterInfoCard(scooter: _currentScooter),
 
-                    // ADR: Sezione Documenti aggiunta per la Fase 1
+                    // Integrazione Fase 1: Sezione Documenti
                     DocumentiCarouselView(scooterId: _currentScooter.id!),
                     const SizedBox(height: 16),
 
@@ -123,11 +152,37 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
                     const SizedBox(height: 12),
                     MaintenanceActionCard(scooter: _currentScooter),
 
-                    const SizedBox(height: 32),
+                    // Spazio extra per non coprire il contenuto con il bottone flottante
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
             ),
+
+            // Integrazione Fase 2: Bottone Esporta PDF (Ancorato in basso)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton.icon(
+                  onPressed: _isGeneratingPDF || isUIBlocked ? null : _generaPDF,
+                  icon: _isGeneratingPDF
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.picture_as_pdf, color: Colors.white),
+                  label: Text(
+                    l10n.esportaPDF,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                  ),
+                ),
+              ),
+            ),
+
             if (isUIBlocked)
               const Center(child: CircularProgressIndicator()),
           ],

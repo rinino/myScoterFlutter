@@ -17,15 +17,23 @@ import 'package:myscooter/features/manutenzione/screens/maintenance_list_screen.
 import 'package:myscooter/features/manutenzione/screens/add_edit_maintenance_screen.dart';
 import 'package:myscooter/features/manutenzione/screens/maintenance_detail_screen.dart';
 
+// ADR: Nuovi import aggiunti per le fasi precedenti (Documenti e Onboarding)
 import 'package:myscooter/features/documenti/models/documento.dart';
 import 'package:myscooter/features/documenti/screens/documento_detail_screen.dart';
 import 'package:myscooter/features/documenti/screens/add_edit_documento_screen.dart';
+import 'package:myscooter/features/onboarding/screens/onboarding_screen.dart';
 
 // Creiamo una funzione che restituisce il router configurato
-GoRouter createRouter(ThemeService themeService) {
+// ADR: Parametro hasSeenOnboarding aggiunto per gestire la rotta iniziale
+GoRouter createRouter(ThemeService themeService, bool hasSeenOnboarding) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: hasSeenOnboarding ? '/' : '/onboarding',
     routes: [
+      // ADR: Rotta Onboarding
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       // Rotta 1: Home
       GoRoute(
         path: '/',
@@ -44,7 +52,6 @@ GoRouter createRouter(ThemeService themeService) {
       GoRoute(
         path: '/add-edit-scooter',
         builder: (context, state) {
-          // Recuperiamo l'eventuale scooter passato come 'extra' per la modifica
           final scooter = state.extra as Scooter?;
           return AddEditScooterScreen(scooter: scooter);
         },
@@ -53,7 +60,6 @@ GoRouter createRouter(ThemeService themeService) {
         path: '/location-picker',
         name: 'location-picker',
         builder: (context, state) {
-          // Estraiamo le coordinate iniziali se ci sono (passate come 'extra')
           final extra = state.extra as Map<String, double?>?;
           final lat = extra?['lat'];
           final lon = extra?['lon'];
@@ -76,7 +82,7 @@ GoRouter createRouter(ThemeService themeService) {
           return RefuelingsScreen(scooter: scooter);
         },
       ),
-      // Rotta 5: Aggiungi o Modifica Rifornimento (passiamo l'id nello URL e l'oggetto in extra)
+      // Rotta 5: Aggiungi o Modifica Rifornimento
       GoRoute(
         path: '/add-edit-rifornimento/:scooterId',
         name: 'add-edit-rifornimento',
@@ -108,7 +114,6 @@ GoRouter createRouter(ThemeService themeService) {
       GoRoute(
         path: '/add-edit-maintenance',
         builder: (context, state) {
-          // Passiamo sia l'ID dello scooter che l'eventuale manutenzione da modificare
           final extra = state.extra as Map<String, dynamic>;
           final scooterId = extra['scooterId'] as int;
           final manutenzione = extra['manutenzione'] as Manutenzione?;
@@ -123,7 +128,7 @@ GoRouter createRouter(ThemeService themeService) {
         },
       ),
 
-      // --- ROTTE DOCUMENTI ---
+      // ADR: --- ROTTE DOCUMENTI (Integrazione Fase 1) ---
       GoRoute(
         path: '/documento-detail',
         builder: (context, state) {
@@ -140,9 +145,6 @@ GoRouter createRouter(ThemeService themeService) {
           return AddEditDocumentoScreen(scooterId: scooterId, documento: documento);
         },
       ),
-
-
-
     ],
   );
 }
