@@ -1,6 +1,7 @@
 import 'package:myscooter/features/scooter/model/scooter.dart';
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
-import 'package:myscooter/features/manutenzione/models/manutenzione.dart'; // <-- Nuovo import
+import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
+import 'package:myscooter/features/documenti/models/documento.dart'; // <-- Nuovo import
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -26,7 +27,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4, // *** INCREMENTATO A VERSIONE 4 ***
+      version: 5, // *** INCREMENTATO A VERSIONE 5 ***
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -48,7 +49,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Creazione della tabella rifornimenti AGGIORNATA
+    // Creazione della tabella rifornimenti
     await db.execute('''
       CREATE TABLE rifornimenti(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,8 +69,11 @@ class DatabaseHelper {
       )
     ''');
 
-    // Creazione della tabella manutenzioni NUOVA
+    // Creazione della tabella manutenzioni
     await _createManutenzioniTable(db);
+
+    // Creazione della tabella documenti
+    await _createDocumentiTable(db);
   }
 
   Future _createManutenzioniTable(Database db) async {
@@ -90,8 +94,23 @@ class DatabaseHelper {
     ''');
   }
 
+  Future _createDocumentiTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE documenti(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        idScooter INTEGER NOT NULL,
+        tipo TEXT NOT NULL,
+        tipoCustom TEXT,
+        dataScadenza INTEGER,
+        note TEXT,
+        nomeFoto TEXT,
+        FOREIGN KEY (idScooter) REFERENCES scooters(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Migrazione da v1 a v2 (Creazione tabella rifornimenti se non esisteva)
+    // Migrazione da v1 a v2
     if (oldVersion < 2) {
       await db.execute('''
         CREATE TABLE rifornimenti(
@@ -109,22 +128,27 @@ class DatabaseHelper {
       ''');
     }
 
-    // Migrazione da v2 a v3 (Aggiunta colonne costo, note, GPS ai rifornimenti)
+    // Migrazione da v2 a v3
     if (oldVersion < 3) {
-      // Usiamo una transazione in modo che se un'aggiunta fallisce, falliscono tutte
       await db.transaction((txn) async {
         await txn.execute("ALTER TABLE rifornimenti ADD COLUMN costo REAL;");
         await txn.execute("ALTER TABLE rifornimenti ADD COLUMN note TEXT;");
         await txn.execute("ALTER TABLE rifornimenti ADD COLUMN latitudine REAL;");
         await txn.execute("ALTER TABLE rifornimenti ADD COLUMN longitudine REAL;");
       });
-      print("Migrazione a V3 completata: aggiunte colonne costo, note, latitudine e longitudine.");
+      print("Migrazione a V3 completata.");
     }
 
-    // Migrazione da v3 a v4 (Nuova tabella manutenzioni)
+    // Migrazione da v3 a v4
     if (oldVersion < 4) {
       await _createManutenzioniTable(db);
       print("Migrazione a V4 completata: creata tabella manutenzioni.");
+    }
+
+    // Migrazione da v4 a v5
+    if (oldVersion < 5) {
+      await _createDocumentiTable(db);
+      print("Migrazione a V5 completata: creata tabella documenti.");
     }
   }
 
@@ -132,7 +156,9 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  // --- Metodi CRUD per Scooter (INVARIATI) ---
+  // ==========================================
+  // --- Metodi CRUD per Scooter ---
+  // ==========================================
   Future<int> insertScooter(Scooter scooter) async {
     final db = await database;
     return await db.insert('scooters', scooter.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -196,10 +222,13 @@ class DatabaseHelper {
       final db = _database!;
       _database = null; // Fondamentale!
       await db.close();
-      print("Database chiuso in sicurezza."); // Usa print normale
+      print("Database chiuso in sicurezza.");
     }
   }
-  // --- Metodi CRUD per Rifornimento (INVARIATI) ---
+
+  // ==========================================
+  // --- Metodi CRUD per Rifornimento ---
+  // ==========================================
   Future<int?> insertRifornimento(Rifornimento rifornimento) async {
     final db = await database;
     try {
@@ -303,8 +332,9 @@ class DatabaseHelper {
     return maps.isNotEmpty ? Rifornimento.fromMap(maps.first) : null;
   }
 
-  // --- NUOVI Metodi CRUD per Manutenzione ---
-
+  // ==========================================
+  // --- Metodi CRUD per Manutenzione ---
+  // ==========================================
   Future<int?> insertManutenzione(Manutenzione manutenzione) async {
     final db = await database;
     try {
@@ -352,6 +382,72 @@ class DatabaseHelper {
     try {
       return await db.delete(
         'manutenzioni',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // ==========================================
+  // --- Metodi CRUD per Documenti ---
+  // ==========================================
+  Future<int?> insertDocumento(Documento documento) async {
+    final db = await database;
+    try {
+      return await db.insert(
+        'documenti',
+        documento.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Documento>> getDocumenti(int scooterId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'documenti',
+      where: 'idScooter = ?',
+      whereArgs: [scooterId],
+      orderBy: 'dataScadenza ASC', // I più imminenti per primi
+    );
+
+    // Ordiniamo a mano per mettere quelli senza scadenza in fondo
+    var docs = List.generate(maps.length, (i) => Documento.fromMap(maps[i]));
+    docs.sort((a, b) {
+      if (a.dataScadenza == null && b.dataScadenza == null) return 0;
+      if (a.dataScadenza == null) return 1;
+      if (b.dataScadenza == null) return -1;
+      return a.dataScadenza!.compareTo(b.dataScadenza!);
+    });
+
+    return docs;
+  }
+
+  Future<bool> updateDocumento(Documento documento) async {
+    final db = await database;
+    if (documento.id == null) return false;
+    try {
+      final changes = await db.update(
+        'documenti',
+        documento.toMap(),
+        where: 'id = ?',
+        whereArgs: [documento.id],
+      );
+      return changes > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<int> deleteDocumento(int id) async {
+    final db = await database;
+    try {
+      return await db.delete(
+        'documenti',
         where: 'id = ?',
         whereArgs: [id],
       );

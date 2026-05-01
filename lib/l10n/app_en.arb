@@ -166,5 +166,24 @@
   "maintenanceDeleted": "Service deleted",
 
   "backupShareSubject": "MyScooter Backup",
-  "backupShareText": "MyScooter Backup (Data + Photos)"
+  "backupShareText": "MyScooter Backup (Data + Photos)",
+
+  "documentiScadenze": "Documents & Deadlines",
+  "nessunDocumento": "No document saved",
+  "scadeIl": "Expiry:",
+  "scaduto": "Expired!",
+  "inScadenza": "Expiring soon",
+  "senzaScadenza": "No expiry date",
+  "tipoDocumento": "Document Type",
+  "haScadenza": "Does it have an expiry date?",
+  "dataScadenza": "Expiry Date",
+  "docLibretto": "Registration",
+  "docAssicurazione": "Insurance",
+  "docRevisione": "Inspection",
+  "docBollo": "Road Tax",
+  "docCertificato": "Historical Certificate",
+  "docPatente": "Driver's License",
+  "documentSaved": "Document saved!",
+  "documentDeleted": "Document deleted",
+  "aggiungi": "Add"
 }

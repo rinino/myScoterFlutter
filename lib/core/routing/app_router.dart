@@ -17,6 +17,10 @@ import 'package:myscooter/features/manutenzione/screens/maintenance_list_screen.
 import 'package:myscooter/features/manutenzione/screens/add_edit_maintenance_screen.dart';
 import 'package:myscooter/features/manutenzione/screens/maintenance_detail_screen.dart';
 
+import 'package:myscooter/features/documenti/models/documento.dart';
+import 'package:myscooter/features/documenti/screens/documento_detail_screen.dart';
+import 'package:myscooter/features/documenti/screens/add_edit_documento_screen.dart';
+
 // Creiamo una funzione che restituisce il router configurato
 GoRouter createRouter(ThemeService themeService) {
   return GoRouter(
@@ -116,6 +120,24 @@ GoRouter createRouter(ThemeService themeService) {
         builder: (context, state) {
           final manutenzione = state.extra as Manutenzione;
           return MaintenanceDetailScreen(manutenzione: manutenzione);
+        },
+      ),
+
+      // --- ROTTE DOCUMENTI ---
+      GoRoute(
+        path: '/documento-detail',
+        builder: (context, state) {
+          final documento = state.extra as Documento;
+          return DocumentoDetailScreen(documento: documento);
+        },
+      ),
+      GoRoute(
+        path: '/add-edit-documento',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          final scooterId = extra['scooterId'] as int;
+          final documento = extra['documento'] as Documento?;
+          return AddEditDocumentoScreen(scooterId: scooterId, documento: documento);
         },
       ),
 

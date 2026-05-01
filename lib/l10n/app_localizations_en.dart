@@ -476,4 +476,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupShareText => 'MyScooter Backup (Data + Photos)';
+
+  @override
+  String get documentiScadenze => 'Documents & Deadlines';
+
+  @override
+  String get nessunDocumento => 'No document saved';
+
+  @override
+  String get scadeIl => 'Expiry:';
+
+  @override
+  String get scaduto => 'Expired!';
+
+  @override
+  String get inScadenza => 'Expiring soon';
+
+  @override
+  String get senzaScadenza => 'No expiry date';
+
+  @override
+  String get tipoDocumento => 'Document Type';
+
+  @override
+  String get haScadenza => 'Does it have an expiry date?';
+
+  @override
+  String get dataScadenza => 'Expiry Date';
+
+  @override
+  String get docLibretto => 'Registration';
+
+  @override
+  String get docAssicurazione => 'Insurance';
+
+  @override
+  String get docRevisione => 'Inspection';
+
+  @override
+  String get docBollo => 'Road Tax';
+
+  @override
+  String get docCertificato => 'Historical Certificate';
+
+  @override
+  String get docPatente => 'Driver\'s License';
+
+  @override
+  String get documentSaved => 'Document saved!';
+
+  @override
+  String get documentDeleted => 'Document deleted';
+
+  @override
+  String get aggiungi => 'Add';
 }

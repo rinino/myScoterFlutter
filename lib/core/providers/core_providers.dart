@@ -5,6 +5,7 @@ import 'package:myscooter/features/rifornimento/repositories/rifornimento_reposi
 import 'package:myscooter/features/scooter/repositories/scooter_repository.dart';
 
 import '../../features/manutenzione/repositories/manutenzione_repository.dart';
+import 'package:myscooter/features/documenti/repositories/documento_repository.dart';
 
 // 1. Provider globale del Database
 final databaseProvider = Provider<DatabaseHelper>((ref) {
@@ -28,4 +29,11 @@ final rifornimentoRepoProvider = Provider<RifornimentoRepository>((ref) {
 final manutenzioneRepoProvider = Provider<ManutenzioneRepository>((ref) {
   final dbHelper = ref.read(databaseProvider);
   return ManutenzioneRepository(dbHelper);
+});
+
+
+// 5. Provider del repository Documenti
+final documentoRepoProvider = Provider<DocumentoRepository>((ref) {
+  final dbHelper = ref.read(databaseProvider);
+  return DocumentoRepository(dbHelper);
 });

@@ -12,6 +12,8 @@ import '../widgets/scooter_info_card.dart';
 import '../widgets/image_viewer_page.dart';
 import '../widgets/refuelings_action_card.dart';
 import '../widgets/maintenance_action_card.dart';
+// ADR: Import aggiunto per la Fase 1
+import '../../documenti/widgets/documenti_carousel_view.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
@@ -53,7 +55,7 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
 
   Future<void> _navigateToEditScooter() async {
     final l10n = AppLocalizations.of(context)!;
-    // Supponiamo che la schermata di modifica restituisca lo scooter aggiornato
+    // La schermata di modifica restituisce lo scooter aggiornato
     final Scooter? updatedScooter = await context.push<Scooter?>('/add-edit-scooter', extra: _currentScooter);
 
     if (updatedScooter != null) {
@@ -89,10 +91,9 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
           ),
         ],
       ),
-      // Applichiamo SafeArea per gestire l'Edge-to-Edge
       body: SafeArea(
-        top: false, // La AppBar protegge già la parte superiore
-        bottom: true, // Protegge il fondo dalle gesture di sistema
+        top: false,
+        bottom: true,
         child: Stack(
           children: [
             AbsorbPointer(
@@ -112,20 +113,21 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
 
                     // Card Informazioni Generali
                     ScooterInfoCard(scooter: _currentScooter),
-                    const SizedBox(height: 24),
+
+                    // ADR: Sezione Documenti aggiunta per la Fase 1
+                    DocumentiCarouselView(scooterId: _currentScooter.id!),
+                    const SizedBox(height: 16),
 
                     // Card Azioni Modulari
                     RefuelingsActionCard(scooter: _currentScooter),
                     const SizedBox(height: 12),
                     MaintenanceActionCard(scooter: _currentScooter),
 
-                    // Spazio extra finale per una migliore respirazione visiva
                     const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
-            // Overlay di caricamento
             if (isUIBlocked)
               const Center(child: CircularProgressIndicator()),
           ],

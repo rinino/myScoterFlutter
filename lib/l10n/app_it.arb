@@ -166,5 +166,24 @@
     "maintenanceDeleted": "Intervento eliminato",
 
     "backupShareSubject": "Backup MyScooter",
-    "backupShareText": "Backup MyScooter (Dati + Foto)"
+    "backupShareText": "Backup MyScooter (Dati + Foto)",
+
+    "documentiScadenze": "Documenti e Scadenze",
+    "nessunDocumento": "Nessun documento salvato",
+    "scadeIl": "Scadenza:",
+    "scaduto": "Scaduto!",
+    "inScadenza": "In scadenza",
+    "senzaScadenza": "Nessuna scadenza",
+    "tipoDocumento": "Tipo di Documento",
+    "haScadenza": "Ha una data di scadenza?",
+    "dataScadenza": "Data di Scadenza",
+    "docLibretto": "Libretto",
+    "docAssicurazione": "Assicurazione",
+    "docRevisione": "Revisione",
+    "docBollo": "Bollo",
+    "docCertificato": "Certificato Storico",
+    "docPatente": "Patente",
+    "documentSaved": "Documento salvato!",
+    "documentDeleted": "Documento eliminato",
+    "aggiungi": "Aggiungi"
 }

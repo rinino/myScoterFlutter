@@ -1009,6 +1009,114 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Backup MyScooter (Dati + Foto)'**
   String get backupShareText;
+
+  /// No description provided for @documentiScadenze.
+  ///
+  /// In it, this message translates to:
+  /// **'Documenti e Scadenze'**
+  String get documentiScadenze;
+
+  /// No description provided for @nessunDocumento.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessun documento salvato'**
+  String get nessunDocumento;
+
+  /// No description provided for @scadeIl.
+  ///
+  /// In it, this message translates to:
+  /// **'Scadenza:'**
+  String get scadeIl;
+
+  /// No description provided for @scaduto.
+  ///
+  /// In it, this message translates to:
+  /// **'Scaduto!'**
+  String get scaduto;
+
+  /// No description provided for @inScadenza.
+  ///
+  /// In it, this message translates to:
+  /// **'In scadenza'**
+  String get inScadenza;
+
+  /// No description provided for @senzaScadenza.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna scadenza'**
+  String get senzaScadenza;
+
+  /// No description provided for @tipoDocumento.
+  ///
+  /// In it, this message translates to:
+  /// **'Tipo di Documento'**
+  String get tipoDocumento;
+
+  /// No description provided for @haScadenza.
+  ///
+  /// In it, this message translates to:
+  /// **'Ha una data di scadenza?'**
+  String get haScadenza;
+
+  /// No description provided for @dataScadenza.
+  ///
+  /// In it, this message translates to:
+  /// **'Data di Scadenza'**
+  String get dataScadenza;
+
+  /// No description provided for @docLibretto.
+  ///
+  /// In it, this message translates to:
+  /// **'Libretto'**
+  String get docLibretto;
+
+  /// No description provided for @docAssicurazione.
+  ///
+  /// In it, this message translates to:
+  /// **'Assicurazione'**
+  String get docAssicurazione;
+
+  /// No description provided for @docRevisione.
+  ///
+  /// In it, this message translates to:
+  /// **'Revisione'**
+  String get docRevisione;
+
+  /// No description provided for @docBollo.
+  ///
+  /// In it, this message translates to:
+  /// **'Bollo'**
+  String get docBollo;
+
+  /// No description provided for @docCertificato.
+  ///
+  /// In it, this message translates to:
+  /// **'Certificato Storico'**
+  String get docCertificato;
+
+  /// No description provided for @docPatente.
+  ///
+  /// In it, this message translates to:
+  /// **'Patente'**
+  String get docPatente;
+
+  /// No description provided for @documentSaved.
+  ///
+  /// In it, this message translates to:
+  /// **'Documento salvato!'**
+  String get documentSaved;
+
+  /// No description provided for @documentDeleted.
+  ///
+  /// In it, this message translates to:
+  /// **'Documento eliminato'**
+  String get documentDeleted;
+
+  /// No description provided for @aggiungi.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi'**
+  String get aggiungi;
 }
 
 class _AppLocalizationsDelegate
