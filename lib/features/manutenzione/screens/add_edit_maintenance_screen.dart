@@ -14,7 +14,7 @@ import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
 class AddEditMaintenanceScreen extends ConsumerStatefulWidget {
-  final int scooterId;
+  final String scooterId;
   final Manutenzione? manutenzione;
 
   const AddEditMaintenanceScreen({
@@ -147,7 +147,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
 
     final nuovaManutenzione = Manutenzione(
       id: widget.manutenzione?.id,
-      idScooter: widget.scooterId,
+      scooterId: widget.scooterId, // FIX: scooterId al posto di idScooter
       data: _data,
       km: km,
       categoria: _categoria,

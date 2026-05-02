@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../../l10n/app_localizations.dart';
 import '../../rifornimento/models/rifornimento.dart';
 
@@ -58,7 +59,8 @@ class RefuelingsListSection extends StatelessWidget {
               },
               child: ListTile(
                 leading: const Icon(Icons.local_gas_station),
-                title: Text(DateFormat.yMMMd(locale).format(DateTime.fromMillisecondsSinceEpoch(rif.dataRifornimento))),
+                // FIX: dataRifornimento è già un DateTime! Rimosso fromMillisecondsSinceEpoch
+                title: Text(DateFormat.yMMMd(locale).format(rif.dataRifornimento)),
                 subtitle: Text('${rif.kmAttuali.toInt()} km - ${rif.mediaConsumo?.toStringAsFixed(2) ?? "N/A"} km/L'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => onRifornimentoTap(rif),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Enum per le categorie di manutenzione (allineato alla versione Swift)
+// Enum per le categorie di manutenzione
 enum CategoriaManutenzione {
   motore,
   accensione,
@@ -42,20 +43,22 @@ extension CategoriaManutenzioneExt on CategoriaManutenzione {
 }
 
 class Manutenzione {
-  final int? id;
-  final int idScooter;
-  final DateTime data;
-  final double km;
-  final CategoriaManutenzione categoria;
-  final String? categoriaCustom;
-  final String titolo;
-  final double? costo;
-  final String? note;
-  final String? nomeFoto;
+  String? id;
+  String? userId;
+  String scooterId; // Allineato a Swift (era idScooter int)
+  DateTime data;
+  double km;
+  CategoriaManutenzione categoria;
+  String? categoriaCustom;
+  String titolo;
+  double? costo;
+  String? note;
+  String? nomeFoto;
 
   Manutenzione({
     this.id,
-    required this.idScooter,
+    this.userId,
+    required this.scooterId,
     required this.data,
     required this.km,
     required this.categoria,
@@ -68,11 +71,11 @@ class Manutenzione {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'idScooter': idScooter,
-      'data': data.millisecondsSinceEpoch, // Come per i rifornimenti, salviamo in millisecondi
+      'userId': userId,
+      'scooterId': scooterId,
+      'data': Timestamp.fromDate(data),
       'km': km,
-      'categoria': categoria.name, // Salviamo il nome dell'enum (es. 'motore')
+      'categoria': categoria.name,
       'categoriaCustom': categoriaCustom,
       'titolo': titolo,
       'costo': costo,
@@ -81,19 +84,19 @@ class Manutenzione {
     };
   }
 
-  factory Manutenzione.fromMap(Map<String, dynamic> map) {
+  factory Manutenzione.fromMap(Map<String, dynamic> map, String documentId) {
     return Manutenzione(
-      id: map['id'],
-      idScooter: map['idScooter'],
-      data: DateTime.fromMillisecondsSinceEpoch(map['data']),
+      id: documentId,
+      userId: map['userId'] as String?,
+      scooterId: map['scooterId'] as String,
+      data: (map['data'] as Timestamp).toDate(),
       km: (map['km'] as num).toDouble(),
-      // Recuperiamo l'enum dal nome stringa salvato nel DB
       categoria: CategoriaManutenzione.values.byName(map['categoria']),
-      categoriaCustom: map['categoriaCustom'],
-      titolo: map['titolo'],
+      categoriaCustom: map['categoriaCustom'] as String?,
+      titolo: map['titolo'] as String,
       costo: map['costo'] != null ? (map['costo'] as num).toDouble() : null,
-      note: map['note'],
-      nomeFoto: map['nomeFoto'],
+      note: map['note'] as String?,
+      nomeFoto: map['nomeFoto'] as String?,
     );
   }
 }

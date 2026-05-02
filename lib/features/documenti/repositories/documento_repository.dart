@@ -1,24 +1,63 @@
-import 'package:myscooter/core/database/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:myscooter/features/documenti/models/documento.dart';
 
 class DocumentoRepository {
-  final DatabaseHelper _dbHelper;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String _collectionName = 'documenti';
 
-  DocumentoRepository(this._dbHelper);
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  Future<int?> insertDocumento(Documento documento) async {
-    return await _dbHelper.insertDocumento(documento);
+  Future<String?> insertDocumento(Documento documento) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    documento.userId = userId;
+    final ref = await _db.collection(_collectionName).add(documento.toMap());
+    return ref.id;
   }
 
-  Future<List<Documento>> getDocumenti(int scooterId) async {
-    return await _dbHelper.getDocumenti(scooterId);
+  Future<List<Documento>> getDocumenti(String scooterId) async {
+    final userId = _currentUserId;
+    if (userId == null) return [];
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('scooterId', isEqualTo: scooterId)
+        .orderBy('dataScadenza', descending: false)
+        .get();
+
+    var docs = snapshot.docs.map((doc) => Documento.fromMap(doc.data(), doc.id)).toList();
+
+    // Siccome Firestore non tratta facilmente i "null" negli ordinamenti,
+    // sistemiamo a mano i documenti senza scadenza in fondo
+    docs.sort((a, b) {
+      if (a.dataScadenza == null && b.dataScadenza == null) return 0;
+      if (a.dataScadenza == null) return 1;
+      if (b.dataScadenza == null) return -1;
+      return a.dataScadenza!.compareTo(b.dataScadenza!);
+    });
+
+    return docs;
   }
 
   Future<bool> updateDocumento(Documento documento) async {
-    return await _dbHelper.updateDocumento(documento);
+    if (documento.id == null || _currentUserId == null) return false;
+    try {
+      await _db.collection(_collectionName).doc(documento.id).set(documento.toMap());
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  Future<int> deleteDocumento(int id) async {
-    return await _dbHelper.deleteDocumento(id);
+  Future<int> deleteDocumento(String id) async {
+    try {
+      await _db.collection(_collectionName).doc(id).delete();
+      return 1;
+    } catch (e) {
+      return 0;
+    }
   }
 }

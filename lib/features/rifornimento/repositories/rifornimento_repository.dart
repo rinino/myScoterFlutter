@@ -1,88 +1,100 @@
-import 'package:myscooter/core/database/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 
 class RifornimentoRepository {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String _collectionName = 'rifornimenti';
 
-  final DatabaseHelper _dbHelper;
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  RifornimentoRepository(this._dbHelper);
+  Future<String?> insertRifornimento(Rifornimento rifornimento) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
 
-  // --- Implementazione dei Metodi CRUD per Rifornimento ---
-
-  /// Inserisce un nuovo rifornimento nel database.
-  /// Ritorna l'ID del rifornimento inserito, o null in caso di errore.
-  Future<int?> insertRifornimento(Rifornimento rifornimento) async {
-    try {
-      final id = await _dbHelper.insertRifornimento(rifornimento);
-      return id;
-    } catch (e) {
-      rethrow;
-    }
+    rifornimento.userId = userId;
+    final ref = await _db.collection(_collectionName).add(rifornimento.toMap());
+    return ref.id;
   }
 
-  /// Recupera tutti i rifornimenti per uno specifico ID scooter.
-  Future<List<Rifornimento>> getRifornimentiForScooter(int scooterId) async {
-    try {
-      final rifornimenti = await _dbHelper.getRifornimenti(scooterId);
-      return rifornimenti;
-    } catch (e) {
-      rethrow;
-    }
+  Future<List<Rifornimento>> getRifornimentiForScooter(String scooterId) async {
+    final userId = _currentUserId;
+    if (userId == null) return [];
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('idScooter', isEqualTo: scooterId)
+        .orderBy('dataRifornimento', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) => Rifornimento.fromMap(doc.data(), doc.id)).toList();
   }
 
-  /// Recupera un singolo rifornimento tramite il suo ID.
-  /// Ritorna null se il rifornimento non viene trovato.
-  Future<Rifornimento?> getRifornimentoById(int rifornimentoId) async {
-    try {
-      final rifornimento = await _dbHelper.getRifornimentoById(rifornimentoId);
-      return rifornimento;
-    } catch (e) {
-      rethrow;
+  Future<Rifornimento?> getRifornimentoById(String rifornimentoId) async {
+    final doc = await _db.collection(_collectionName).doc(rifornimentoId).get();
+    if (doc.exists && doc.data() != null) {
+      return Rifornimento.fromMap(doc.data()!, doc.id);
     }
+    return null;
   }
 
-  /// Aggiorna un rifornimento esistente nel database.
-  /// Ritorna true se l'aggiornamento ha avuto successo, false altrimenti.
   Future<bool> updateRifornimento(Rifornimento rifornimento) async {
+    if (rifornimento.id == null || _currentUserId == null) return false;
     try {
-      final success = await _dbHelper.updateRifornimento(rifornimento);
-      return success;
+      await _db.collection(_collectionName).doc(rifornimento.id).set(rifornimento.toMap());
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
 
-  /// Cancella un rifornimento dal database dato il suo ID.
-  /// Ritorna il numero di righe eliminate (normalmente 1 se la cancellazione ha successo).
-  Future<int> deleteRifornimento(int rifornimentoId) async {
+  Future<int> deleteRifornimento(String rifornimentoId) async {
     try {
-      final rowsAffected = await _dbHelper.deleteRifornimento(rifornimentoId);
-      return rowsAffected;
+      await _db.collection(_collectionName).doc(rifornimentoId).delete();
+      return 1;
     } catch (e) {
-      rethrow;
+      return 0;
     }
   }
 
-  /// Recupera l'ultimo rifornimento per un dato scooter ID.
-  /// Ritorna null se non ci sono rifornimenti per quello scooter.
-  Future<Rifornimento?> getPreviousRifornimento(int scooterId) async {
-    try {
-      final rifornimento = await _dbHelper.getPreviousRifornimento(scooterId);
-      return rifornimento;
-    } catch (e) {
-      rethrow;
+  Future<Rifornimento?> getPreviousRifornimento(String scooterId) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('idScooter', isEqualTo: scooterId)
+        .orderBy('dataRifornimento', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      return Rifornimento.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
     }
+    return null;
   }
 
-  /// Recupera l'ultimo rifornimento per un dato scooter ID, escludendo uno specifico rifornimento.
-  /// Utile per calcoli che non devono includere il rifornimento che si sta modificando/eliminando.
-  /// Ritorna null se non ci sono rifornimenti validi.
-  Future<Rifornimento?> getPreviousRifornimentoExcluding(int scooterId, int? excludingRifornimentoId) async {
+  Future<Rifornimento?> getPreviousRifornimentoExcluding(String scooterId, String? excludingRifornimentoId) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    // Poiché non possiamo fare != e orderBy insieme facilmente su Firebase senza index complessi, peschiamo i primi 2
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('idScooter', isEqualTo: scooterId)
+        .orderBy('dataRifornimento', descending: true)
+        .limit(2)
+        .get();
+
+    final rifornimenti = snapshot.docs.map((doc) => Rifornimento.fromMap(doc.data(), doc.id)).toList();
+
     try {
-      final rifornimento = await _dbHelper.getPreviousRifornimentoExcluding(scooterId, excludingRifornimentoId);
-      return rifornimento;
+      return rifornimenti.firstWhere((rif) => rif.id != excludingRifornimentoId);
     } catch (e) {
-      rethrow;
+      return null;
     }
   }
 }

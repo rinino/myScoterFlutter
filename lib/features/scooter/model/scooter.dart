@@ -1,65 +1,50 @@
-// lib/models/scooter.dart
-
 class Scooter {
-  // @PrimaryKey(autoGenerate = true) -> gestito dal database al momento dell'inserimento
-  final int?
-  id; // `id` è nullable perché non sarà presente quando crei un nuovo oggetto prima di inserirlo nel DB
+  String? id;
+  String? userId;
   final String marca;
   final String modello;
   final int cilindrata;
   final String targa;
   final int anno;
   final bool miscelatore;
-  final String?
-  imgPath; // Usiamo `imgPath` per essere più generici (percorso locale o URI)
+  String? imgName; // Allineato a Swift (era imgPath)
 
-  // Costruttore per creare un nuovo oggetto Scooter
   Scooter({
-    this.id, // Opzionale per i nuovi oggetti
+    this.id,
+    this.userId,
     required this.marca,
     required this.modello,
     required this.cilindrata,
     required this.targa,
     required this.anno,
     required this.miscelatore,
-    this.imgPath, // Opzionale
+    this.imgName,
   });
 
-  // Metodo per convertire un oggetto Scooter in una Map<String, dynamic>
-  // Questo è utile quando inserisci o aggiorni i dati nel database SQLite.
   Map<String, dynamic> toMap() {
     return {
-      'id': id, // Sarà null per i nuovi oggetti, il DB lo auto-genererà
+      'userId': userId,
       'marca': marca,
       'modello': modello,
       'cilindrata': cilindrata,
       'targa': targa,
       'anno': anno,
-      'miscelatore': miscelatore
-          ? 1
-          : 0, // SQLite non ha tipo Boolean, usiamo 0 per false, 1 per true
-      'imgPath': imgPath,
+      'miscelatore': miscelatore,
+      'imgName': imgName,
     };
   }
 
-  // Costruttore di fabbrica per creare un oggetto Scooter da una Map<String, dynamic>
-  // Questo è utile quando recuperi i dati dal database SQLite.
-  factory Scooter.fromMap(Map<String, dynamic> map) {
+  factory Scooter.fromMap(Map<String, dynamic> map, String documentId) {
     return Scooter(
-      id: map['id'] as int?,
+      id: documentId,
+      userId: map['userId'] as String?,
       marca: map['marca'] as String,
       modello: map['modello'] as String,
       cilindrata: map['cilindrata'] as int,
       targa: map['targa'] as String,
       anno: map['anno'] as int,
-      miscelatore: map['miscelatore'] == 1, // Converti 0/1 in booleano
-      imgPath: map['imgPath'] as String?,
+      miscelatore: map['miscelatore'] == true || map['miscelatore'] == 1,
+      imgName: map['imgName'] as String?,
     );
-  }
-
-  // Override di toString per una stampa più leggibile (utile per il debug)
-  @override
-  String toString() {
-    return 'Scooter(id: $id, marca: $marca, modello: $modello, cilindrata: $cilindrata, targa: $targa, anno: $anno, miscelatore: $miscelatore, imgPath: $imgPath)';
   }
 }

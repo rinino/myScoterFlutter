@@ -1,17 +1,17 @@
-import 'package:intl/intl.dart'; // Importa questo per DateFormat
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class Rifornimento {
-  int? id;
-  int idScooter;
-  int dataRifornimento; // timestamp in millisecondi
+  String? id;
+  String? userId;
+  String idScooter;
+  DateTime dataRifornimento; // Allineato a Swift (Date -> Timestamp)
   double kmAttuali;
   double litriBenzina;
   double? litriOlio;
   double? percentualeOlio;
   double kmPercorsi;
   double? mediaConsumo;
-
-  // NUOVI CAMPI
   double? costo;
   String? note;
   double? latitudine;
@@ -19,6 +19,7 @@ class Rifornimento {
 
   Rifornimento({
     this.id,
+    this.userId,
     required this.idScooter,
     required this.dataRifornimento,
     required this.kmAttuali,
@@ -33,12 +34,11 @@ class Rifornimento {
     this.longitudine,
   });
 
-  // Converti un Rifornimento in una Map. Utile per l'inserimento nel DB.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'userId': userId,
       'idScooter': idScooter,
-      'dataRifornimento': dataRifornimento,
+      'dataRifornimento': Timestamp.fromDate(dataRifornimento),
       'kmAttuali': kmAttuali,
       'litriBenzina': litriBenzina,
       'litriOlio': litriOlio,
@@ -52,30 +52,26 @@ class Rifornimento {
     };
   }
 
-  // Crea un Rifornimento da una Map. Utile per il recupero dal DB.
-  factory Rifornimento.fromMap(Map<String, dynamic> map) {
+  factory Rifornimento.fromMap(Map<String, dynamic> map, String documentId) {
     return Rifornimento(
-      id: map['id'] as int?,
-      idScooter: map['idScooter'] as int,
-      dataRifornimento: map['dataRifornimento'] as int,
-      kmAttuali: map['kmAttuali'] as double,
-      litriBenzina: map['litriBenzina'] as double,
-      litriOlio: map['litriOlio'] as double?,
-      percentualeOlio: map['percentualeOlio'] as double?,
-      kmPercorsi: map['kmPercorsi'] as double,
-      mediaConsumo: map['mediaConsumo'] as double?,
-      costo: map['costo'] as double?,
+      id: documentId,
+      userId: map['userId'] as String?,
+      idScooter: map['idScooter'] as String,
+      dataRifornimento: (map['dataRifornimento'] as Timestamp).toDate(),
+      kmAttuali: (map['kmAttuali'] as num).toDouble(),
+      litriBenzina: (map['litriBenzina'] as num).toDouble(),
+      litriOlio: map['litriOlio'] != null ? (map['litriOlio'] as num).toDouble() : null,
+      percentualeOlio: map['percentualeOlio'] != null ? (map['percentualeOlio'] as num).toDouble() : null,
+      kmPercorsi: (map['kmPercorsi'] as num).toDouble(),
+      mediaConsumo: map['mediaConsumo'] != null ? (map['mediaConsumo'] as num).toDouble() : null,
+      costo: map['costo'] != null ? (map['costo'] as num).toDouble() : null,
       note: map['note'] as String?,
-      latitudine: map['latitudine'] as double?,
-      longitudine: map['longitudine'] as double?,
+      latitudine: map['latitudine'] != null ? (map['latitudine'] as num).toDouble() : null,
+      longitudine: map['longitudine'] != null ? (map['longitudine'] as num).toDouble() : null,
     );
   }
 
-  // Getter per ottenere la data come DateTime
-  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(dataRifornimento);
-
-  // Getter per ottenere la data formattata come stringa
   String get formattedDataRifornimento {
-    return DateFormat('dd/MM/yyyy').format(dateTime); // Formato italiano
+    return DateFormat('dd/MM/yyyy').format(dataRifornimento);
   }
 }

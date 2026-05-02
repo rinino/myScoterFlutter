@@ -1,5 +1,3 @@
-// lib/features/scooter/screens/add_edit_scooter_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +7,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
-
+// FIX: Aggiunto l'import del gestore Cloud Storage
+import '../../../core/services/cloud_storage_manager.dart';
 
 class AddEditScooterScreen extends StatefulWidget {
   final Scooter? scooter;
@@ -38,25 +37,21 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     super.initState();
     _marcaController = TextEditingController(text: widget.scooter?.marca ?? '');
     _modelloController = TextEditingController(text: widget.scooter?.modello ?? '');
-
     _cilindrataController = TextEditingController(
         text: (widget.scooter != null && widget.scooter!.cilindrata != 0)
             ? widget.scooter!.cilindrata.toString()
             : ''
     );
-
     _targaController = TextEditingController(text: widget.scooter?.targa ?? '');
-
     _annoController = TextEditingController(
         text: (widget.scooter != null && widget.scooter!.anno != 0)
             ? widget.scooter!.anno.toString()
             : ''
     );
-
     _miscelatore = widget.scooter?.miscelatore ?? false;
 
-    if (widget.scooter?.imgPath != null) {
-      _imageFile = File(widget.scooter!.imgPath!);
+    if (widget.scooter?.imgName != null) {
+      _imageFile = File(widget.scooter!.imgName!);
     }
   }
 
@@ -64,7 +59,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
+      imageQuality: 70, // Compressione ottimale per il Cloud
       maxWidth: 1024,
       maxHeight: 1024,
     );
@@ -77,28 +72,31 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   }
 
   Future<void> _saveForm() async {
-    // LUCCHETTO ANTI RIMBALZO: se sto già salvando, ignoro altri tocchi
     if (_isProcessing) return;
-
     if (_formKey.currentState!.validate()) {
       setState(() => _isProcessing = true);
-
-      String? finalImagePath = widget.scooter?.imgPath;
+      String? finalImagePath = widget.scooter?.imgName;
 
       try {
-        if (_imageFile != null && _imageFile!.path != widget.scooter?.imgPath) {
+        if (_imageFile != null && _imageFile!.path != widget.scooter?.imgName) {
           final appDir = await getApplicationDocumentsDirectory();
           final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(_imageFile!.path)}';
-          final savedImage = File('${appDir.path}/$fileName');
+          final savedImage = File(p.join(appDir.path, fileName));
 
           await _imageFile!.copy(savedImage.path);
           finalImagePath = savedImage.path;
 
-          if (widget.scooter?.imgPath != null) {
-            final oldImage = File(widget.scooter!.imgPath!);
+          // ☁️ UPLOAD SUL CLOUD!
+          CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
+
+          if (widget.scooter?.imgName != null) {
+            final oldImage = File(widget.scooter!.imgName!);
             if (await oldImage.exists()) {
               await oldImage.delete();
             }
+            // ☁️ ELIMINA LA VECCHIA FOTO DAL CLOUD!
+            final oldFileName = p.basename(widget.scooter!.imgName!);
+            CloudStorageManager.shared.deleteImageSilently(fileName: oldFileName);
           }
         }
       } catch (e) {
@@ -113,11 +111,10 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         targa: _targaController.text.trim().toUpperCase(),
         anno: int.tryParse(_annoController.text) ?? 0,
         miscelatore: _miscelatore,
-        imgPath: finalImagePath,
+        imgName: finalImagePath,
       );
 
       if (mounted) {
-        // Uso corretto della chiusura modale con go_router
         context.pop(newScooter);
       }
     }
@@ -130,7 +127,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.scooter == null ? l10n.addScooter : l10n.editScooter),
-        // Chiusura corretta con go_router
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),

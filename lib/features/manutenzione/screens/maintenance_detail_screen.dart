@@ -49,10 +49,9 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
 
   Future<void> _navigateToEdit() async {
     await context.push('/add-edit-maintenance', extra: {
-      'scooterId': _currentManutenzione.idScooter,
+      'scooterId': _currentManutenzione.scooterId, // FIX: scooterId al posto di idScooter
       'manutenzione': _currentManutenzione,
     });
-
     if (mounted) {
       context.pop();
     }

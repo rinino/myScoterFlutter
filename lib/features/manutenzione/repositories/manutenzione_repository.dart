@@ -1,24 +1,52 @@
-import 'package:myscooter/core/database/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 
 class ManutenzioneRepository {
-  final DatabaseHelper _dbHelper;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String _collectionName = 'manutenzioni';
 
-  ManutenzioneRepository(this._dbHelper);
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  Future<int?> insertManutenzione(Manutenzione manutenzione) async {
-    return await _dbHelper.insertManutenzione(manutenzione);
+  Future<String?> insertManutenzione(Manutenzione manutenzione) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    manutenzione.userId = userId;
+    final ref = await _db.collection(_collectionName).add(manutenzione.toMap());
+    return ref.id;
   }
 
-  Future<List<Manutenzione>> getManutenzioni(int scooterId) async {
-    return await _dbHelper.getManutenzioni(scooterId);
+  Future<List<Manutenzione>> getManutenzioni(String scooterId) async {
+    final userId = _currentUserId;
+    if (userId == null) return [];
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('scooterId', isEqualTo: scooterId)
+        .orderBy('data', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList();
   }
 
   Future<bool> updateManutenzione(Manutenzione manutenzione) async {
-    return await _dbHelper.updateManutenzione(manutenzione);
+    if (manutenzione.id == null || _currentUserId == null) return false;
+    try {
+      await _db.collection(_collectionName).doc(manutenzione.id).set(manutenzione.toMap());
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  Future<int> deleteManutenzione(int id) async {
-    return await _dbHelper.deleteManutenzione(id);
+  Future<int> deleteManutenzione(String id) async {
+    try {
+      await _db.collection(_collectionName).doc(id).delete();
+      return 1;
+    } catch (e) {
+      return 0;
+    }
   }
 }

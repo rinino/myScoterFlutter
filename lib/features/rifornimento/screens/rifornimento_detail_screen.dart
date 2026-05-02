@@ -9,7 +9,7 @@ import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import '../../../l10n/app_localizations.dart';
 
 class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in ConsumerWidget
-  final int scooterId;
+  final String scooterId;
   final Rifornimento rifornimento;
 
   const RifornimentoDetailScreen({

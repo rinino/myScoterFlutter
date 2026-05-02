@@ -4,21 +4,20 @@ import 'package:myscooter/core/providers/core_providers.dart';
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 import 'package:myscooter/features/manutenzione/repositories/manutenzione_repository.dart';
 
-// Provider che gestisce la lista delle manutenzioni per un dato scooter (tramite family)
-final manutenzioneListProvider = StateNotifierProvider.family<ManutenzioneListNotifier, AsyncValue<List<Manutenzione>>, int>((ref, scooterId) {
+// FIX: Usiamo String per scooterId
+final manutenzioneListProvider = StateNotifierProvider.family<ManutenzioneListNotifier, AsyncValue<List<Manutenzione>>, String>((ref, scooterId) {
   final repository = ref.read(manutenzioneRepoProvider);
   return ManutenzioneListNotifier(repository, scooterId);
 });
 
 class ManutenzioneListNotifier extends StateNotifier<AsyncValue<List<Manutenzione>>> {
   final ManutenzioneRepository _repository;
-  final int _scooterId;
+  final String _scooterId;
 
   ManutenzioneListNotifier(this._repository, this._scooterId) : super(const AsyncValue.loading()) {
     loadManutenzioni();
   }
 
-  // Carica i dati dal DB
   Future<void> loadManutenzioni() async {
     try {
       state = const AsyncValue.loading();
@@ -29,7 +28,6 @@ class ManutenzioneListNotifier extends StateNotifier<AsyncValue<List<Manutenzion
     }
   }
 
-  // Aggiunge una manutenzione e ricarica
   Future<bool> addManutenzione(Manutenzione m) async {
     final result = await _repository.insertManutenzione(m);
     if (result != null) {
@@ -39,7 +37,6 @@ class ManutenzioneListNotifier extends StateNotifier<AsyncValue<List<Manutenzion
     return false;
   }
 
-  // Aggiorna una manutenzione e ricarica
   Future<bool> updateManutenzione(Manutenzione m) async {
     final result = await _repository.updateManutenzione(m);
     if (result) {
@@ -49,8 +46,7 @@ class ManutenzioneListNotifier extends StateNotifier<AsyncValue<List<Manutenzion
     return false;
   }
 
-  // Elimina una manutenzione e ricarica
-  Future<bool> deleteManutenzione(int id) async {
+  Future<bool> deleteManutenzione(String id) async { // FIX: String
     final result = await _repository.deleteManutenzione(id);
     if (result > 0) {
       await loadManutenzioni();

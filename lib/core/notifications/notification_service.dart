@@ -56,34 +56,22 @@ class NotificationService {
     await _schedule(docId, 0, scadenza, nomeDoc, "Documento Scaduto", "Il documento $nomeDoc scade oggi.");
   }
 
-  Future<void> _schedule(int docId, int daysBefore, DateTime targetDate, String docName, String title, String body) async {
-    // Calcoliamo la data della notifica
+  Future<void> _schedule(String docId, int daysBefore, DateTime targetDate, String docName, String title, String body) async {
     final notificationDate = targetDate.subtract(Duration(days: daysBefore));
+    var scheduledDate = DateTime(notificationDate.year, notificationDate.month, notificationDate.day, 9, 0, 0);
 
-    // Impostiamo l'ora alle 09:00 del mattino
-    var scheduledDate = DateTime(
-      notificationDate.year,
-      notificationDate.month,
-      notificationDate.day,
-      9, 0, 0,
-    );
-
-    // Se la data calcolata è già passata, non la programmiamo
     if (scheduledDate.isBefore(DateTime.now())) return;
 
-    // FIX: Creiamo un ID univoco matematico invece che testuale (evita l'errore del linter)
-    final int notificationId = (docId * 100) + daysBefore;
+    // FIX: Usiamo l'hashCode dell'ID stringa di Firebase
+    final int notificationId = docId.hashCode + daysBefore;
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'documenti_scadenze',
-      'Scadenze Documenti',
+      'documenti_scadenze', 'Scadenze Documenti',
       channelDescription: 'Notifiche per le scadenze dei documenti dello scooter',
-      importance: Importance.max,
-      priority: Priority.high,
+      importance: Importance.max, priority: Priority.high,
     );
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
-    // FIX: Uso esclusivo di parametri nominativi + rimozione di uiLocalNotificationDateInterpretation
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id: notificationId,
       title: title,
@@ -94,11 +82,9 @@ class NotificationService {
     );
   }
 
-  // Cancella tutte le notifiche associate a un documento
-  Future<void> cancelNotifications(int docId) async {
-    // FIX: Uso del parametro nominativo 'id:' + calcolo matematico
-    await flutterLocalNotificationsPlugin.cancel(id: (docId * 100) + 15);
-    await flutterLocalNotificationsPlugin.cancel(id: (docId * 100) + 3);
-    await flutterLocalNotificationsPlugin.cancel(id: (docId * 100) + 0);
+  Future<void> cancelNotifications(String docId) async {
+    await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode + 15);
+    await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode + 3);
+    await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode + 0);
   }
 }

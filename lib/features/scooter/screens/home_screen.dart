@@ -202,14 +202,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildScooterList(BuildContext context, List<Scooter> scooters) {
     final l10n = AppLocalizations.of(context)!;
-
     return ListView.builder(
       itemCount: scooters.length,
-      // Aggiunto un piccolo padding extra in fondo per pulizia visiva con Edge-to-Edge
       padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (context, index) {
         final scooter = scooters[index];
-        bool hasValidImage = scooter.imgPath != null && File(scooter.imgPath!).existsSync();
+        // FIX: imgPath aggiornato in imgName
+        bool hasValidImage = scooter.imgName != null && File(scooter.imgName!).existsSync();
 
         return Dismissible(
           key: Key(scooter.id.toString()),
@@ -245,8 +244,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 child: ClipOval(
+                  // FIX: imgPath aggiornato in imgName
                   child: hasValidImage
-                      ? Image.file(File(scooter.imgPath!), fit: BoxFit.cover)
+                      ? Image.file(File(scooter.imgName!), fit: BoxFit.cover)
                       : const Icon(Icons.moped, color: Colors.grey),
                 ),
               ),

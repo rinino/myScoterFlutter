@@ -204,5 +204,51 @@
     "onboardingDesc3": "Salva libretto, assicurazione e altri documenti. Ricevi notifiche automatiche prima delle scadenze!",
     "salta": "Salta",
     "avanti": "Avanti",
-    "inizia": "Inizia"
+    "inizia": "Inizia",
+
+    "profiloTitle": "Profilo",
+    "utenteOspite": "Utente Ospite",
+    "datiLocali": "I tuoi dati sono salvati solo su questo dispositivo.",
+    "avvisoSovrascrittura": "Attenzione: Se accedi con un account già esistente sul Cloud, i dati presenti su questo dispositivo verranno sostituiti con quelli del Cloud.",
+    "accediGoogle": "Accedi con Google",
+    "accediApple": "Accedi con Apple",
+    "esci": "Esci dall'account",
+
+    "settingsTitle": "Impostazioni",
+    "themeLabel": "Tema App",
+    "themeSystem": "Sistema",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+
+    "accediEmail": "Accedi con Email",
+    "registrati": "Registrati",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "confermaPassword": "Conferma Password",
+    "mailVerificaInviata": "Ti abbiamo inviato un'email di verifica. Controlla la tua casella di posta.",
+    "mailNonVerificata": "Email non ancora verificata. Clicca qui per reinviare il link.",
+    "modificaProfilo": "Modifica Profilo",
+    "nomeLabel": "Nome",
+    "cognomeLabel": "Cognome",
+    "selezionaFotoProfilo": "Scegli un'immagine di profilo",
+    "attenzioneSovrascritturaTitolo": "Attenzione ai Dati Locali",
+    "attenzioneSovrascritturaMessaggio": "Stai per accedere a un account Cloud. Se questo account contiene già dei dati, i dati attualmente salvati su questo dispositivo (Utente Ospite) verranno SOVRASCRITTI e persi definitivamente. Vuoi procedere?",
+    "procedi": "Procedi",
+    "annulla": "Annulla",
+
+    "loginSuccess": "Login effettuato con successo",
+    "loginError": "Accesso non riuscito o annullato",
+    "cloudUser": "Utente Cloud",
+    "logoutSuccess": "Sessione terminata",
+    "emailValida": "Inserisci una email valida",
+    "passwordCorta": "Minimo 6 caratteri",
+    "passwordNonCoincidono": "Le password non coincidono",
+    "nonHaiAccount": "Non hai un account? Registrati",
+    "haiGiaAccount": "Hai già un account? Accedi",
+    "profiloAggiornato": "Profilo aggiornato con successo!",
+    "erroreSalvataggio": "Errore nel salvataggio",
+
+    "languageLabel": "Lingua"
+
+
 }

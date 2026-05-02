@@ -164,7 +164,8 @@ class PdfService {
       cellAlignment: pw.Alignment.centerLeft,
       data: list.map((r) {
         final costoStr = r.costo != null ? '${r.costo!.toStringAsFixed(2)} $currency' : '-';
-        return [df.format(r.dateTime), '${r.kmAttuali.toStringAsFixed(0)}', '${r.litriBenzina.toStringAsFixed(2)} L', costoStr];
+        // FIX: Cambiato r.dateTime in r.dataRifornimento
+        return [df.format(r.dataRifornimento), '${r.kmAttuali.toStringAsFixed(0)}', '${r.litriBenzina.toStringAsFixed(2)} L', costoStr];
       }).toList(),
     );
   }

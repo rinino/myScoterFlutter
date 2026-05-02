@@ -1,87 +1,85 @@
-import '../../../core/database/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../model/scooter.dart';
 
 class ScooterRepository {
-  // 1. Variabile per il DatabaseHelper che verrà iniettata
-  final DatabaseHelper _dbHelper;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String _collectionName = 'scooters';
 
-  // 2. Costruttore che richiede il DatabaseHelper
-  ScooterRepository(this._dbHelper);
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // --- Implementazione dei Metodi CRUD ---
-  // (Lascia tutto il resto identico, i metodi useranno _dbHelper normalmente!)
+  Future<String?> insertScooter(Scooter scooter) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
 
-  Future<int> insertScooter(Scooter scooter) async {
-    try {
-      final id = await _dbHelper.insertScooter(scooter);
-      return id;
-    } catch (e) {
-      rethrow;
-    }
+    scooter.userId = userId;
+    final ref = await _db.collection(_collectionName).add(scooter.toMap());
+    return ref.id;
   }
 
-  /// Recupera tutti gli scooter dal database.
   Future<List<Scooter>> getAllScooters() async {
-    try {
-      final scooters = await _dbHelper.getScooters();
-      return scooters;
-    } catch (e) {
-      rethrow;
-    }
+    final userId = _currentUserId;
+    if (userId == null) return [];
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    return snapshot.docs.map((doc) => Scooter.fromMap(doc.data(), doc.id)).toList();
   }
 
-  /// Recupera un singolo scooter per ID.
-  /// Ritorna null se lo scooter non viene trovato.
-  Future<Scooter?> getScooterById(int id) async {
-    try {
-      final scooter = await _dbHelper.getScooterById(id);
-      return scooter;
-    } catch (e) {
-      rethrow;
+  Future<Scooter?> getScooterById(String id) async {
+    final doc = await _db.collection(_collectionName).doc(id).get();
+    if (doc.exists && doc.data() != null) {
+      return Scooter.fromMap(doc.data()!, doc.id);
     }
+    return null;
   }
 
-  /// Recupera un singolo scooter per targa.
-  /// Ritorna null se lo scooter non viene trovato.
   Future<Scooter?> getScooterByTarga(String targa) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    final snapshot = await _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('targa', isEqualTo: targa)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      return Scooter.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
+    }
+    return null;
+  }
+
+  Future<bool> updateScooter(Scooter scooter) async {
+    if (scooter.id == null || _currentUserId == null) return false;
     try {
-      final scooter = await _dbHelper.getScooterByTarga(targa);
-      return scooter;
+      await _db.collection(_collectionName).doc(scooter.id).set(scooter.toMap());
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
 
-  /// Aggiorna uno scooter esistente nel database.
-  /// Ritorna il numero di righe aggiornate (normalmente 1 se l'update ha successo).
-  Future<int> updateScooter(Scooter scooter) async {
+  Future<bool> deleteScooter(String id) async {
     try {
-      final rowsAffected = await _dbHelper.updateScooter(scooter);
-      return rowsAffected;
+      await _db.collection(_collectionName).doc(id).delete();
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
 
-  /// Cancella uno scooter dal database dato il suo ID.
-  /// Ritorna il numero di righe eliminate (normalmente 1 se la cancellazione ha successo).
-  Future<int> deleteScooter(int id) async {
-    try {
-      final rowsAffected = await _dbHelper.deleteScooter(id);
-      return rowsAffected;
-    } catch (e) {
-      rethrow;
-    }
-  }
+  Future<void> deleteAllScooters() async {
+    final userId = _currentUserId;
+    if (userId == null) return;
 
-  /// Cancella tutti gli scooter dalla tabella.
-  /// Ritorna il numero di righe eliminate.
-  Future<int> deleteAllScooters() async {
-    try {
-      final rowsAffected = await _dbHelper.deleteAllScooters();
-      return rowsAffected;
-    } catch (e) {
-      rethrow;
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).get();
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
     }
   }
 }

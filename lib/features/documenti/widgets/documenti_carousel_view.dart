@@ -8,7 +8,7 @@ import '../models/documento.dart';
 import '../providers/documento_provider.dart';
 
 class DocumentiCarouselView extends ConsumerWidget {
-  final int scooterId;
+  final String scooterId; // FIX: Ora è String
 
   const DocumentiCarouselView({super.key, required this.scooterId});
 
@@ -36,7 +36,7 @@ class DocumentiCarouselView extends ConsumerWidget {
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: documenti.length + 1, // +1 per il bottone Aggiungi
+                itemCount: documenti.length + 1,
                 itemBuilder: (context, index) {
                   if (index == documenti.length) {
                     return _buildAddButton(context, l10n);

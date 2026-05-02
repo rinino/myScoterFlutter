@@ -41,14 +41,14 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   }
 
   void _openImageViewer() {
-    if (_currentScooter.imgPath == null || !File(_currentScooter.imgPath!).existsSync()) return;
-
+    // FIX: imgPath aggiornato in imgName
+    if (_currentScooter.imgName == null || !File(_currentScooter.imgName!).existsSync()) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) => ImageViewerPage(
-          imageFile: File(_currentScooter.imgPath!),
+          imageFile: File(_currentScooter.imgName!),
           title: "${_currentScooter.marca} ${_currentScooter.modello}",
           heroTag: 'scooter_image_${_currentScooter.id}',
         ),
@@ -134,7 +134,7 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
                   children: [
                     // Immagine Header
                     ScooterHeaderImage(
-                      imgPath: _currentScooter.imgPath,
+                      imgPath: _currentScooter.imgName, // FIX: imgName
                       scooterId: _currentScooter.id!,
                       onTap: _openImageViewer,
                     ),

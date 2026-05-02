@@ -585,4 +585,126 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get inizia => 'Inizia';
+
+  @override
+  String get profiloTitle => 'Profilo';
+
+  @override
+  String get utenteOspite => 'Utente Ospite';
+
+  @override
+  String get datiLocali =>
+      'I tuoi dati sono salvati solo su questo dispositivo.';
+
+  @override
+  String get avvisoSovrascrittura =>
+      'Attenzione: Se accedi con un account già esistente sul Cloud, i dati presenti su questo dispositivo verranno sostituiti con quelli del Cloud.';
+
+  @override
+  String get accediGoogle => 'Accedi con Google';
+
+  @override
+  String get accediApple => 'Accedi con Apple';
+
+  @override
+  String get esci => 'Esci dall\'account';
+
+  @override
+  String get settingsTitle => 'Impostazioni';
+
+  @override
+  String get themeLabel => 'Tema App';
+
+  @override
+  String get themeSystem => 'Sistema';
+
+  @override
+  String get themeLight => 'Chiaro';
+
+  @override
+  String get themeDark => 'Scuro';
+
+  @override
+  String get accediEmail => 'Accedi con Email';
+
+  @override
+  String get registrati => 'Registrati';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get confermaPassword => 'Conferma Password';
+
+  @override
+  String get mailVerificaInviata =>
+      'Ti abbiamo inviato un\'email di verifica. Controlla la tua casella di posta.';
+
+  @override
+  String get mailNonVerificata =>
+      'Email non ancora verificata. Clicca qui per reinviare il link.';
+
+  @override
+  String get modificaProfilo => 'Modifica Profilo';
+
+  @override
+  String get nomeLabel => 'Nome';
+
+  @override
+  String get cognomeLabel => 'Cognome';
+
+  @override
+  String get selezionaFotoProfilo => 'Scegli un\'immagine di profilo';
+
+  @override
+  String get attenzioneSovrascritturaTitolo => 'Attenzione ai Dati Locali';
+
+  @override
+  String get attenzioneSovrascritturaMessaggio =>
+      'Stai per accedere a un account Cloud. Se questo account contiene già dei dati, i dati attualmente salvati su questo dispositivo (Utente Ospite) verranno SOVRASCRITTI e persi definitivamente. Vuoi procedere?';
+
+  @override
+  String get procedi => 'Procedi';
+
+  @override
+  String get annulla => 'Annulla';
+
+  @override
+  String get loginSuccess => 'Login effettuato con successo';
+
+  @override
+  String get loginError => 'Accesso non riuscito o annullato';
+
+  @override
+  String get cloudUser => 'Utente Cloud';
+
+  @override
+  String get logoutSuccess => 'Sessione terminata';
+
+  @override
+  String get emailValida => 'Inserisci una email valida';
+
+  @override
+  String get passwordCorta => 'Minimo 6 caratteri';
+
+  @override
+  String get passwordNonCoincidono => 'Le password non coincidono';
+
+  @override
+  String get nonHaiAccount => 'Non hai un account? Registrati';
+
+  @override
+  String get haiGiaAccount => 'Hai già un account? Accedi';
+
+  @override
+  String get profiloAggiornato => 'Profilo aggiornato con successo!';
+
+  @override
+  String get erroreSalvataggio => 'Errore nel salvataggio';
+
+  @override
+  String get languageLabel => 'Lingua';
 }

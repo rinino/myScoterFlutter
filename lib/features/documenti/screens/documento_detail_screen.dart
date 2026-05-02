@@ -48,10 +48,10 @@ class DocumentoDetailScreen extends ConsumerWidget {
             icon: const Icon(Icons.edit, color: Colors.blue),
             onPressed: () {
               context.push('/add-edit-documento', extra: {
-                'scooterId': documento.idScooter,
+                'scooterId': documento.scooterId, // FIX: scooterId al posto di idScooter
                 'documento': documento,
               });
-              context.pop(); // Chiude il dettaglio per forzare l'aggiornamento tornando al carosello
+              context.pop();
             },
           ),
         ],

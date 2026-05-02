@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
 enum TipoDocumento {
@@ -38,17 +39,19 @@ extension TipoDocumentoExt on TipoDocumento {
 }
 
 class Documento {
-  final int? id;
-  final int idScooter;
-  final TipoDocumento tipo;
-  final String? tipoCustom;
-  final DateTime? dataScadenza;
-  final String? note;
-  final String? nomeFoto;
+  String? id;
+  String? userId;
+  String scooterId; // Allineato a Swift (era idScooter int)
+  TipoDocumento tipo;
+  String? tipoCustom;
+  DateTime? dataScadenza;
+  String? note;
+  String? nomeFoto;
 
   Documento({
     this.id,
-    required this.idScooter,
+    this.userId,
+    required this.scooterId,
     required this.tipo,
     this.tipoCustom,
     this.dataScadenza,
@@ -58,27 +61,26 @@ class Documento {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'idScooter': idScooter,
+      'userId': userId,
+      'scooterId': scooterId,
       'tipo': tipo.name,
       'tipoCustom': tipoCustom,
-      'dataScadenza': dataScadenza?.millisecondsSinceEpoch,
+      'dataScadenza': dataScadenza != null ? Timestamp.fromDate(dataScadenza!) : null,
       'note': note,
       'nomeFoto': nomeFoto,
     };
   }
 
-  factory Documento.fromMap(Map<String, dynamic> map) {
+  factory Documento.fromMap(Map<String, dynamic> map, String documentId) {
     return Documento(
-      id: map['id'],
-      idScooter: map['idScooter'],
+      id: documentId,
+      userId: map['userId'] as String?,
+      scooterId: map['scooterId'] as String,
       tipo: TipoDocumento.values.byName(map['tipo']),
-      tipoCustom: map['tipoCustom'],
-      dataScadenza: map['dataScadenza'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['dataScadenza'])
-          : null,
-      note: map['note'],
-      nomeFoto: map['nomeFoto'],
+      tipoCustom: map['tipoCustom'] as String?,
+      dataScadenza: map['dataScadenza'] != null ? (map['dataScadenza'] as Timestamp).toDate() : null,
+      note: map['note'] as String?,
+      nomeFoto: map['nomeFoto'] as String?,
     );
   }
 }

@@ -1,169 +1,207 @@
-// lib/core/database/backup_manager.dart
+import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive_io.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:archive/archive_io.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
-import 'database_helper.dart';
-
 class BackupManager {
-  /// Genera un backup ZIP contenente il DB (inclusi i file WAL/SHM) e tutte le immagini salvate
+  static final FirebaseFirestore db = FirebaseFirestore.instance;
+  static final FirebaseStorage storage = FirebaseStorage.instance;
+  static String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
+  // ESPORTAZIONE BACKUP DA FIRESTORE A JSON + ZIP
   static Future<void> exportBackup(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
-    debugPrint("📦 [BACKUP] Inizio procedura di esportazione...");
+    final userId = currentUserId;
+    if (userId == null) throw Exception("Utente non autenticato");
 
-    // 1. Percorsi sorgente
-    final dbFolderPath = await getDatabasesPath();
-    final docDir = await getApplicationDocumentsDirectory();
-    final dbDir = Directory(dbFolderPath);
+    // 1. Lettura Dati dal Cloud
+    final scootersSnap = await db.collection("scooters").where("userId", isEqualTo: userId).get();
+    final scooters = scootersSnap.docs.map((d) => d.data()..['id'] = d.id).toList();
 
-    // 2. Prepara il percorso del file ZIP
-    final formatter = DateFormat('yyyy-MM-dd_HH-mm');
-    final dateString = formatter.format(DateTime.now());
-    final zipFileName = 'MyScooter_Backup_$dateString.zip';
-    final zipPath = p.join(docDir.path, zipFileName);
-
-    if (await File(zipPath).exists()) {
-      await File(zipPath).delete();
-    }
-
-    // BYPASS DEL BUG DI ZipFileEncoder: Usiamo l'Archive in RAM
-    final archive = Archive();
-
-    // 3. Aggiunta dei file del Database
-    final dbFiles = dbDir.listSync().where((f) => p.basename(f.path).startsWith('scooter_database.db'));
-
-    if (dbFiles.isEmpty) {
-      throw Exception("Nessun database trovato da esportare.");
-    }
-
-    for (var file in dbFiles) {
-      if (file is File) {
-        debugPrint("📦 [BACKUP] Lettura DB file: ${p.basename(file.path)}");
-        final bytes = await file.readAsBytes(); // Legge il file dal disco
-        archive.addFile(ArchiveFile(p.basename(file.path), bytes.length, bytes)); // Lo mette nell'archivio
+    // Helper per convertire i Timestamp di Firebase in stringhe ISO per il JSON
+    void convertTimestamps(Map<String, dynamic> map, String dateField) {
+      if (map[dateField] is Timestamp) {
+        map[dateField] = (map[dateField] as Timestamp).toDate().toIso8601String();
       }
     }
 
-    // 4. Aggiunta delle Immagini
-    final List<FileSystemEntity> docFiles = docDir.listSync();
-    int imgCount = 0;
-    for (var file in docFiles) {
-      if (file is File) {
-        final ext = p.extension(file.path).toLowerCase();
-        if (ext == '.jpg' || ext == '.jpeg' || ext == '.png') {
-          final bytes = await file.readAsBytes(); // Legge la foto
-          archive.addFile(ArchiveFile(p.basename(file.path), bytes.length, bytes));
-          imgCount++;
-        }
+    final rifSnap = await db.collection("rifornimenti").where("userId", isEqualTo: userId).get();
+    final rifornimenti = rifSnap.docs.map((d) {
+      final data = d.data()..['id'] = d.id;
+      convertTimestamps(data, 'dataRifornimento');
+      return data;
+    }).toList();
+
+    final manSnap = await db.collection("manutenzioni").where("userId", isEqualTo: userId).get();
+    final manutenzioni = manSnap.docs.map((d) {
+      final data = d.data()..['id'] = d.id;
+      convertTimestamps(data, 'data');
+      return data;
+    }).toList();
+
+    final docSnap = await db.collection("documenti").where("userId", isEqualTo: userId).get();
+    final documenti = docSnap.docs.map((d) {
+      final data = d.data()..['id'] = d.id;
+      convertTimestamps(data, 'dataScadenza');
+      return data;
+    }).toList();
+
+    // 2. Aggiunta Foto Locali
+    Map<String, String> imagesData = {};
+    final docsDir = await getApplicationDocumentsDirectory();
+
+    void addImage(String? imgName) {
+      if (imgName != null) {
+        final f = File(p.join(docsDir.path, imgName));
+        if (f.existsSync()) imagesData[imgName] = base64Encode(f.readAsBytesSync());
       }
     }
-    debugPrint("📦 [BACKUP] Aggiunte $imgCount immagini al backup.");
 
-    debugPrint("📦 [BACKUP] Codifica in ZIP e scrittura su disco...");
+    for (var s in scooters) { addImage(s['imgName'] as String?); }
+    for (var m in manutenzioni) { addImage(m['nomeFoto'] as String?); }
+    for (var d in documenti) { addImage(d['nomeFoto'] as String?); }
 
-    // 5. Codifica l'intero archivio e salvalo su disco
+    // 3. Creazione JSON
+    final backupMap = {
+      'version': 3,
+      'scooters': scooters,
+      'rifornimenti': rifornimenti,
+      'manutenzioni': manutenzioni,
+      'documenti': documenti,
+      'images': imagesData,
+    };
+
+    final jsonString = jsonEncode(backupMap);
+    var archive = Archive();
+    archive.addFile(ArchiveFile('backup.json', jsonString.length, utf8.encode(jsonString)));
     final zipData = ZipEncoder().encode(archive);
-    if (zipData == null) {
-      throw Exception("Errore critico durante la generazione dello ZIP.");
-    }
 
-    final zipFile = File(zipPath);
-    await zipFile.writeAsBytes(zipData, flush: true);
+    final formatter = DateFormat('yyyyMMdd_HHmm');
+    final dateString = formatter.format(DateTime.now());
+    final zipPath = p.join(docsDir.path, 'MyScooter_CloudBackup_$dateString.scooterbackup');
 
-    // 6. Controllo finale di sicurezza
-    final zipSize = await zipFile.length();
-    debugPrint("📦 [BACKUP] Creazione completata. Dimensione ZIP: $zipSize bytes");
-
-    if (zipSize <= 22) {
-      throw Exception("Errore critico: Il file ZIP generato è vuoto ($zipSize bytes).");
-    }
-
-    debugPrint("📦 [BACKUP] Avvio condivisione...");
-
-    // 7. Condividi lo ZIP
-    final xFile = XFile(zipPath, mimeType: 'application/zip');
-
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [xFile],
-        subject: l10n.backupShareSubject,
-        text: l10n.backupShareText,
-      ),
-    );
+    await File(zipPath).writeAsBytes(zipData!);
+    final xFile = XFile(zipPath, mimeType: 'application/octet-stream');
+    await SharePlus.instance.share(ShareParams(files: [xFile], subject: l10n.backupShareSubject, text: l10n.backupShareText));
   }
 
-  /// Importa l'archivio ZIP, estrae il DB e ripristina le immagini
-  static Future<bool> importBackup(DatabaseHelper dbHelper) async {
-    debugPrint("🔄 [RESTORE] Inizio procedura di ripristino...");
+  // RIPRISTINO BACKUP: DA JSON A FIRESTORE
+  static Future<bool> importBackup() async {
+    final userId = currentUserId;
+    if (userId == null) return false;
 
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-      );
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (result == null || result.files.single.path == null) return false;
 
-      if (result == null || result.files.single.path == null) {
-        debugPrint("🔄 [RESTORE] Selezione file annullata dall'utente.");
-        return false;
+    final bytes = await File(result.files.single.path!).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    ArchiveFile? jsonFile;
+    for (final file in archive) {
+      if (file.name == 'backup.json') {
+        jsonFile = file;
+        break;
       }
-
-      final zipFilePath = result.files.single.path!;
-      debugPrint("🔄 [RESTORE] File selezionato: $zipFilePath");
-
-      final dbFolderPath = await getDatabasesPath();
-      final docDir = await getApplicationDocumentsDirectory();
-      final mainDbPath = p.join(dbFolderPath, 'scooter_database.db');
-
-      debugPrint("🔄 [RESTORE] Chiusura connessione database corrente...");
-      await dbHelper.closeDb();
-
-      if (await databaseExists(mainDbPath)) {
-        debugPrint("🔄 [RESTORE] Distruzione vecchio database e cache sqlite in corso...");
-        await deleteDatabase(mainDbPath);
-      }
-
-      debugPrint("🔄 [RESTORE] Lettura file ZIP...");
-      final bytes = await File(zipFilePath).readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
-      bool dbRipristinato = false;
-      int imgCount = 0;
-
-      for (final file in archive) {
-        if (!file.isFile) continue;
-
-        final filename = p.basename(file.name);
-        final fileData = file.content as List<int>; // Estraiamo i byte
-
-        if (filename.startsWith('scooter_database.db')) {
-          final outPath = p.join(dbFolderPath, filename);
-          await File(outPath).writeAsBytes(fileData, flush: true);
-
-          if (filename == 'scooter_database.db') dbRipristinato = true;
-          debugPrint("🔄 [RESTORE] Ripristinato file DB: $filename");
-        }
-        else if (filename.toLowerCase().endsWith('.jpg') ||
-            filename.toLowerCase().endsWith('.png') ||
-            filename.toLowerCase().endsWith('.jpeg')) {
-          final outPath = p.join(docDir.path, filename);
-          await File(outPath).writeAsBytes(fileData, flush: true);
-          imgCount++;
-        }
-      }
-
-      debugPrint("🔄 [RESTORE] Ripristino completato! File DB trovati: $dbRipristinato, Immagini ripristinate: $imgCount");
-      return dbRipristinato;
-
-    } catch (e, stack) {
-      debugPrint("❌ [RESTORE ERROR] Errore critico durante il ripristino: $e");
-      debugPrint(stack.toString());
-      return false;
     }
+    if (jsonFile == null) return false;
+
+    final jsonString = utf8.decode(jsonFile.content as List<int>);
+    final map = jsonDecode(jsonString);
+
+    // 1. WIPING DATI VECCHI SUL CLOUD
+    final collections = ["scooters", "rifornimenti", "manutenzioni", "documenti"];
+    for (var coll in collections) {
+      final snap = await db.collection(coll).where("userId", isEqualTo: userId).get();
+      for (var doc in snap.docs) {
+        final data = doc.data();
+        final fileName = data["nomeFoto"] as String? ?? data["imgName"] as String?;
+        if (fileName != null) try { await storage.ref("images/$userId/$fileName").delete(); } catch(_) {}
+        await doc.reference.delete();
+      }
+    }
+
+    // 2. BATCH WRITING SU FIRESTORE
+    WriteBatch batch = db.batch();
+    int count = 0;
+
+    Future<void> commitIfNeed() async {
+      count++;
+      if (count >= 490) {
+        await batch.commit();
+        batch = db.batch();
+        count = 0;
+      }
+    }
+
+    void restoreTimestamps(Map<String, dynamic> data, String dateField) {
+      if (data[dateField] != null) {
+        data[dateField] = Timestamp.fromDate(DateTime.parse(data[dateField]));
+      }
+    }
+
+    for (var s in map['scooters']) {
+      s['userId'] = userId;
+      final docId = s['id'] ?? db.collection('scooters').doc().id;
+      s.remove('id');
+      batch.set(db.collection('scooters').doc(docId), s);
+      await commitIfNeed();
+    }
+
+    for (var r in map['rifornimenti']) {
+      r['userId'] = userId;
+      restoreTimestamps(r, 'dataRifornimento');
+      final docId = r['id'] ?? db.collection('rifornimenti').doc().id;
+      r.remove('id');
+      batch.set(db.collection('rifornimenti').doc(docId), r);
+      await commitIfNeed();
+    }
+
+    if (map['manutenzioni'] != null) {
+      for (var m in map['manutenzioni']) {
+        m['userId'] = userId;
+        restoreTimestamps(m, 'data');
+        final docId = m['id'] ?? db.collection('manutenzioni').doc().id;
+        m.remove('id');
+        batch.set(db.collection('manutenzioni').doc(docId), m);
+        await commitIfNeed();
+      }
+    }
+
+    if (map['documenti'] != null) {
+      for (var d in map['documenti']) {
+        d['userId'] = userId;
+        restoreTimestamps(d, 'dataScadenza');
+        final docId = d['id'] ?? db.collection('documenti').doc().id;
+        d.remove('id');
+        batch.set(db.collection('documenti').doc(docId), d);
+        await commitIfNeed();
+      }
+    }
+
+    await batch.commit();
+
+    // 3. RIPRISTINO FOTO IN LOCALE E CLOUD
+    final docsDir = await getApplicationDocumentsDirectory();
+    final imagesMap = map['images'] as Map<String, dynamic>? ?? {};
+
+    for (var entry in imagesMap.entries) {
+      final imgData = base64Decode(entry.value);
+      final fileURL = File(p.join(docsDir.path, entry.key));
+      await fileURL.writeAsBytes(imgData);
+
+      final storageRef = storage.ref().child("images/$userId/${entry.key}");
+      storageRef.putData(imgData);
+    }
+
+    return true;
   }
 }

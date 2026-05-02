@@ -584,4 +584,125 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inizia => 'Get Started';
+
+  @override
+  String get profiloTitle => 'Profile';
+
+  @override
+  String get utenteOspite => 'Guest User';
+
+  @override
+  String get datiLocali => 'Your data is saved only on this device.';
+
+  @override
+  String get avvisoSovrascrittura =>
+      'Warning: Logging in with an existing Cloud account will replace your local data with the data saved on the Cloud.';
+
+  @override
+  String get accediGoogle => 'Sign in with Google';
+
+  @override
+  String get accediApple => 'Sign in with Apple';
+
+  @override
+  String get esci => 'Sign Out';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get themeLabel => 'App Theme';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get accediEmail => 'Sign in with Email';
+
+  @override
+  String get registrati => 'Sign Up';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get confermaPassword => 'Confirm Password';
+
+  @override
+  String get mailVerificaInviata =>
+      'We\'ve sent you a verification email. Please check your inbox.';
+
+  @override
+  String get mailNonVerificata =>
+      'Email not verified yet. Click here to resend the link.';
+
+  @override
+  String get modificaProfilo => 'Edit Profile';
+
+  @override
+  String get nomeLabel => 'First Name';
+
+  @override
+  String get cognomeLabel => 'Last Name';
+
+  @override
+  String get selezionaFotoProfilo => 'Choose a profile picture';
+
+  @override
+  String get attenzioneSovrascritturaTitolo => 'Local Data Warning';
+
+  @override
+  String get attenzioneSovrascritturaMessaggio =>
+      'You are about to sign in to a Cloud account. If this account already contains data, the data currently saved on this device (Guest User) will be OVERWRITTEN and permanently lost. Do you wish to proceed?';
+
+  @override
+  String get procedi => 'Proceed';
+
+  @override
+  String get annulla => 'Cancel';
+
+  @override
+  String get loginSuccess => 'Login successful';
+
+  @override
+  String get loginError => 'Login failed or cancelled';
+
+  @override
+  String get cloudUser => 'Cloud User';
+
+  @override
+  String get logoutSuccess => 'Logged out successfully';
+
+  @override
+  String get emailValida => 'Enter a valid email';
+
+  @override
+  String get passwordCorta => 'Minimum 6 characters';
+
+  @override
+  String get passwordNonCoincidono => 'Passwords do not match';
+
+  @override
+  String get nonHaiAccount => 'Don\'t have an account? Sign up';
+
+  @override
+  String get haiGiaAccount => 'Already have an account? Sign in';
+
+  @override
+  String get profiloAggiornato => 'Profile updated successfully!';
+
+  @override
+  String get erroreSalvataggio => 'Error saving profile';
+
+  @override
+  String get languageLabel => 'Language';
 }

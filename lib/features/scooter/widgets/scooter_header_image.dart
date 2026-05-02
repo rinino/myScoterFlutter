@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class ScooterHeaderImage extends StatelessWidget {
   final String? imgPath;
-  final int scooterId;
+  final String scooterId;
   final VoidCallback onTap;
 
   const ScooterHeaderImage({

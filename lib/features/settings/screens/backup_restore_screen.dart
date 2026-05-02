@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:myscooter/core/providers/core_providers.dart';
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
 import '../../../../core/database/backup_manager.dart';
 import '../../../../core/providers/message_provider.dart';
@@ -21,7 +20,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   Future<void> _esporta() async {
     setState(() => _isLoading = true);
     try {
-      // FIX: Passato il context per permettere al BackupManager di leggere le traduzioni
       await BackupManager.exportBackup(context);
     } catch (e) {
       if (mounted) {
@@ -39,30 +37,15 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final dbHelper = ref.read(databaseProvider);
-
-      // Passiamo il dbHelper al manager per chiuderlo in sicurezza
-      final success = await BackupManager.importBackup(dbHelper);
+      // FIX: BackupManager.importBackup ora gestisce direttamente Firestore! Non serve passare dbHelper
+      final success = await BackupManager.importBackup();
 
       if (success) {
-        debugPrint("✅ [UI] Backup ripristinato sul FileSystem. Riavvio i provider...");
-
-        // 1. Invalida il DatabaseHelper in modo che al prossimo giro lo ricrei aprendo i nuovi file
-        ref.invalidate(databaseProvider);
-
-        // 2. Mettiamo un ritardo abbondante. Il file system di iOS/Android ha bisogno
-        // di qualche istante prima che SQLite riesca ad acquisire il nuovo lock.
         await Future.delayed(const Duration(milliseconds: 1500));
-
-        // 3. Forziamo l'aggiornamento degli scooter (che userà la nuova istanza DB)
         await ref.read(scooterListProvider.notifier).refreshScooters();
 
         if (mounted) {
           ref.read(messageProvider.notifier).show(l10n.restoreSuccess, type: MessageType.success);
-
-          // 4. Navigazione brutale alla home.
-          // Invece di `context.go('/')`, che potrebbe mantenere lo stack,
-          // preferiamo un pushReplacement o go per resettare.
           context.go('/');
         }
       } else {
@@ -94,7 +77,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           ListView(
             padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
             children: [
-              // BOX ESPORTAZIONE
               Text(l10n.backupSection, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 8),
               Card(
@@ -110,7 +92,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _esporta, // Disabilita se carica
+                          onPressed: _isLoading ? null : _esporta,
                           icon: const Icon(Icons.upload_file),
                           label: Text(l10n.createBackupBtn),
                           style: ElevatedButton.styleFrom(
@@ -126,7 +108,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               ),
               const SizedBox(height: 32),
 
-              // BOX RIPRISTINO
               Text(l10n.restoreSection, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 8),
               Card(
@@ -152,7 +133,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _ripristina, // Disabilita se carica
+                          onPressed: _isLoading ? null : _ripristina,
                           icon: const Icon(Icons.download),
                           label: Text(l10n.restoreBtn),
                           style: ElevatedButton.styleFrom(

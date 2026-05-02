@@ -5,8 +5,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
 import 'app_localizations_it.dart';
+import 'app_localizations_pt.dart';
 
 // ignore_for_file: type=lint
 
@@ -94,8 +98,12 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
     Locale('en'),
+    Locale('es'),
+    Locale('fr'),
     Locale('it'),
+    Locale('pt'),
   ];
 
   /// No description provided for @appTitle.
@@ -1219,6 +1227,240 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Inizia'**
   String get inizia;
+
+  /// No description provided for @profiloTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Profilo'**
+  String get profiloTitle;
+
+  /// No description provided for @utenteOspite.
+  ///
+  /// In it, this message translates to:
+  /// **'Utente Ospite'**
+  String get utenteOspite;
+
+  /// No description provided for @datiLocali.
+  ///
+  /// In it, this message translates to:
+  /// **'I tuoi dati sono salvati solo su questo dispositivo.'**
+  String get datiLocali;
+
+  /// No description provided for @avvisoSovrascrittura.
+  ///
+  /// In it, this message translates to:
+  /// **'Attenzione: Se accedi con un account già esistente sul Cloud, i dati presenti su questo dispositivo verranno sostituiti con quelli del Cloud.'**
+  String get avvisoSovrascrittura;
+
+  /// No description provided for @accediGoogle.
+  ///
+  /// In it, this message translates to:
+  /// **'Accedi con Google'**
+  String get accediGoogle;
+
+  /// No description provided for @accediApple.
+  ///
+  /// In it, this message translates to:
+  /// **'Accedi con Apple'**
+  String get accediApple;
+
+  /// No description provided for @esci.
+  ///
+  /// In it, this message translates to:
+  /// **'Esci dall\'account'**
+  String get esci;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Impostazioni'**
+  String get settingsTitle;
+
+  /// No description provided for @themeLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Tema App'**
+  String get themeLabel;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In it, this message translates to:
+  /// **'Sistema'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiaro'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In it, this message translates to:
+  /// **'Scuro'**
+  String get themeDark;
+
+  /// No description provided for @accediEmail.
+  ///
+  /// In it, this message translates to:
+  /// **'Accedi con Email'**
+  String get accediEmail;
+
+  /// No description provided for @registrati.
+  ///
+  /// In it, this message translates to:
+  /// **'Registrati'**
+  String get registrati;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @confermaPassword.
+  ///
+  /// In it, this message translates to:
+  /// **'Conferma Password'**
+  String get confermaPassword;
+
+  /// No description provided for @mailVerificaInviata.
+  ///
+  /// In it, this message translates to:
+  /// **'Ti abbiamo inviato un\'email di verifica. Controlla la tua casella di posta.'**
+  String get mailVerificaInviata;
+
+  /// No description provided for @mailNonVerificata.
+  ///
+  /// In it, this message translates to:
+  /// **'Email non ancora verificata. Clicca qui per reinviare il link.'**
+  String get mailNonVerificata;
+
+  /// No description provided for @modificaProfilo.
+  ///
+  /// In it, this message translates to:
+  /// **'Modifica Profilo'**
+  String get modificaProfilo;
+
+  /// No description provided for @nomeLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Nome'**
+  String get nomeLabel;
+
+  /// No description provided for @cognomeLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Cognome'**
+  String get cognomeLabel;
+
+  /// No description provided for @selezionaFotoProfilo.
+  ///
+  /// In it, this message translates to:
+  /// **'Scegli un\'immagine di profilo'**
+  String get selezionaFotoProfilo;
+
+  /// No description provided for @attenzioneSovrascritturaTitolo.
+  ///
+  /// In it, this message translates to:
+  /// **'Attenzione ai Dati Locali'**
+  String get attenzioneSovrascritturaTitolo;
+
+  /// No description provided for @attenzioneSovrascritturaMessaggio.
+  ///
+  /// In it, this message translates to:
+  /// **'Stai per accedere a un account Cloud. Se questo account contiene già dei dati, i dati attualmente salvati su questo dispositivo (Utente Ospite) verranno SOVRASCRITTI e persi definitivamente. Vuoi procedere?'**
+  String get attenzioneSovrascritturaMessaggio;
+
+  /// No description provided for @procedi.
+  ///
+  /// In it, this message translates to:
+  /// **'Procedi'**
+  String get procedi;
+
+  /// No description provided for @annulla.
+  ///
+  /// In it, this message translates to:
+  /// **'Annulla'**
+  String get annulla;
+
+  /// No description provided for @loginSuccess.
+  ///
+  /// In it, this message translates to:
+  /// **'Login effettuato con successo'**
+  String get loginSuccess;
+
+  /// No description provided for @loginError.
+  ///
+  /// In it, this message translates to:
+  /// **'Accesso non riuscito o annullato'**
+  String get loginError;
+
+  /// No description provided for @cloudUser.
+  ///
+  /// In it, this message translates to:
+  /// **'Utente Cloud'**
+  String get cloudUser;
+
+  /// No description provided for @logoutSuccess.
+  ///
+  /// In it, this message translates to:
+  /// **'Sessione terminata'**
+  String get logoutSuccess;
+
+  /// No description provided for @emailValida.
+  ///
+  /// In it, this message translates to:
+  /// **'Inserisci una email valida'**
+  String get emailValida;
+
+  /// No description provided for @passwordCorta.
+  ///
+  /// In it, this message translates to:
+  /// **'Minimo 6 caratteri'**
+  String get passwordCorta;
+
+  /// No description provided for @passwordNonCoincidono.
+  ///
+  /// In it, this message translates to:
+  /// **'Le password non coincidono'**
+  String get passwordNonCoincidono;
+
+  /// No description provided for @nonHaiAccount.
+  ///
+  /// In it, this message translates to:
+  /// **'Non hai un account? Registrati'**
+  String get nonHaiAccount;
+
+  /// No description provided for @haiGiaAccount.
+  ///
+  /// In it, this message translates to:
+  /// **'Hai già un account? Accedi'**
+  String get haiGiaAccount;
+
+  /// No description provided for @profiloAggiornato.
+  ///
+  /// In it, this message translates to:
+  /// **'Profilo aggiornato con successo!'**
+  String get profiloAggiornato;
+
+  /// No description provided for @erroreSalvataggio.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore nel salvataggio'**
+  String get erroreSalvataggio;
+
+  /// No description provided for @languageLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Lingua'**
+  String get languageLabel;
 }
 
 class _AppLocalizationsDelegate
@@ -1231,8 +1473,14 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'it'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'de',
+    'en',
+    'es',
+    'fr',
+    'it',
+    'pt',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -1241,10 +1489,18 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'de':
+      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
     case 'it':
       return AppLocalizationsIt();
+    case 'pt':
+      return AppLocalizationsPt();
   }
 
   throw FlutterError(

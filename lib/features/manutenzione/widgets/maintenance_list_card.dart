@@ -67,7 +67,8 @@ class MaintenanceListCard extends ConsumerWidget {
         );
       },
       onDismissed: (direction) {
-        ref.read(manutenzioneListProvider(manutenzione.idScooter).notifier).deleteManutenzione(manutenzione.id!);
+        // FIX: aggiornato idScooter in scooterId
+        ref.read(manutenzioneListProvider(manutenzione.scooterId).notifier).deleteManutenzione(manutenzione.id!);
         ref.read(messageProvider.notifier).show(l10n.maintenanceDeleted, type: MessageType.success);
       },
       background: Container(
