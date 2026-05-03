@@ -60,7 +60,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SnackBar(
             content: Text(next.message),
             backgroundColor: bgColor,
-            behavior: SnackBarBehavior.floating,
+            // FIX: Cambiato in "fixed" per evitare l'eccezione di rendering
+            behavior: SnackBarBehavior.fixed,
           ),
         );
         ref.read(messageProvider.notifier).clear();
@@ -207,7 +208,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (context, index) {
         final scooter = scooters[index];
-        // FIX: imgPath aggiornato in imgName
         bool hasValidImage = scooter.imgName != null && File(scooter.imgName!).existsSync();
 
         return Dismissible(
@@ -244,7 +244,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 child: ClipOval(
-                  // FIX: imgPath aggiornato in imgName
                   child: hasValidImage
                       ? Image.file(File(scooter.imgName!), fit: BoxFit.cover)
                       : const Icon(Icons.moped, color: Colors.grey),

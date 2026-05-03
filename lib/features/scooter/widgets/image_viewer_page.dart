@@ -1,5 +1,3 @@
-// lib/features/scooter/widgets/image_viewer_page.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,13 +8,13 @@ import '../../../../core/providers/message_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class ImageViewerPage extends ConsumerStatefulWidget {
-  final File imageFile;
+  final String imagePath; // FIX: ora accetta un path locale o un URL
   final String title;
   final String heroTag;
 
   const ImageViewerPage({
     super.key,
-    required this.imageFile,
+    required this.imagePath,
     required this.title,
     required this.heroTag,
   });
@@ -27,13 +25,22 @@ class ImageViewerPage extends ConsumerStatefulWidget {
 
 class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
   bool _isSaving = false;
+  late bool _isNetwork;
 
-  // Questa funzione apre la Share Sheet di sistema (include WhatsApp, Telegram, Mail, ecc.)
+  @override
+  void initState() {
+    super.initState();
+    _isNetwork = widget.imagePath.startsWith('http');
+  }
+
   Future<void> _shareImage() async {
     final l10n = AppLocalizations.of(context)!;
+    if (_isNetwork) {
+      ref.read(messageProvider.notifier).show(l10n.funzioneInArrivo, type: MessageType.info);
+      return;
+    }
     try {
-      final xFile = XFile(widget.imageFile.path);
-
+      final xFile = XFile(widget.imagePath);
       await SharePlus.instance.share(
         ShareParams(
           files: [xFile],
@@ -48,10 +55,13 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
 
   Future<void> _saveToGallery() async {
     final l10n = AppLocalizations.of(context)!;
+    if (_isNetwork) {
+      ref.read(messageProvider.notifier).show(l10n.funzioneInArrivo, type: MessageType.info);
+      return;
+    }
     setState(() => _isSaving = true);
-
     try {
-      await Gal.putImage(widget.imageFile.path);
+      await Gal.putImage(widget.imagePath);
       ref.read(messageProvider.notifier).show(l10n.imageSaved, type: MessageType.success);
     } catch (e) {
       ref.read(messageProvider.notifier).show(l10n.errorSaving, type: MessageType.error);
@@ -62,7 +72,6 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -71,12 +80,10 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
         actions: [
-          // Tasto Condividi (WhatsApp & Co.)
           IconButton(
             icon: const Icon(Icons.share, color: Colors.cyanAccent),
             onPressed: _shareImage,
           ),
-          // Tasto Salva in Galleria
           IconButton(
             icon: _isSaving
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -92,7 +99,9 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
           maxScale: 4.0,
           child: Hero(
             tag: widget.heroTag,
-            child: Image.file(widget.imageFile),
+            child: _isNetwork
+                ? Image.network(widget.imagePath)
+                : Image.file(File(widget.imagePath)),
           ),
         ),
       ),

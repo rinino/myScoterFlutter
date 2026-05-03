@@ -248,5 +248,34 @@
   "profiloAggiornato": "Profile updated successfully!",
   "erroreSalvataggio": "Error saving profile",
 
-  "languageLabel": "Language"
+  "languageLabel": "Language",
+
+  "eliminaAccount": "Delete Account",
+  "eliminaAccountConferma": "Are you sure you want to permanently delete your account? This operation will delete all your data and photos from the Cloud.",
+  "eliminaDefinitivamente": "Permanently Delete",
+  "accountEliminato": "Account successfully deleted",
+  "erroreRiautenticazione": "For security reasons, you must log out first, log in again, and then delete your account.",
+  "funzioneInArrivo": "Feature coming in future updates",
+
+  "notificaScadenza15Titolo": "Deadline approaching",
+  "notificaScadenza15Corpo": "The document {documento} will expire in 15 days.",
+  "@notificaScadenza15Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza3Titolo": "Expiring Soon!",
+  "notificaScadenza3Corpo": "Warning: the document {documento} will expire in 3 days.",
+  "@notificaScadenza3Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza0Titolo": "Document Expired",
+  "notificaScadenza0Corpo": "The document {documento} expires today.",
+  "@notificaScadenza0Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  }
 }

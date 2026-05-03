@@ -27,6 +27,8 @@ import 'package:myscooter/features/onboarding/screens/onboarding_screen.dart';
 import 'package:myscooter/features/profilo/screens/email_auth_screen.dart';
 import 'package:myscooter/features/profilo/screens/edit_profile_screen.dart';
 
+import 'package:myscooter/features/profilo/screens/profile_screen.dart';
+
 GoRouter createRouter(ThemeService themeService, bool hasSeenOnboarding) {
   return GoRouter(
     initialLocation: hasSeenOnboarding ? '/' : '/onboarding',
@@ -144,6 +146,11 @@ GoRouter createRouter(ThemeService themeService, bool hasSeenOnboarding) {
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );

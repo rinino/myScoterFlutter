@@ -1461,6 +1461,78 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Lingua'**
   String get languageLabel;
+
+  /// No description provided for @eliminaAccount.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina Account'**
+  String get eliminaAccount;
+
+  /// No description provided for @eliminaAccountConferma.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei sicuro di voler eliminare definitivamente il tuo account? Questa operazione cancellerà tutti i tuoi dati e le tue foto dal Cloud.'**
+  String get eliminaAccountConferma;
+
+  /// No description provided for @eliminaDefinitivamente.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina Definitivamente'**
+  String get eliminaDefinitivamente;
+
+  /// No description provided for @accountEliminato.
+  ///
+  /// In it, this message translates to:
+  /// **'Account eliminato con successo'**
+  String get accountEliminato;
+
+  /// No description provided for @erroreRiautenticazione.
+  ///
+  /// In it, this message translates to:
+  /// **'Per sicurezza, devi fare prima il logout, accedere di nuovo e poi eliminare l\'account.'**
+  String get erroreRiautenticazione;
+
+  /// No description provided for @funzioneInArrivo.
+  ///
+  /// In it, this message translates to:
+  /// **'Funzione in arrivo nei prossimi aggiornamenti'**
+  String get funzioneInArrivo;
+
+  /// No description provided for @notificaScadenza15Titolo.
+  ///
+  /// In it, this message translates to:
+  /// **'Scadenza in avvicinamento'**
+  String get notificaScadenza15Titolo;
+
+  /// No description provided for @notificaScadenza15Corpo.
+  ///
+  /// In it, this message translates to:
+  /// **'Il documento {documento} scadrà tra 15 giorni.'**
+  String notificaScadenza15Corpo(String documento);
+
+  /// No description provided for @notificaScadenza3Titolo.
+  ///
+  /// In it, this message translates to:
+  /// **'Scadenza Imminente!'**
+  String get notificaScadenza3Titolo;
+
+  /// No description provided for @notificaScadenza3Corpo.
+  ///
+  /// In it, this message translates to:
+  /// **'Attenzione: il documento {documento} scadrà tra 3 giorni.'**
+  String notificaScadenza3Corpo(String documento);
+
+  /// No description provided for @notificaScadenza0Titolo.
+  ///
+  /// In it, this message translates to:
+  /// **'Documento Scaduto'**
+  String get notificaScadenza0Titolo;
+
+  /// No description provided for @notificaScadenza0Corpo.
+  ///
+  /// In it, this message translates to:
+  /// **'Il documento {documento} scade oggi.'**
+  String notificaScadenza0Corpo(String documento);
 }
 
 class _AppLocalizationsDelegate

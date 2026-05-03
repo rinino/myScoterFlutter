@@ -3,13 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
 enum TipoDocumento {
-  libretto,
-  assicurazione,
-  revisione,
-  bollo,
-  certificato,
-  patente,
-  altro,
+  libretto, assicurazione, revisione, bollo, certificato, patente, altro,
 }
 
 extension TipoDocumentoExt on TipoDocumento {
@@ -41,7 +35,7 @@ extension TipoDocumentoExt on TipoDocumento {
 class Documento {
   String? id;
   String? userId;
-  String scooterId; // Allineato a Swift (era idScooter int)
+  String scooterId;
   TipoDocumento tipo;
   String? tipoCustom;
   DateTime? dataScadenza;
@@ -49,14 +43,8 @@ class Documento {
   String? nomeFoto;
 
   Documento({
-    this.id,
-    this.userId,
-    required this.scooterId,
-    required this.tipo,
-    this.tipoCustom,
-    this.dataScadenza,
-    this.note,
-    this.nomeFoto,
+    this.id, this.userId, required this.scooterId, required this.tipo,
+    this.tipoCustom, this.dataScadenza, this.note, this.nomeFoto,
   });
 
   Map<String, dynamic> toMap() {
@@ -76,7 +64,11 @@ class Documento {
       id: documentId,
       userId: map['userId'] as String?,
       scooterId: map['scooterId'] as String,
-      tipo: TipoDocumento.values.byName(map['tipo']),
+      // FIX CRITICO: Ignora maiuscole/minuscole
+      tipo: TipoDocumento.values.firstWhere(
+            (e) => e.name.toLowerCase() == map['tipo'].toString().toLowerCase(),
+        orElse: () => TipoDocumento.libretto,
+      ),
       tipoCustom: map['tipoCustom'] as String?,
       dataScadenza: map['dataScadenza'] != null ? (map['dataScadenza'] as Timestamp).toDate() : null,
       note: map['note'] as String?,

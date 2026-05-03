@@ -27,7 +27,6 @@ class BackupManager {
     final scootersSnap = await db.collection("scooters").where("userId", isEqualTo: userId).get();
     final scooters = scootersSnap.docs.map((d) => d.data()..['id'] = d.id).toList();
 
-    // Helper per convertire i Timestamp di Firebase in stringhe ISO per il JSON
     void convertTimestamps(Map<String, dynamic> map, String dateField) {
       if (map[dateField] is Timestamp) {
         map[dateField] = (map[dateField] as Timestamp).toDate().toIso8601String();
@@ -60,7 +59,8 @@ class BackupManager {
     final docsDir = await getApplicationDocumentsDirectory();
 
     void addImage(String? imgName) {
-      if (imgName != null) {
+      // FIX CRITICO: Se è un link al cloud, ignoriamo perché il dato è già al sicuro online
+      if (imgName != null && !imgName.startsWith('http')) {
         final f = File(p.join(docsDir.path, imgName));
         if (f.existsSync()) imagesData[imgName] = base64Encode(f.readAsBytesSync());
       }
@@ -124,7 +124,10 @@ class BackupManager {
       for (var doc in snap.docs) {
         final data = doc.data();
         final fileName = data["nomeFoto"] as String? ?? data["imgName"] as String?;
-        if (fileName != null) try { await storage.ref("images/$userId/$fileName").delete(); } catch(_) {}
+        // FIX CRITICO: Eliminiamo solo se era un file locale convertito in storage (senza http)
+        if (fileName != null && !fileName.startsWith('http')) {
+          try { await storage.ref("images/$userId/$fileName").delete(); } catch(_) {}
+        }
         await doc.reference.delete();
       }
     }

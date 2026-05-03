@@ -711,4 +711,49 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get languageLabel => 'Langue';
+
+  @override
+  String get eliminaAccount => 'Elimina Account';
+
+  @override
+  String get eliminaAccountConferma =>
+      'Sei sicuro di voler eliminare definitivamente il tuo account? Questa operazione cancellerà tutti i tuoi dati e le tue foto dal Cloud.';
+
+  @override
+  String get eliminaDefinitivamente => 'Elimina Definitivamente';
+
+  @override
+  String get accountEliminato => 'Account eliminato con successo';
+
+  @override
+  String get erroreRiautenticazione =>
+      'Per sicurezza, devi fare prima il logout, accedere di nuovo e poi eliminare l\'account.';
+
+  @override
+  String get funzioneInArrivo =>
+      'Funzione in arrivo nei prossimi aggiornamenti';
+
+  @override
+  String get notificaScadenza15Titolo => 'Échéance proche';
+
+  @override
+  String notificaScadenza15Corpo(String documento) {
+    return 'Le document $documento expirera dans 15 jours.';
+  }
+
+  @override
+  String get notificaScadenza3Titolo => 'Échéance imminente !';
+
+  @override
+  String notificaScadenza3Corpo(String documento) {
+    return 'Attention : le document $documento expirera dans 3 jours.';
+  }
+
+  @override
+  String get notificaScadenza0Titolo => 'Document Expiré';
+
+  @override
+  String notificaScadenza0Corpo(String documento) {
+    return 'Le document $documento expire aujourd\'hui.';
+  }
 }

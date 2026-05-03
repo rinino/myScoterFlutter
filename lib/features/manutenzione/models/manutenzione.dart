@@ -1,19 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Enum per le categorie di manutenzione
 enum CategoriaManutenzione {
-  motore,
-  accensione,
-  alimentazione,
-  olioCambio,
-  trasmissione,
-  freniGomme,
-  carrozzeria,
-  altro,
+  motore, accensione, alimentazione, olioCambio, trasmissione, freniGomme, carrozzeria, altro,
 }
 
-// Estensione per gestire icone e chiavi di traduzione associate alle categorie
 extension CategoriaManutenzioneExt on CategoriaManutenzione {
   String get nameKey {
     switch (this) {
@@ -45,7 +36,7 @@ extension CategoriaManutenzioneExt on CategoriaManutenzione {
 class Manutenzione {
   String? id;
   String? userId;
-  String scooterId; // Allineato a Swift (era idScooter int)
+  String scooterId;
   DateTime data;
   double km;
   CategoriaManutenzione categoria;
@@ -56,31 +47,16 @@ class Manutenzione {
   String? nomeFoto;
 
   Manutenzione({
-    this.id,
-    this.userId,
-    required this.scooterId,
-    required this.data,
-    required this.km,
-    required this.categoria,
-    this.categoriaCustom,
-    required this.titolo,
-    this.costo,
-    this.note,
-    this.nomeFoto,
+    this.id, this.userId, required this.scooterId, required this.data,
+    required this.km, required this.categoria, this.categoriaCustom,
+    required this.titolo, this.costo, this.note, this.nomeFoto,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
-      'scooterId': scooterId,
-      'data': Timestamp.fromDate(data),
-      'km': km,
-      'categoria': categoria.name,
-      'categoriaCustom': categoriaCustom,
-      'titolo': titolo,
-      'costo': costo,
-      'note': note,
-      'nomeFoto': nomeFoto,
+      'userId': userId, 'scooterId': scooterId, 'data': Timestamp.fromDate(data),
+      'km': km, 'categoria': categoria.name, 'categoriaCustom': categoriaCustom,
+      'titolo': titolo, 'costo': costo, 'note': note, 'nomeFoto': nomeFoto,
     };
   }
 
@@ -91,7 +67,11 @@ class Manutenzione {
       scooterId: map['scooterId'] as String,
       data: (map['data'] as Timestamp).toDate(),
       km: (map['km'] as num).toDouble(),
-      categoria: CategoriaManutenzione.values.byName(map['categoria']),
+      // FIX CRITICO: Ignora maiuscole/minuscole
+      categoria: CategoriaManutenzione.values.firstWhere(
+            (e) => e.name.toLowerCase() == map['categoria'].toString().toLowerCase(),
+        orElse: () => CategoriaManutenzione.altro,
+      ),
       categoriaCustom: map['categoriaCustom'] as String?,
       titolo: map['titolo'] as String,
       costo: map['costo'] != null ? (map['costo'] as num).toDouble() : null,

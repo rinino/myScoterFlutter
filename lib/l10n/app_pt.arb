@@ -239,5 +239,27 @@
   "profiloAggiornato": "Perfil atualizado com sucesso!",
   "erroreSalvataggio": "Erro ao salvar",
 
-  "languageLabel": "Idioma"
+  "languageLabel": "Idioma",
+
+  "notificaScadenza15Titolo": "Prazo se aproximando",
+  "notificaScadenza15Corpo": "O documento {documento} expirará em 15 dias.",
+  "@notificaScadenza15Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza3Titolo": "Expirando em breve!",
+  "notificaScadenza3Corpo": "Aviso: o documento {documento} expirará em 3 dias.",
+  "@notificaScadenza3Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza0Titolo": "Documento Expirado",
+  "notificaScadenza0Corpo": "O documento {documento} expira hoje.",
+  "@notificaScadenza0Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  }
 }

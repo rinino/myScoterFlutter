@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:myscooter/core/providers/message_provider.dart';
+import 'package:myscooter/core/services/local_image_cache.dart'; // FIX: Aggiunto
 import 'package:myscooter/l10n/app_localizations.dart';
 import '../models/utente_profilo.dart';
 
@@ -44,11 +45,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _loadProfile() async {
     if (_currentUser == null) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('utenti').doc(_currentUser.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('utenti').doc(_currentUser!.uid).get();
       if (doc.exists) {
         _utenteProfilo = UtenteProfilo.fromMap(doc.data()!, doc.id);
         _nomeController.text = _utenteProfilo!.nome;
         _cognomeController.text = _utenteProfilo!.cognome;
+      } else {
+        if (_currentUser!.displayName != null) {
+          final parti = _currentUser!.displayName!.split(' ');
+          _nomeController.text = parti.first;
+          if (parti.length > 1) {
+            _cognomeController.text = parti.sublist(1).join(' ');
+          }
+        }
       }
     } catch (e) {
       debugPrint("Errore caricamento profilo: $e");
@@ -59,7 +68,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    // Compressione foto come da Swift (800x800 e qualità ridotta per risparmiare banda/spazio)
     final pickedFile = await picker.pickImage(
         source: ImageSource.gallery,
         maxHeight: 800,
@@ -78,32 +86,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      String? photoUrl = _utenteProfilo?.nomeFotoProfilo ?? _currentUser.photoURL;
+      String? photoUrl = _utenteProfilo?.nomeFotoProfilo ?? _currentUser!.photoURL;
 
-      // 1. Upload Immagine su Firebase Storage se è stata cambiata
       if (_newProfileImage != null) {
-        final storageRef = FirebaseStorage.instance.ref().child("images/${_currentUser.uid}/profile.jpg");
+        final storageRef = FirebaseStorage.instance.ref().child("images/${_currentUser!.uid}/profile.jpg");
         await storageRef.putFile(_newProfileImage!);
         photoUrl = await storageRef.getDownloadURL();
-        await _currentUser.updatePhotoURL(photoUrl);
+        await _currentUser!.updatePhotoURL(photoUrl);
       }
 
-      // 2. Aggiorna il Display Name su Auth (per comodità)
       final fullName = "${_nomeController.text.trim()} ${_cognomeController.text.trim()}".trim();
       if (fullName.isNotEmpty) {
-        await _currentUser.updateDisplayName(fullName);
+        await _currentUser!.updateDisplayName(fullName);
       }
 
-      // 3. Salva su Firestore nel documento utente
       final newProfile = UtenteProfilo(
-        id: _currentUser.uid,
-        email: _currentUser.email ?? "no-email",
+        id: _currentUser!.uid,
+        email: _currentUser!.email ?? "no-email",
         nome: _nomeController.text.trim(),
         cognome: _cognomeController.text.trim(),
         nomeFotoProfilo: photoUrl,
       );
 
-      await FirebaseFirestore.instance.collection('utenti').doc(_currentUser.uid).set(newProfile.toMap());
+      await FirebaseFirestore.instance.collection('utenti').doc(_currentUser!.uid).set(newProfile.toMap());
 
       if (mounted) {
         ref.read(messageProvider.notifier).show(l10n.profiloAggiornato, type: MessageType.success);
@@ -121,6 +126,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final photoToDisplay = _utenteProfilo?.nomeFotoProfilo ?? _currentUser?.photoURL;
 
     return Scaffold(
       appBar: AppBar(
@@ -138,24 +144,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           : ListView(
         padding: const EdgeInsets.all(24.0),
         children: [
-          // FOTO PROFILO
           Center(
             child: GestureDetector(
               onTap: _pickImage,
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: _newProfileImage != null
-                        ? FileImage(_newProfileImage!) as ImageProvider
-                        : (_utenteProfilo?.nomeFotoProfilo != null || _currentUser?.photoURL != null)
-                        ? NetworkImage(_utenteProfilo?.nomeFotoProfilo ?? _currentUser!.photoURL!)
-                        : null,
-                    child: (_newProfileImage == null && _utenteProfilo?.nomeFotoProfilo == null && _currentUser?.photoURL == null)
-                        ? const Icon(Icons.person, size: 60, color: Colors.white)
-                        : null,
+                  // FIX: Uso di ClipOval + CloudSyncImage per scaricare dal cloud in caso di path iOS
+                  ClipOval(
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey.shade300,
+                      child: _newProfileImage != null
+                          ? Image.file(_newProfileImage!, fit: BoxFit.cover)
+                          : (photoToDisplay != null && photoToDisplay.isNotEmpty)
+                          ? CloudSyncImage(imagePath: photoToDisplay, width: 120, height: 120, fit: BoxFit.cover)
+                          : const Icon(Icons.person, size: 60, color: Colors.white),
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -172,10 +178,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: 32),
 
-          // CAMPI TESTO
           TextFormField(
             initialValue: _currentUser?.email ?? "N/A",
-            enabled: false, // La mail non è modificabile
+            enabled: false,
             decoration: InputDecoration(
                 labelText: l10n.emailLabel,
                 border: const OutlineInputBorder(),
@@ -186,6 +191,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
           TextFormField(
             controller: _nomeController,
+            textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
                 labelText: l10n.nomeLabel,
                 border: const OutlineInputBorder()
@@ -195,6 +201,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
           TextFormField(
             controller: _cognomeController,
+            textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
                 labelText: l10n.cognomeLabel,
                 border: const OutlineInputBorder()

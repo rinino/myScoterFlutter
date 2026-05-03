@@ -248,7 +248,38 @@
     "profiloAggiornato": "Profilo aggiornato con successo!",
     "erroreSalvataggio": "Errore nel salvataggio",
 
-    "languageLabel": "Lingua"
+    "languageLabel": "Lingua",
+
+    "eliminaAccount": "Elimina Account",
+    "eliminaAccountConferma": "Sei sicuro di voler eliminare definitivamente il tuo account? Questa operazione cancellerà tutti i tuoi dati e le tue foto dal Cloud.",
+    "eliminaDefinitivamente": "Elimina Definitivamente",
+    "accountEliminato": "Account eliminato con successo",
+    "erroreRiautenticazione": "Per sicurezza, devi fare prima il logout, accedere di nuovo e poi eliminare l'account.",
+    "funzioneInArrivo": "Funzione in arrivo nei prossimi aggiornamenti",
+
+    "notificaScadenza15Titolo": "Scadenza in avvicinamento",
+    "notificaScadenza15Corpo": "Il documento {documento} scadrà tra 15 giorni.",
+    "@notificaScadenza15Corpo": {
+        "placeholders": {
+            "documento": { "type": "String" }
+        }
+    },
+    "notificaScadenza3Titolo": "Scadenza Imminente!",
+    "notificaScadenza3Corpo": "Attenzione: il documento {documento} scadrà tra 3 giorni.",
+    "@notificaScadenza3Corpo": {
+        "placeholders": {
+            "documento": { "type": "String" }
+        }
+    },
+    "notificaScadenza0Titolo": "Documento Scaduto",
+    "notificaScadenza0Corpo": "Il documento {documento} scade oggi.",
+    "@notificaScadenza0Corpo": {
+        "placeholders": {
+            "documento": { "type": "String" }
+        }
+    }
+
+
 
 
 }

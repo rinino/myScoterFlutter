@@ -23,11 +23,15 @@ class DocumentoDetailScreen extends ConsumerWidget {
   }
 
   void _openImageViewer(BuildContext context) {
-    if (documento.nomeFoto == null || !File(documento.nomeFoto!).existsSync()) return;
+    if (documento.nomeFoto == null || documento.nomeFoto!.isEmpty) return;
+
+    final isNetwork = documento.nomeFoto!.startsWith('http');
+    if (!isNetwork && !File(documento.nomeFoto!).existsSync()) return;
+
     Navigator.push(context, MaterialPageRoute(
       fullscreenDialog: true,
       builder: (context) => ImageViewerPage(
-        imageFile: File(documento.nomeFoto!),
+        imagePath: documento.nomeFoto!,
         title: documento.tipo == TipoDocumento.altro ? (documento.tipoCustom ?? 'Documento') : documento.tipo.name,
         heroTag: 'doc_image_${documento.id}',
       ),
@@ -38,7 +42,10 @@ class DocumentoDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
-    final isExpiredOrNear = _getExpiryColor(documento.dataScadenza) != Colors.green;
+
+    // FIX: Calcola se c'è un'immagine disponibile (Cloud o Locale)
+    final bool isNetwork = documento.nomeFoto != null && documento.nomeFoto!.startsWith('http');
+    final bool hasImage = documento.nomeFoto != null && (isNetwork || File(documento.nomeFoto!).existsSync());
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +55,7 @@ class DocumentoDetailScreen extends ConsumerWidget {
             icon: const Icon(Icons.edit, color: Colors.blue),
             onPressed: () {
               context.push('/add-edit-documento', extra: {
-                'scooterId': documento.scooterId, // FIX: scooterId al posto di idScooter
+                'scooterId': documento.scooterId,
                 'documento': documento,
               });
               context.pop();
@@ -69,7 +76,7 @@ class DocumentoDetailScreen extends ConsumerWidget {
                   Icon(documento.tipo.icon, size: 50, color: _getExpiryColor(documento.dataScadenza)),
                   const SizedBox(height: 16),
                   Text(
-                    documento.tipo == TipoDocumento.altro ? (documento.tipoCustom ?? l10n.cat_altro) : documento.tipo.getLocalizedName(l10n),
+                    documento.tipo == TipoDocumento.altro ? (documento.tipoCustom ?? l10n.cat_altro) : documento.tipo.getLocalizedName(l10n).toUpperCase(),
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const Divider(height: 32),
@@ -115,7 +122,8 @@ class DocumentoDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
           ],
-          if (documento.nomeFoto != null && File(documento.nomeFoto!).existsSync()) ...[
+
+          if (hasImage) ...[
             Card(
               elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -137,7 +145,9 @@ class DocumentoDetailScreen extends ConsumerWidget {
                         tag: 'doc_image_${documento.id}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(File(documento.nomeFoto!), height: 200, width: double.infinity, fit: BoxFit.cover),
+                          child: isNetwork
+                              ? Image.network(documento.nomeFoto!, height: 200, width: double.infinity, fit: BoxFit.cover)
+                              : Image.file(File(documento.nomeFoto!), height: 200, width: double.infinity, fit: BoxFit.cover),
                         ),
                       ),
                     ],

@@ -239,5 +239,27 @@
   "profiloAggiornato": "Profil mis à jour avec succès !",
   "erroreSalvataggio": "Erreur lors de l'enregistrement",
 
-  "languageLabel": "Langue"
+  "languageLabel": "Langue",
+
+  "notificaScadenza15Titolo": "Échéance proche",
+  "notificaScadenza15Corpo": "Le document {documento} expirera dans 15 jours.",
+  "@notificaScadenza15Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza3Titolo": "Échéance imminente !",
+  "notificaScadenza3Corpo": "Attention : le document {documento} expirera dans 3 jours.",
+  "@notificaScadenza3Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza0Titolo": "Document Expiré",
+  "notificaScadenza0Corpo": "Le document {documento} expire aujourd'hui.",
+  "@notificaScadenza0Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  }
 }

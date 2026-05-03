@@ -12,57 +12,41 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // Inizializza i fusi orari per poter programmare notifiche nel futuro
     tz.initializeTimeZones();
-
-    // Configurazione per Android
     const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    // Configurazione per iOS
     const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true,
     );
-
     const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
+      android: initializationSettingsAndroid, iOS: initializationSettingsIOS,
     );
-
-    // FIX: Uso del parametro nominativo 'settings:'
-    await flutterLocalNotificationsPlugin.initialize(
-      settings: initializationSettings,
-    );
+    await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
   }
 
-  // Equivalente della funzione scheduleDocumentNotifications di Swift
   Future<void> scheduleDocumentNotifications(Documento documento, AppLocalizations l10n) async {
     final scadenza = documento.dataScadenza;
     final docId = documento.id;
 
     if (scadenza == null || docId == null) return;
 
-    // 1. Cancelliamo le notifiche precedenti per questo documento
     await cancelNotifications(docId);
 
     final nomeDoc = documento.tipo == TipoDocumento.altro
         ? (documento.tipoCustom ?? 'Documento')
         : documento.tipo.getLocalizedName(l10n);
 
-    // 2. Programmiamo gli avvisi (15 gg, 3 gg, giorno stesso)
-    await _schedule(docId, 15, scadenza, nomeDoc, "Scadenza in avvicinamento", "Il documento $nomeDoc scadrà tra 15 giorni.");
-    await _schedule(docId, 3, scadenza, nomeDoc, "Scadenza Imminente!", "Attenzione: il documento $nomeDoc scadrà tra 3 giorni.");
-    await _schedule(docId, 0, scadenza, nomeDoc, "Documento Scaduto", "Il documento $nomeDoc scade oggi.");
+    // Usa le traduzioni di sistema passando il nome del documento
+    await _schedule(docId, 15, scadenza, l10n.notificaScadenza15Titolo, l10n.notificaScadenza15Corpo(nomeDoc));
+    await _schedule(docId, 3, scadenza, l10n.notificaScadenza3Titolo, l10n.notificaScadenza3Corpo(nomeDoc));
+    await _schedule(docId, 0, scadenza, l10n.notificaScadenza0Titolo, l10n.notificaScadenza0Corpo(nomeDoc));
   }
 
-  Future<void> _schedule(String docId, int daysBefore, DateTime targetDate, String docName, String title, String body) async {
+  Future<void> _schedule(String docId, int daysBefore, DateTime targetDate, String title, String body) async {
     final notificationDate = targetDate.subtract(Duration(days: daysBefore));
     var scheduledDate = DateTime(notificationDate.year, notificationDate.month, notificationDate.day, 9, 0, 0);
 
     if (scheduledDate.isBefore(DateTime.now())) return;
 
-    // FIX: Usiamo l'hashCode dell'ID stringa di Firebase
     final int notificationId = docId.hashCode + daysBefore;
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -73,9 +57,7 @@ class NotificationService {
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      id: notificationId,
-      title: title,
-      body: body,
+      id: notificationId, title: title, body: body,
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

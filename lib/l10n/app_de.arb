@@ -239,5 +239,27 @@
   "profiloAggiornato": "Profil erfolgreich aktualisiert!",
   "erroreSalvataggio": "Fehler beim Speichern",
 
-  "languageLabel": "Sprache"
+  "languageLabel": "Sprache",
+
+  "notificaScadenza15Titolo": "Frist rückt näher",
+  "notificaScadenza15Corpo": "Das Dokument {documento} läuft in 15 Tagen ab.",
+  "@notificaScadenza15Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza3Titolo": "Läuft bald ab!",
+  "notificaScadenza3Corpo": "Achtung: Das Dokument {documento} läuft in 3 Tagen ab.",
+  "@notificaScadenza3Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza0Titolo": "Dokument Abgelaufen",
+  "notificaScadenza0Corpo": "Das Dokument {documento} läuft heute ab.",
+  "@notificaScadenza0Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  }
 }

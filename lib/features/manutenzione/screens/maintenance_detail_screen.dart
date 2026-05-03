@@ -8,7 +8,6 @@ import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 import 'package:myscooter/features/scooter/widgets/image_viewer_page.dart';
 
-// Importiamo i nuovi widget estratti
 import '../widgets/maintenance_info_card.dart';
 import '../widgets/maintenance_notes_card.dart';
 import '../widgets/maintenance_photo_card.dart';
@@ -32,14 +31,17 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
   }
 
   void _openImageViewer() {
-    if (_currentManutenzione.nomeFoto == null || !File(_currentManutenzione.nomeFoto!).existsSync()) return;
+    if (_currentManutenzione.nomeFoto == null || _currentManutenzione.nomeFoto!.isEmpty) return;
+
+    final isNetwork = _currentManutenzione.nomeFoto!.startsWith('http');
+    if (!isNetwork && !File(_currentManutenzione.nomeFoto!).existsSync()) return;
 
     Navigator.push(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) => ImageViewerPage(
-          imageFile: File(_currentManutenzione.nomeFoto!),
+          imagePath: _currentManutenzione.nomeFoto!,
           title: _currentManutenzione.titolo,
           heroTag: 'maint_image_${_currentManutenzione.id}',
         ),
@@ -49,7 +51,7 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
 
   Future<void> _navigateToEdit() async {
     await context.push('/add-edit-maintenance', extra: {
-      'scooterId': _currentManutenzione.scooterId, // FIX: scooterId al posto di idScooter
+      'scooterId': _currentManutenzione.scooterId,
       'manutenzione': _currentManutenzione,
     });
     if (mounted) {
@@ -86,7 +88,8 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
             const SizedBox(height: 16),
           ],
 
-          if (_currentManutenzione.nomeFoto != null && File(_currentManutenzione.nomeFoto!).existsSync()) ...[
+          // La logica di controllo isNetwork è ora dentro MaintenancePhotoCard
+          if (_currentManutenzione.nomeFoto != null && _currentManutenzione.nomeFoto!.isNotEmpty) ...[
             MaintenancePhotoCard(
               manutenzione: _currentManutenzione,
               onTap: _openImageViewer,

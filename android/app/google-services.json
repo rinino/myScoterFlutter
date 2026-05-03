@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "215689741346",
+    "project_id": "myscooterapp",
+    "storage_bucket": "myscooterapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215689741346:android:3a1b8bbb47eec5e148b67b",
+        "android_client_info": {
+          "package_name": "it.adr.myscooter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "215689741346-hcah8lt6j1psq3p6tbb1ga9m169qmf14.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.adr.myscooter",
+            "certificate_hash": "cd379118c74b9f634bd72da9637385de28cd68c3"
+          }
+        },
+        {
+          "client_id": "215689741346-i8s8f7kvtmthunlviu5f2aoma11gatd4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.adr.myscooter",
+            "certificate_hash": "7ad429f52add862a5b612922b410e66c5d3631cc"
+          }
+        },
+        {
+          "client_id": "215689741346-503hpjgdkhrdm01r47omrsr2k6cveor0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUbWOVuSygevOWQlGFqt_-19bLf6vJc68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "215689741346-503hpjgdkhrdm01r47omrsr2k6cveor0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "215689741346-07bdku2q7k8tlu8l5u19f2iu99iv9pc5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "adr.myScooter"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

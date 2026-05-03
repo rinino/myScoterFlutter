@@ -1,22 +1,15 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:myscooter/core/services/local_image_cache.dart';
 
 class ScooterHeaderImage extends StatelessWidget {
   final String? imgPath;
   final String scooterId;
   final VoidCallback onTap;
 
-  const ScooterHeaderImage({
-    super.key,
-    required this.imgPath,
-    required this.scooterId,
-    required this.onTap,
-  });
+  const ScooterHeaderImage({super.key, required this.imgPath, required this.scooterId, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final bool hasImage = imgPath != null && File(imgPath!).existsSync();
-
     return Center(
       child: GestureDetector(
         onTap: onTap,
@@ -30,12 +23,7 @@ class ScooterHeaderImage extends StatelessWidget {
           child: ClipOval(
             child: Hero(
               tag: 'scooter_image_$scooterId',
-              child: hasImage
-                  ? Image.file(File(imgPath!), fit: BoxFit.cover)
-                  : Container(
-                color: Colors.grey[200],
-                child: const Icon(Icons.moped, size: 50, color: Colors.blue),
-              ),
+              child: CloudSyncImage(imagePath: imgPath, width: 140, height: 140),
             ),
           ),
         ),

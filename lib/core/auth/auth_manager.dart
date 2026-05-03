@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-// FIX ASSOLUTO: Usiamo un alias per impedire a Flutter di confondere la classe
 import 'package:google_sign_in/google_sign_in.dart' as g_sign_in;
 
 import '../database/migration_manager.dart';
@@ -48,9 +47,18 @@ class AuthManager extends ChangeNotifier {
   Future<String?> registerWithEmail(String email, String password) async {
     try {
       setSyncing(true);
-      final creds = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-      await creds.user?.sendEmailVerification();
-      currentUserId = creds.user?.uid;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      // FIX CRITICO: Se eravamo ospiti, uniamo i dati invece di sovrascriverli!
+      if (currentUser != null && currentUser.isAnonymous) {
+        final credential = EmailAuthProvider.credential(email: email, password: password);
+        await currentUser.linkWithCredential(credential);
+        await currentUser.sendEmailVerification();
+      } else {
+        final creds = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+        await creds.user?.sendEmailVerification();
+      }
+      currentUserId = FirebaseAuth.instance.currentUser?.uid;
       notifyListeners();
       return null;
     } on FirebaseAuthException catch (e) {
@@ -86,7 +94,6 @@ class AuthManager extends ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     try {
       setSyncing(true);
-      // Usiamo l'alias g_sign_in per forzare l'uso del pacchetto corretto
       final g_sign_in.GoogleSignIn googleSignIn = g_sign_in.GoogleSignIn(scopes: ['email', 'profile']);
 
       final g_sign_in.GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -99,8 +106,16 @@ class AuthManager extends ChangeNotifier {
           idToken: googleAuth.idToken
       );
 
-      final userCred = await FirebaseAuth.instance.signInWithCredential(credential);
-      currentUserId = userCred.user?.uid;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      // FIX CRITICO: Unisce i dati Ospite all'account Google
+      if (currentUser != null && currentUser.isAnonymous) {
+        await currentUser.linkWithCredential(credential);
+      } else {
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
+
+      currentUserId = FirebaseAuth.instance.currentUser?.uid;
       notifyListeners();
       return true;
     } catch (e) {
@@ -122,8 +137,16 @@ class AuthManager extends ChangeNotifier {
       );
 
       final oauthCredential = OAuthProvider('apple.com').credential(idToken: appleCredential.identityToken, rawNonce: nonce);
-      final userCred = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
-      currentUserId = userCred.user?.uid;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      // FIX CRITICO: Unisce i dati Ospite all'account Apple
+      if (currentUser != null && currentUser.isAnonymous) {
+        await currentUser.linkWithCredential(oauthCredential);
+      } else {
+        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      currentUserId = FirebaseAuth.instance.currentUser?.uid;
       notifyListeners();
       return true;
     } catch (e) {
@@ -140,7 +163,6 @@ class AuthManager extends ChangeNotifier {
     try {
       await FirebaseAuth.instance.signOut();
 
-      // Usiamo l'alias g_sign_in anche per il logout
       final g_sign_in.GoogleSignIn googleSignIn = g_sign_in.GoogleSignIn();
       await googleSignIn.signOut();
 

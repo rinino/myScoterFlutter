@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart'; // Necessario per SystemChrome
 
+// FIX: Aggiunto l'import per inizializzare Firebase
+import 'package:firebase_core/firebase_core.dart';
+
 // Import corretti per l'architettura
 import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/routing/app_router.dart';
@@ -14,8 +17,12 @@ import 'l10n/app_localizations.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // FIX: Inizializza Firebase prima di qualsiasi altra cosa!
+  await Firebase.initializeApp();
 
   // Inizializza notifiche e impostazioni grafiche...
   await NotificationService().init();
@@ -97,6 +104,18 @@ class MyApp extends ConsumerWidget {
           routerConfig: router,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+
+          localeResolutionCallback: (deviceLocale, supportedLocales) {
+            if (deviceLocale != null) {
+              for (var locale in supportedLocales) {
+                if (locale.languageCode == deviceLocale.languageCode) {
+                  return deviceLocale; // Lingua trovata, usa quella del dispositivo!
+                }
+              }
+            }
+            // Lingua sconosciuta (es. Olandese, Russo, ecc.), usa l'Inglese di default
+            return const Locale('en', '');
+          },
         );
       },
     );

@@ -239,5 +239,27 @@
   "profiloAggiornato": "¡Perfil actualizado con éxito!",
   "erroreSalvataggio": "Error al guardar",
 
-  "languageLabel": "Idioma"
+  "languageLabel": "Idioma",
+
+  "notificaScadenza15Titolo": "Vencimiento próximo",
+  "notificaScadenza15Corpo": "El documento {documento} caducará en 15 días.",
+  "@notificaScadenza15Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza3Titolo": "¡Vencimiento inminente!",
+  "notificaScadenza3Corpo": "Atención: el documento {documento} caducará en 3 días.",
+  "@notificaScadenza3Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  },
+  "notificaScadenza0Titolo": "Documento Caducado",
+  "notificaScadenza0Corpo": "El documento {documento} caduca hoy.",
+  "@notificaScadenza0Corpo": {
+    "placeholders": {
+      "documento": { "type": "String" }
+    }
+  }
 }

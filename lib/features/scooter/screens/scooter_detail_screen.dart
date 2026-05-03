@@ -14,7 +14,6 @@ import '../widgets/scooter_info_card.dart';
 import '../widgets/image_viewer_page.dart';
 import '../widgets/refuelings_action_card.dart';
 import '../widgets/maintenance_action_card.dart';
-// Integrazione Fase 1: Carosello Documenti
 import '../../documenti/widgets/documenti_carousel_view.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -31,7 +30,7 @@ class ScooterDetailScreen extends ConsumerStatefulWidget {
 
 class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   bool _isProcessingAction = false;
-  bool _isGeneratingPDF = false; // Stato per il caricamento del PDF
+  bool _isGeneratingPDF = false;
   late Scooter _currentScooter;
 
   @override
@@ -41,14 +40,18 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   }
 
   void _openImageViewer() {
-    // FIX: imgPath aggiornato in imgName
-    if (_currentScooter.imgName == null || !File(_currentScooter.imgName!).existsSync()) return;
+    if (_currentScooter.imgName == null || _currentScooter.imgName!.isEmpty) return;
+
+    // FIX: Controlliamo se è cloud o locale
+    final isNetwork = _currentScooter.imgName!.startsWith('http');
+    if (!isNetwork && !File(_currentScooter.imgName!).existsSync()) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (context) => ImageViewerPage(
-          imageFile: File(_currentScooter.imgName!),
+          imagePath: _currentScooter.imgName!,
           title: "${_currentScooter.marca} ${_currentScooter.modello}",
           heroTag: 'scooter_image_${_currentScooter.id}',
         ),
@@ -78,7 +81,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
     }
   }
 
-  // Logica Fase 2: Generazione e condivisione del PDF
   Future<void> _generaPDF() async {
     setState(() => _isGeneratingPDF = true);
     try {
@@ -86,7 +88,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
       final localeCode = Localizations.localeOf(context).languageCode;
       final currency = ref.read(currencyProvider);
 
-      // Recupero dati per il report
       final rifornimenti = await ref.read(rifornimentoRepoProvider).getRifornimentiForScooter(_currentScooter.id!);
       final manutenzioni = await ref.read(manutenzioneRepoProvider).getManutenzioni(_currentScooter.id!);
 
@@ -132,34 +133,23 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
-                    // Immagine Header
                     ScooterHeaderImage(
-                      imgPath: _currentScooter.imgName, // FIX: imgName
+                      imgPath: _currentScooter.imgName,
                       scooterId: _currentScooter.id!,
                       onTap: _openImageViewer,
                     ),
                     const SizedBox(height: 24),
-
-                    // Card Informazioni Generali
                     ScooterInfoCard(scooter: _currentScooter),
-
-                    // Integrazione Fase 1: Sezione Documenti
                     DocumentiCarouselView(scooterId: _currentScooter.id!),
                     const SizedBox(height: 16),
-
-                    // Card Azioni Modulari
                     RefuelingsActionCard(scooter: _currentScooter),
                     const SizedBox(height: 12),
                     MaintenanceActionCard(scooter: _currentScooter),
-
-                    // Spazio extra per non coprire il contenuto con il bottone flottante
                     const SizedBox(height: 80),
                   ],
                 ),
               ),
             ),
-
-            // Integrazione Fase 2: Bottone Esporta PDF (Ancorato in basso)
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
@@ -182,7 +172,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
                 ),
               ),
             ),
-
             if (isUIBlocked)
               const Center(child: CircularProgressIndicator()),
           ],
