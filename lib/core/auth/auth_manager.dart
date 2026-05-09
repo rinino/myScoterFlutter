@@ -4,10 +4,10 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
 import 'package:google_sign_in/google_sign_in.dart' as g_sign_in;
 
 import '../database/migration_manager.dart';
+import '../services/local_image_cache.dart'; // Import per la gestione della cache immagini
 
 class AuthManager extends ChangeNotifier {
   static final AuthManager shared = AuthManager._internal();
@@ -49,11 +49,17 @@ class AuthManager extends ChangeNotifier {
       setSyncing(true);
       final currentUser = FirebaseAuth.instance.currentUser;
 
-      // FIX CRITICO: Se eravamo ospiti, uniamo i dati invece di sovrascriverli!
       if (currentUser != null && currentUser.isAnonymous) {
-        final credential = EmailAuthProvider.credential(email: email, password: password);
-        await currentUser.linkWithCredential(credential);
-        await currentUser.sendEmailVerification();
+        try {
+          final credential = EmailAuthProvider.credential(email: email, password: password);
+          await currentUser.linkWithCredential(credential);
+          await currentUser.sendEmailVerification();
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'credential-already-in-use') {
+            return "Email già in uso. Vai su 'Accedi' per fare il login.";
+          }
+          return e.message;
+        }
       } else {
         final creds = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
         await creds.user?.sendEmailVerification();
@@ -71,6 +77,9 @@ class AuthManager extends ChangeNotifier {
   Future<String?> signInWithEmail(String email, String password) async {
     try {
       setSyncing(true);
+      // Puliamo la cache locale prima di accedere per forzare il caricamento dei dati corretti dal cloud
+      await LocalImageCache.shared.clearCache();
+
       final creds = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       currentUserId = creds.user?.uid;
       notifyListeners();
@@ -108,10 +117,22 @@ class AuthManager extends ChangeNotifier {
 
       final currentUser = FirebaseAuth.instance.currentUser;
 
-      // FIX CRITICO: Unisce i dati Ospite all'account Google
       if (currentUser != null && currentUser.isAnonymous) {
-        await currentUser.linkWithCredential(credential);
+        try {
+          // Tenta di unire i dati locali all'account Google
+          await currentUser.linkWithCredential(credential);
+        } on FirebaseAuthException catch (e) {
+          // Se l'account Google esiste già, effettua il login diretto svuotando la cache
+          if (e.code == 'credential-already-in-use') {
+            debugPrint("ADR: Credenziale Google già esistente. Eseguo il Login diretto.");
+            await LocalImageCache.shared.clearCache();
+            await FirebaseAuth.instance.signInWithCredential(credential);
+          } else {
+            rethrow;
+          }
+        }
       } else {
+        await LocalImageCache.shared.clearCache();
         await FirebaseAuth.instance.signInWithCredential(credential);
       }
 
@@ -139,10 +160,20 @@ class AuthManager extends ChangeNotifier {
       final oauthCredential = OAuthProvider('apple.com').credential(idToken: appleCredential.identityToken, rawNonce: nonce);
       final currentUser = FirebaseAuth.instance.currentUser;
 
-      // FIX CRITICO: Unisce i dati Ospite all'account Apple
       if (currentUser != null && currentUser.isAnonymous) {
-        await currentUser.linkWithCredential(oauthCredential);
+        try {
+          await currentUser.linkWithCredential(oauthCredential);
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'credential-already-in-use') {
+            debugPrint("ADR: Credenziale Apple già esistente. Eseguo il Login diretto.");
+            await LocalImageCache.shared.clearCache();
+            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+          } else {
+            rethrow;
+          }
+        }
       } else {
+        await LocalImageCache.shared.clearCache();
         await FirebaseAuth.instance.signInWithCredential(oauthCredential);
       }
 
@@ -167,6 +198,10 @@ class AuthManager extends ChangeNotifier {
       await googleSignIn.signOut();
 
       currentUserId = null;
+
+      // Svuota la cache locale al logout per garantire che un nuovo login parta da dati puliti
+      await LocalImageCache.shared.clearCache();
+
       notifyListeners();
       await signInAnonymously();
     } catch (e) {

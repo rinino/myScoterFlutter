@@ -19,13 +19,11 @@ class PdfService {
     final pdf = pw.Document();
     final dateFormat = DateFormat('dd/MM/yyyy', localeCode);
 
-    // Calcoli totali
     final double totaleRifornimenti = rifornimenti.fold(0.0, (sum, item) => sum + (item.costo ?? 0.0));
     final double totaleManutenzioni = manutenzioni.fold(0.0, (sum, item) => sum + (item.costo ?? 0.0));
     final double costoTotale = totaleRifornimenti + totaleManutenzioni;
     final double litriTotali = rifornimenti.fold(0.0, (sum, item) => sum + item.litriBenzina);
 
-    // Generazione Impaginazione
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -33,7 +31,6 @@ class PdfService {
         footer: (pw.Context context) {
           return pw.Container(
             alignment: pw.Alignment.centerRight,
-            // FIX: rimosso const e usato .only()
             margin: pw.EdgeInsets.only(top: 1.0 * PdfPageFormat.cm),
             child: pw.Text(
               '${l10n.generatoDa} - ${dateFormat.format(DateTime.now())} - ${l10n.pag} ${context.pageNumber} / ${context.pagesCount}',
@@ -43,7 +40,6 @@ class PdfService {
         },
         build: (pw.Context context) {
           return [
-            // Titolo
             pw.Header(
               level: 0,
               child: pw.Text(
@@ -53,7 +49,6 @@ class PdfService {
             ),
             pw.SizedBox(height: 10),
 
-            // Box Info Scooter
             pw.Container(
               padding: const pw.EdgeInsets.all(15),
               decoration: pw.BoxDecoration(
@@ -73,7 +68,6 @@ class PdfService {
             ),
             pw.SizedBox(height: 20),
 
-            // Tabella Manutenzioni
             if (manutenzioni.isNotEmpty) ...[
               pw.Text(l10n.registroManutenzione, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
               pw.SizedBox(height: 10),
@@ -86,7 +80,6 @@ class PdfService {
               pw.SizedBox(height: 20),
             ],
 
-            // Tabella Rifornimenti
             if (rifornimenti.isNotEmpty) ...[
               pw.Text(l10n.refuelings, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
               pw.SizedBox(height: 10),
@@ -99,7 +92,6 @@ class PdfService {
               pw.SizedBox(height: 20),
             ],
 
-            // Riepilogo Finale Globale
             pw.Container(
               padding: const pw.EdgeInsets.all(15),
               decoration: pw.BoxDecoration(
@@ -122,7 +114,6 @@ class PdfService {
       ),
     );
 
-    // Innesca la Share Sheet nativa passando il file PDF generato
     final targaPulita = scooter.targa.replaceAll(' ', '');
     await Printing.sharePdf(
       bytes: await pdf.save(),
@@ -151,7 +142,8 @@ class PdfService {
       data: list.map((m) {
         final catName = m.categoria == CategoriaManutenzione.altro ? (m.categoriaCustom ?? l10n.cat_altro) : m.categoria.nameKey;
         final costoStr = m.costo != null ? '${m.costo!.toStringAsFixed(2)} $currency' : '-';
-        return [df.format(m.data), '${m.km.toStringAsFixed(0)}', '${m.titolo} ($catName)', costoStr];
+        // FIX: Rimosso '${}' superfluo
+        return [df.format(m.data), m.km.toStringAsFixed(0), '${m.titolo} ($catName)', costoStr];
       }).toList(),
     );
   }
@@ -164,8 +156,8 @@ class PdfService {
       cellAlignment: pw.Alignment.centerLeft,
       data: list.map((r) {
         final costoStr = r.costo != null ? '${r.costo!.toStringAsFixed(2)} $currency' : '-';
-        // FIX: Cambiato r.dateTime in r.dataRifornimento
-        return [df.format(r.dataRifornimento), '${r.kmAttuali.toStringAsFixed(0)}', '${r.litriBenzina.toStringAsFixed(2)} L', costoStr];
+        // FIX: Rimosso '${}' superfluo
+        return [df.format(r.dataRifornimento), r.kmAttuali.toStringAsFixed(0), '${r.litriBenzina.toStringAsFixed(2)} L', costoStr];
       }).toList(),
     );
   }

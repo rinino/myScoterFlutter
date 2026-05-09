@@ -17,13 +17,11 @@ class BackupManager {
   static final FirebaseStorage storage = FirebaseStorage.instance;
   static String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // ESPORTAZIONE BACKUP DA FIRESTORE A JSON + ZIP
   static Future<void> exportBackup(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final userId = currentUserId;
     if (userId == null) throw Exception("Utente non autenticato");
 
-    // 1. Lettura Dati dal Cloud
     final scootersSnap = await db.collection("scooters").where("userId", isEqualTo: userId).get();
     final scooters = scootersSnap.docs.map((d) => d.data()..['id'] = d.id).toList();
 
@@ -54,15 +52,15 @@ class BackupManager {
       return data;
     }).toList();
 
-    // 2. Aggiunta Foto Locali
     Map<String, String> imagesData = {};
     final docsDir = await getApplicationDocumentsDirectory();
 
     void addImage(String? imgName) {
-      // FIX CRITICO: Se è un link al cloud, ignoriamo perché il dato è già al sicuro online
       if (imgName != null && !imgName.startsWith('http')) {
-        final f = File(p.join(docsDir.path, imgName));
-        if (f.existsSync()) imagesData[imgName] = base64Encode(f.readAsBytesSync());
+        // SANITIZZA: Prende sempre e solo il nome file finale
+        final fileName = p.basename(imgName);
+        final f = File(p.join(docsDir.path, fileName));
+        if (f.existsSync()) imagesData[fileName] = base64Encode(f.readAsBytesSync());
       }
     }
 
@@ -70,7 +68,6 @@ class BackupManager {
     for (var m in manutenzioni) { addImage(m['nomeFoto'] as String?); }
     for (var d in documenti) { addImage(d['nomeFoto'] as String?); }
 
-    // 3. Creazione JSON
     final backupMap = {
       'version': 3,
       'scooters': scooters,
@@ -89,12 +86,11 @@ class BackupManager {
     final dateString = formatter.format(DateTime.now());
     final zipPath = p.join(docsDir.path, 'MyScooter_CloudBackup_$dateString.scooterbackup');
 
-    await File(zipPath).writeAsBytes(zipData!);
+    await File(zipPath).writeAsBytes(zipData);
     final xFile = XFile(zipPath, mimeType: 'application/octet-stream');
     await SharePlus.instance.share(ShareParams(files: [xFile], subject: l10n.backupShareSubject, text: l10n.backupShareText));
   }
 
-  // RIPRISTINO BACKUP: DA JSON A FIRESTORE
   static Future<bool> importBackup() async {
     final userId = currentUserId;
     if (userId == null) return false;
@@ -117,22 +113,20 @@ class BackupManager {
     final jsonString = utf8.decode(jsonFile.content as List<int>);
     final map = jsonDecode(jsonString);
 
-    // 1. WIPING DATI VECCHI SUL CLOUD
     final collections = ["scooters", "rifornimenti", "manutenzioni", "documenti"];
     for (var coll in collections) {
       final snap = await db.collection(coll).where("userId", isEqualTo: userId).get();
       for (var doc in snap.docs) {
         final data = doc.data();
-        final fileName = data["nomeFoto"] as String? ?? data["imgName"] as String?;
-        // FIX CRITICO: Eliminiamo solo se era un file locale convertito in storage (senza http)
-        if (fileName != null && !fileName.startsWith('http')) {
+        final fileNameRaw = data["nomeFoto"] as String? ?? data["imgName"] as String?;
+        if (fileNameRaw != null && !fileNameRaw.startsWith('http')) {
+          final fileName = p.basename(fileNameRaw);
           try { await storage.ref("images/$userId/$fileName").delete(); } catch(_) {}
         }
         await doc.reference.delete();
       }
     }
 
-    // 2. BATCH WRITING SU FIRESTORE
     WriteBatch batch = db.batch();
     int count = 0;
 
@@ -192,7 +186,6 @@ class BackupManager {
 
     await batch.commit();
 
-    // 3. RIPRISTINO FOTO IN LOCALE E CLOUD
     final docsDir = await getApplicationDocumentsDirectory();
     final imagesMap = map['images'] as Map<String, dynamic>? ?? {};
 

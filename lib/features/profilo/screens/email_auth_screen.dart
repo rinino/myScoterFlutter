@@ -50,26 +50,26 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
       );
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+    if (!context.mounted) return; // FIX: Controllo mount prima della gestione UI
+    setState(() => _isLoading = false);
 
-      if (error != null) {
-        ref.read(messageProvider.notifier).show(error, type: MessageType.error);
+    if (error != null) {
+      ref.read(messageProvider.notifier).show(error, type: MessageType.error);
+    } else {
+      await ref.read(scooterListProvider.notifier).refreshScooters();
+
+      if (!context.mounted) return; // FIX: Controllo mount post-await
+
+      if (!_isLogin) {
+        ref.read(messageProvider.notifier).show(l10n.mailVerificaInviata, type: MessageType.success);
       } else {
-        await ref.read(scooterListProvider.notifier).refreshScooters();
+        ref.read(messageProvider.notifier).show(l10n.loginSuccess, type: MessageType.success);
+      }
 
-        if (!_isLogin) {
-          ref.read(messageProvider.notifier).show(l10n.mailVerificaInviata, type: MessageType.success);
-        } else {
-          ref.read(messageProvider.notifier).show(l10n.loginSuccess, type: MessageType.success);
-        }
-
-        // Se usiamo goRouter, ritorniamo alle impostazioni o alla home
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/settings');
-        }
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/settings');
       }
     }
   }

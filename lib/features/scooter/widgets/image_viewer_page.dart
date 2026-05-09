@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -6,9 +6,10 @@ import 'package:gal/gal.dart';
 
 import '../../../../core/providers/message_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/services/local_image_cache.dart';
 
 class ImageViewerPage extends ConsumerStatefulWidget {
-  final String imagePath; // FIX: ora accetta un path locale o un URL
+  final String imagePath;
   final String title;
   final String heroTag;
 
@@ -99,9 +100,10 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
           maxScale: 4.0,
           child: Hero(
             tag: widget.heroTag,
-            child: _isNetwork
-                ? Image.network(widget.imagePath)
-                : Image.file(File(widget.imagePath)),
+            child: CloudSyncImage(
+              imagePath: widget.imagePath,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),

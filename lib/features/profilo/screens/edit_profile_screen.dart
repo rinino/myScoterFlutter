@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:myscooter/core/providers/message_provider.dart';
-import 'package:myscooter/core/services/local_image_cache.dart'; // FIX: Aggiunto
+import 'package:myscooter/core/services/local_image_cache.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 import '../models/utente_profilo.dart';
 
@@ -45,14 +45,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _loadProfile() async {
     if (_currentUser == null) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('utenti').doc(_currentUser!.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('utenti').doc(_currentUser.uid).get();
       if (doc.exists) {
         _utenteProfilo = UtenteProfilo.fromMap(doc.data()!, doc.id);
         _nomeController.text = _utenteProfilo!.nome;
         _cognomeController.text = _utenteProfilo!.cognome;
       } else {
-        if (_currentUser!.displayName != null) {
-          final parti = _currentUser!.displayName!.split(' ');
+        if (_currentUser.displayName != null) {
+          final parti = _currentUser.displayName!.split(' ');
           _nomeController.text = parti.first;
           if (parti.length > 1) {
             _cognomeController.text = parti.sublist(1).join(' ');
@@ -86,29 +86,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      String? photoUrl = _utenteProfilo?.nomeFotoProfilo ?? _currentUser!.photoURL;
+      String? photoUrl = _utenteProfilo?.nomeFotoProfilo ?? _currentUser.photoURL;
 
       if (_newProfileImage != null) {
-        final storageRef = FirebaseStorage.instance.ref().child("images/${_currentUser!.uid}/profile.jpg");
+        final storageRef = FirebaseStorage.instance.ref().child("images/${_currentUser.uid}/profile.jpg");
         await storageRef.putFile(_newProfileImage!);
         photoUrl = await storageRef.getDownloadURL();
-        await _currentUser!.updatePhotoURL(photoUrl);
+        await _currentUser.updatePhotoURL(photoUrl);
       }
 
       final fullName = "${_nomeController.text.trim()} ${_cognomeController.text.trim()}".trim();
       if (fullName.isNotEmpty) {
-        await _currentUser!.updateDisplayName(fullName);
+        await _currentUser.updateDisplayName(fullName);
       }
 
       final newProfile = UtenteProfilo(
-        id: _currentUser!.uid,
-        email: _currentUser!.email ?? "no-email",
+        id: _currentUser.uid,
+        email: _currentUser .email ?? "no-email",
         nome: _nomeController.text.trim(),
         cognome: _cognomeController.text.trim(),
         nomeFotoProfilo: photoUrl,
       );
 
-      await FirebaseFirestore.instance.collection('utenti').doc(_currentUser!.uid).set(newProfile.toMap());
+      await FirebaseFirestore.instance.collection('utenti').doc(_currentUser.uid).set(newProfile.toMap());
 
       if (mounted) {
         ref.read(messageProvider.notifier).show(l10n.profiloAggiornato, type: MessageType.success);
@@ -150,7 +150,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  // FIX: Uso di ClipOval + CloudSyncImage per scaricare dal cloud in caso di path iOS
                   ClipOval(
                     child: Container(
                       width: 120,

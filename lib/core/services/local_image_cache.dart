@@ -13,31 +13,48 @@ class LocalImageCache {
     if (imagePath == null || imagePath.isEmpty) return null;
     if (imagePath.startsWith('http')) return null;
 
-    final fileName = imagePath.split('/').last; // Estrae solo il nome (es. doc_123.jpg)
+    final fileName = imagePath.split('/').last;
     final docsDir = await getApplicationDocumentsDirectory();
     final localFile = File(p.join(docsDir.path, fileName));
 
-    if (await localFile.exists()) return localFile; // Trovata sul telefono!
+    // 1. OTTIMIZZAZIONE CACHE: Se il file esiste già, caricalo istantaneamente!
+    if (await localFile.exists()) {
+      return localFile;
+    }
 
+    // 2. SE NON ESISTE (Telefono nuovo o foto aggiornata da un altro dispositivo) -> Scarica dal Cloud!
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return null;
 
     try {
-      // Non c'è sul telefono? Scarichiamo dal Cloud e salviamo!
       final storageRef = FirebaseStorage.instance.ref().child("images/$userId/$fileName");
       final data = await storageRef.getData(10 * 1024 * 1024); // max 10MB
+
       if (data != null) {
-        await localFile.writeAsBytes(data);
+        await localFile.writeAsBytes(data, flush: true);
+        debugPrint("ADR: ✅ Immagine scaricata e cachata da Firebase: $fileName");
         return localFile;
       }
     } catch (e) {
-      debugPrint("ADR: Immagine non trovata nel cloud: $fileName");
+      debugPrint("ADR: ❌ Immagine non trovata su Firebase Storage: $fileName");
     }
+
     return null;
+  }
+
+  // Chiamato solo al Logout o Cambio Account
+  Future<void> clearCache() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final files = docsDir.listSync();
+    for (var file in files) {
+      if (file is File && (file.path.toLowerCase().endsWith('.jpg') || file.path.toLowerCase().endsWith('.png'))) {
+        await file.delete();
+      }
+    }
+    debugPrint("ADR: 🧹 Cache locale svuotata.");
   }
 }
 
-// IL NUOVO WIDGET UNIVERSALE DA USARE IN TUTTA L'APP
 class CloudSyncImage extends StatelessWidget {
   final String? imagePath;
   final BoxFit fit;
@@ -60,7 +77,8 @@ class CloudSyncImage extends StatelessWidget {
           return SizedBox(width: width, height: height, child: const Center(child: CircularProgressIndicator(strokeWidth: 2)));
         }
         if (snapshot.hasData && snapshot.data != null) {
-          return Image.file(snapshot.data!, fit: fit, width: width, height: height, errorBuilder: (c,e,s) => _placeholder());
+          // Usiamo ValueKey per forzare il refresh visivo se il path cambia
+          return Image.file(snapshot.data!, fit: fit, width: width, height: height, key: ValueKey(snapshot.data!.path));
         }
         return _placeholder();
       },

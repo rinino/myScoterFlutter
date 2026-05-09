@@ -8,10 +8,23 @@ class RifornimentoRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
+  // NUOVO METODO STREAM
+  Stream<List<Rifornimento>> streamRifornimentiForScooter(String scooterId) {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('idScooter', isEqualTo: scooterId)
+        .orderBy('dataRifornimento', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Rifornimento.fromMap(doc.data(), doc.id)).toList());
+  }
+
   Future<String?> insertRifornimento(Rifornimento rifornimento) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
     rifornimento.userId = userId;
     final ref = await _db.collection(_collectionName).add(rifornimento.toMap());
     return ref.id;
@@ -20,22 +33,13 @@ class RifornimentoRepository {
   Future<List<Rifornimento>> getRifornimentiForScooter(String scooterId) async {
     final userId = _currentUserId;
     if (userId == null) return [];
-
-    final snapshot = await _db
-        .collection(_collectionName)
-        .where('userId', isEqualTo: userId)
-        .where('idScooter', isEqualTo: scooterId)
-        .orderBy('dataRifornimento', descending: true)
-        .get();
-
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).where('idScooter', isEqualTo: scooterId).orderBy('dataRifornimento', descending: true).get();
     return snapshot.docs.map((doc) => Rifornimento.fromMap(doc.data(), doc.id)).toList();
   }
 
   Future<Rifornimento?> getRifornimentoById(String rifornimentoId) async {
     final doc = await _db.collection(_collectionName).doc(rifornimentoId).get();
-    if (doc.exists && doc.data() != null) {
-      return Rifornimento.fromMap(doc.data()!, doc.id);
-    }
+    if (doc.exists && doc.data() != null) return Rifornimento.fromMap(doc.data()!, doc.id);
     return null;
   }
 
@@ -61,36 +65,16 @@ class RifornimentoRepository {
   Future<Rifornimento?> getPreviousRifornimento(String scooterId) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
-    final snapshot = await _db
-        .collection(_collectionName)
-        .where('userId', isEqualTo: userId)
-        .where('idScooter', isEqualTo: scooterId)
-        .orderBy('dataRifornimento', descending: true)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      return Rifornimento.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
-    }
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).where('idScooter', isEqualTo: scooterId).orderBy('dataRifornimento', descending: true).limit(1).get();
+    if (snapshot.docs.isNotEmpty) return Rifornimento.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
     return null;
   }
 
   Future<Rifornimento?> getPreviousRifornimentoExcluding(String scooterId, String? excludingRifornimentoId) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
-    // Poiché non possiamo fare != e orderBy insieme facilmente su Firebase senza index complessi, peschiamo i primi 2
-    final snapshot = await _db
-        .collection(_collectionName)
-        .where('userId', isEqualTo: userId)
-        .where('idScooter', isEqualTo: scooterId)
-        .orderBy('dataRifornimento', descending: true)
-        .limit(2)
-        .get();
-
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).where('idScooter', isEqualTo: scooterId).orderBy('dataRifornimento', descending: true).limit(2).get();
     final rifornimenti = snapshot.docs.map((doc) => Rifornimento.fromMap(doc.data(), doc.id)).toList();
-
     try {
       return rifornimenti.firstWhere((rif) => rif.id != excludingRifornimentoId);
     } catch (e) {

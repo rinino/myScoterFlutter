@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,11 @@ import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/providers/core_providers.dart';
 import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/core/services/pdf_service.dart';
+
+// IMPORT AGGIUNTIVI PER LE NOTIFICHE
+import 'package:myscooter/core/notifications/notification_service.dart';
+import 'package:myscooter/features/documenti/providers/documento_provider.dart';
+import 'package:myscooter/features/documenti/models/documento.dart';
 
 // IMPORT WIDGETS
 import '../widgets/scooter_header_image.dart';
@@ -31,6 +35,7 @@ class ScooterDetailScreen extends ConsumerStatefulWidget {
 class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   bool _isProcessingAction = false;
   bool _isGeneratingPDF = false;
+  bool _hasCheckedScadenze = false; // Flag per evitare spam di notifiche continue
   late Scooter _currentScooter;
 
   @override
@@ -41,10 +46,6 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
 
   void _openImageViewer() {
     if (_currentScooter.imgName == null || _currentScooter.imgName!.isEmpty) return;
-
-    // FIX: Controlliamo se è cloud o locale
-    final isNetwork = _currentScooter.imgName!.startsWith('http');
-    if (!isNetwork && !File(_currentScooter.imgName!).existsSync()) return;
 
     Navigator.push(
       context,
@@ -110,6 +111,38 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bool isUIBlocked = _isProcessingAction;
+
+    // --- LOGICA DI CONTROLLO SCADENZE IN TEMPO REALE ---
+    ref.listen<AsyncValue<List<Documento>>>(documentiStreamProvider(_currentScooter.id!), (previous, next) {
+      next.whenData((documenti) {
+        // Eseguiamo il controllo solo la prima volta che si apre la schermata
+        // per evitare fastidiosi "beep" ogni volta che la lista si ricarica.
+        if (!_hasCheckedScadenze) {
+          _hasCheckedScadenze = true;
+
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+
+          // Trova tutti i documenti scaduti oggi o nei giorni passati
+          final scaduti = documenti.where((d) {
+            if (d.dataScadenza == null) return false;
+            final exp = DateTime(d.dataScadenza!.year, d.dataScadenza!.month, d.dataScadenza!.day);
+            return exp.isBefore(today) || exp.isAtSameMomentAs(today);
+          }).toList();
+
+          if (scaduti.isNotEmpty) {
+            // 1. Lancia la notifica al volo sul telefono
+            NotificationService().showInstantNotificationForExpiredDocs(scaduti, l10n);
+            // 2. Programma silenziosamente i solleciti futuri (3, 7 e 14 giorni)
+            NotificationService().scheduleFutureReminders(scaduti, l10n);
+          } else {
+            // Se tutti i documenti sono in regola, annulliamo eventuali vecchi solleciti!
+            NotificationService().cancelAllReminders();
+          }
+        }
+      });
+    });
+    // ----------------------------------------------------
 
     return Scaffold(
       appBar: AppBar(

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,14 +26,12 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
   @override
   void initState() {
     super.initState();
+    // Inizializziamo lo stato locale con la manutenzione passata dal widget
     _currentManutenzione = widget.manutenzione;
   }
 
   void _openImageViewer() {
     if (_currentManutenzione.nomeFoto == null || _currentManutenzione.nomeFoto!.isEmpty) return;
-
-    final isNetwork = _currentManutenzione.nomeFoto!.startsWith('http');
-    if (!isNetwork && !File(_currentManutenzione.nomeFoto!).existsSync()) return;
 
     Navigator.push(
       context,
@@ -50,12 +47,17 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
   }
 
   Future<void> _navigateToEdit() async {
-    await context.push('/add-edit-maintenance', extra: {
+    // Navighiamo alla modifica e attendiamo il risultato (l'oggetto aggiornato)
+    final result = await context.push('/add-edit-maintenance', extra: {
       'scooterId': _currentManutenzione.scooterId,
       'manutenzione': _currentManutenzione,
     });
-    if (mounted) {
-      context.pop();
+
+    // Se l'utente ha salvato, il risultato sarà la nuova Manutenzione
+    if (result != null && result is Manutenzione) {
+      setState(() {
+        _currentManutenzione = result;
+      });
     }
   }
 
@@ -77,18 +79,20 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // Card con Info Principali (Data, KM, Costo, Categoria)
           MaintenanceInfoCard(
             manutenzione: _currentManutenzione,
             currencySymbol: currencySymbol,
           ),
           const SizedBox(height: 16),
 
+          // Card con le Note (se presenti)
           if (_currentManutenzione.note != null && _currentManutenzione.note!.isNotEmpty) ...[
             MaintenanceNotesCard(note: _currentManutenzione.note!),
             const SizedBox(height: 16),
           ],
 
-          // La logica di controllo isNetwork è ora dentro MaintenancePhotoCard
+          // Card con la Foto/Ricevuta (se presente)
           if (_currentManutenzione.nomeFoto != null && _currentManutenzione.nomeFoto!.isNotEmpty) ...[
             MaintenancePhotoCard(
               manutenzione: _currentManutenzione,

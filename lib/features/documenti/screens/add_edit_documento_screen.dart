@@ -1,461 +1,249 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
-import 'package:myscooter/core/providers/core_providers.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../../l10n/app_localizations.dart';
-import '../../scooter/model/scooter.dart';
+import 'package:myscooter/l10n/app_localizations.dart';
+import 'package:myscooter/core/providers/message_provider.dart';
+import 'package:myscooter/core/services/cloud_storage_manager.dart';
+import 'package:myscooter/core/services/local_image_cache.dart';
+import '../../documenti/models/documento.dart';
+import '../../documenti/providers/documento_provider.dart';
 
-class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
-  final String scooterId; // <-- FIX CRITICO: ORA È STRINGA
-  final Rifornimento? rifornimento;
+class AddEditDocumentoScreen extends ConsumerStatefulWidget {
+  final String scooterId;
+  final Documento? documento;
 
-  const AddEditRifornimentoScreen({
-    super.key,
-    required this.scooterId,
-    this.rifornimento,
-  });
+  const AddEditDocumentoScreen({super.key, required this.scooterId, this.documento});
 
   @override
-  ConsumerState<AddEditRifornimentoScreen> createState() => _AddEditRifornimentoScreenState();
+  ConsumerState<AddEditDocumentoScreen> createState() => _AddEditDocumentoScreenState();
 }
 
-class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoScreen> {
+class _AddEditDocumentoScreenState extends ConsumerState<AddEditDocumentoScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  DateTime _selectedDate = DateTime.now();
-  final TextEditingController _kmAttualiController = TextEditingController();
-  final TextEditingController _litriBenzinaController = TextEditingController();
-  final TextEditingController _litriOlioController = TextEditingController();
-  final TextEditingController _percentualeOlioController = TextEditingController();
-
-  final TextEditingController _costoController = TextEditingController();
-  final TextEditingController _noteController = TextEditingController();
-  double? _latitudine;
-  double? _longitudine;
-
-  double _kmPercorsi = 0.0;
-  double _mediaConsumo = 0.0;
-
   bool _isSaving = false;
-  bool _isLoadingData = true;
-  Rifornimento? _previousRifornimento;
-  bool _scooterHasMiscelatore = false;
+
+  late TipoDocumento _tipo;
+  late TextEditingController _tipoCustomController;
+  late bool _haScadenza;
+  DateTime? _dataScadenza;
+  late TextEditingController _noteController;
+
+  String? _currentImgName;
+  File? _newImageFile;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    _setupControllersListeners();
+    final d = widget.documento;
+    _tipo = d?.tipo ?? TipoDocumento.libretto;
+    _tipoCustomController = TextEditingController(text: d?.tipoCustom ?? '');
+    _haScadenza = d?.dataScadenza != null || d == null;
+    _dataScadenza = d?.dataScadenza ?? DateTime.now().add(const Duration(days: 365));
+    _noteController = TextEditingController(text: d?.note ?? '');
 
-    if (widget.rifornimento != null) {
-      _selectedDate = widget.rifornimento!.dataRifornimento; // FIX: dataRifornimento è già DateTime nel nuovo modello
-      _kmAttualiController.text = widget.rifornimento!.kmAttuali.toString();
-      _litriBenzinaController.text = widget.rifornimento!.litriBenzina.toString();
+    _currentImgName = d?.nomeFoto != null ? p.basename(d!.nomeFoto!) : null;
+  }
 
-      if (widget.rifornimento!.litriOlio != null) {
-        _litriOlioController.text = widget.rifornimento!.litriOlio.toString();
-      }
-      if (widget.rifornimento!.percentualeOlio != null) {
-        _percentualeOlioController.text = widget.rifornimento!.percentualeOlio.toString();
-      }
+  @override
+  void dispose() {
+    _tipoCustomController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
 
-      if (widget.rifornimento!.costo != null) {
-        _costoController.text = widget.rifornimento!.costo.toString();
-      }
-      if (widget.rifornimento!.note != null) {
-        _noteController.text = widget.rifornimento!.note!;
-      }
-      _latitudine = widget.rifornimento!.latitudine;
-      _longitudine = widget.rifornimento!.longitudine;
+  Future<void> _scegliFoto() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (pickedFile != null) {
+      setState(() => _newImageFile = File(pickedFile.path));
     }
   }
 
-  Future<void> _loadInitialData() async {
-    setState(() => _isLoadingData = true);
-    try {
-      final Scooter? scooter = await ref.read(scooterRepoProvider).getScooterById(widget.scooterId);
-      if (scooter != null) {
-        _scooterHasMiscelatore = scooter.miscelatore;
-      }
-
-      _previousRifornimento = await ref.read(rifornimentoRepoProvider).getPreviousRifornimentoExcluding(
-        widget.scooterId,
-        widget.rifornimento?.id,
-      );
-
-      _calculateStats();
-    } catch (e) {
-      _showErrorSnackBar(AppLocalizations.of(context)!.errorInitialData);
-    } finally {
-      if (mounted) setState(() => _isLoadingData = false);
-    }
-  }
-
-  void _setupControllersListeners() {
-    _kmAttualiController.addListener(_calculateStats);
-    _litriBenzinaController.addListener(_calculateStats);
-    _percentualeOlioController.addListener(_calculateCalculatedLitriOlio);
-  }
-
-  void _calculateStats() {
-    final double? kmAttuali = _parseToDouble(_kmAttualiController.text);
-    final double? litriBenzina = _parseToDouble(_litriBenzinaController.text);
-
-    setState(() {
-      if (kmAttuali != null && _previousRifornimento != null) {
-        _kmPercorsi = kmAttuali - _previousRifornimento!.kmAttuali;
-        if (_kmPercorsi < 0) _kmPercorsi = 0.0;
-      } else {
-        _kmPercorsi = 0.0;
-      }
-
-      if (_kmPercorsi > 0 && litriBenzina != null && litriBenzina > 0) {
-        _mediaConsumo = _kmPercorsi / litriBenzina;
-      } else {
-        _mediaConsumo = 0.0;
-      }
-    });
-  }
-
-  void _calculateCalculatedLitriOlio() {
-    if (_scooterHasMiscelatore) return;
-    final double? litriBenzina = _parseToDouble(_litriBenzinaController.text);
-    final double? percentualeOlio = _parseToDouble(_percentualeOlioController.text);
-
-    if (litriBenzina != null && percentualeOlio != null) {
-      final double litriOlioCalculated = litriBenzina * (percentualeOlio / 100.0);
-      _litriOlioController.text = litriOlioCalculated.toStringAsFixed(2);
-    }
-  }
-
-  double? _parseToDouble(String text) {
-    if (text.isEmpty) return null;
-    return double.tryParse(text.replaceAll(',', '.'));
-  }
-
-  Future<void> _saveRifornimento() async {
+  Future<void> _salvaDati() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
 
-    final String noteText = _noteController.text.trim();
-    final String? noteFinali = noteText.isEmpty ? null : noteText;
-
-    final Rifornimento rifornimentoToSave = Rifornimento(
-      id: widget.rifornimento?.id,
-      idScooter: widget.scooterId,
-      dataRifornimento: _selectedDate, // FIX: Passiamo direttamente il DateTime
-      kmAttuali: _parseToDouble(_kmAttualiController.text)!,
-      litriBenzina: _parseToDouble(_litriBenzinaController.text)!,
-      litriOlio: _parseToDouble(_litriOlioController.text),
-      percentualeOlio: _parseToDouble(_percentualeOlioController.text),
-      kmPercorsi: _kmPercorsi,
-      mediaConsumo: _mediaConsumo,
-      costo: _parseToDouble(_costoController.text),
-      note: noteFinali,
-      latitudine: _latitudine,
-      longitudine: _longitudine,
-    );
+    String? finalImgName = _currentImgName;
+    final appDir = await getApplicationDocumentsDirectory();
 
     try {
-      if (widget.rifornimento == null) {
-        await ref.read(rifornimentoRepoProvider).insertRifornimento(rifornimentoToSave);
+      if (_newImageFile != null) {
+        final fileName = 'doc_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
+        final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
+        finalImgName = fileName;
+
+        CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
+
+        if (_currentImgName != null) {
+          final oldFile = File(p.join(appDir.path, _currentImgName!));
+          if (await oldFile.exists()) await oldFile.delete();
+          CloudStorageManager.shared.deleteImageSilently(fileName: _currentImgName!);
+        }
+      } else if (_currentImgName == null && widget.documento?.nomeFoto != null) {
+        final oldFileName = p.basename(widget.documento!.nomeFoto!);
+        final oldFile = File(p.join(appDir.path, oldFileName));
+        if (await oldFile.exists()) await oldFile.delete();
+        CloudStorageManager.shared.deleteImageSilently(fileName: oldFileName);
+      }
+
+      final nuovoDocumento = Documento(
+        id: widget.documento?.id,
+        userId: widget.documento?.userId ?? FirebaseAuth.instance.currentUser?.uid,
+        scooterId: widget.scooterId,
+        tipo: _tipo,
+        tipoCustom: _tipo == TipoDocumento.altro ? _tipoCustomController.text.trim() : null,
+        dataScadenza: _haScadenza ? _dataScadenza : null,
+        note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
+        nomeFoto: finalImgName,
+      );
+
+      // FIX: Chiamata corretta al nuovo actions provider
+      final actions = ref.read(documentoActionsProvider);
+
+      if (widget.documento == null) {
+        await actions.addDocumento(nuovoDocumento, l10n);
       } else {
-        await ref.read(rifornimentoRepoProvider).updateRifornimento(rifornimentoToSave);
+        await actions.updateDocumento(nuovoDocumento, l10n);
       }
 
       if (mounted) {
-        Future.microtask(() {
-          if (mounted) {
-            Navigator.of(context).pop(rifornimentoToSave);
-          }
-        });
+        context.pop(nuovoDocumento);
+        ref.read(messageProvider.notifier).show(l10n.documentSaved, type: MessageType.success);
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar(AppLocalizations.of(context)!.errorSaving);
-        setState(() => _isSaving = false);
-      }
+      if (mounted) ref.read(messageProvider.notifier).show(l10n.errorSaving, type: MessageType.error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
+
+    final bool hasImage = _newImageFile != null || (_currentImgName != null && _currentImgName!.isNotEmpty);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        title: Text(widget.documento == null ? l10n.aggiungi : l10n.modificaIntervento),
         actions: [
-          if (!_isLoadingData)
-            IconButton(
-              icon: const Icon(Icons.check, size: 28),
-              color: Theme.of(context).colorScheme.primary,
-              onPressed: _isSaving ? null : _saveRifornimento,
-            )
+          if (_isSaving)
+            const Padding(padding: EdgeInsets.only(right: 16), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+          else
+            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _salvaDati),
         ],
       ),
-      body: _isLoadingData
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 40),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionLabel(l10n.dateAndKm),
-                  _buildDatePicker(l10n),
-                  const SizedBox(height: 16),
-                  _buildKmInput(l10n),
-                  const SizedBox(height: 24),
-
-                  _buildSectionLabel(l10n.fuelAndMix),
-                  _buildBenzinaInput(l10n),
-                  const SizedBox(height: 16),
-                  if (!_scooterHasMiscelatore) ...[
-                    _buildPercentualeOlioInput(l10n),
-                    const SizedBox(height: 16),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(l10n.infoPrincipali.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<TipoDocumento>(
+                      // FIX: Usiamo initialValue invece di value (Flutter 3.33+)
+                      initialValue: _tipo,
+                      decoration: const InputDecoration(border: InputBorder.none),
+                      items: TipoDocumento.values.map((t) => DropdownMenuItem(value: t, child: Text(t.getLocalizedName(l10n)))).toList(),
+                      onChanged: (val) { if (val != null) setState(() => _tipo = val); },
+                    ),
+                    if (_tipo == TipoDocumento.altro) ...[
+                      const Divider(),
+                      TextFormField(
+                        controller: _tipoCustomController,
+                        decoration: InputDecoration(labelText: l10n.specificaAltro, border: InputBorder.none),
+                        validator: (val) => val == null || val.trim().isEmpty ? l10n.datiMancanti : null,
+                      ),
+                    ],
+                    const Divider(),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.haScadenza),
+                      value: _haScadenza,
+                      onChanged: (val) => setState(() => _haScadenza = val),
+                    ),
+                    if (_haScadenza) ...[
+                      const Divider(),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(context: context, initialDate: _dataScadenza!, firstDate: DateTime(2000), lastDate: DateTime(2100));
+                          if (picked != null) setState(() => _dataScadenza = picked);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            Text(l10n.dataScadenza, style: const TextStyle(fontSize: 16)),
+                            Text(dateFormat.format(_dataScadenza!), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ]),
+                        ),
+                      )
+                    ]
                   ],
-                  _buildLitriOlioInput(l10n),
-                  const SizedBox(height: 24),
-
-                  _buildSectionLabel(l10n.costoLabel),
-                  _buildCostoInput(l10n),
-                  const SizedBox(height: 16),
-                  _buildNoteInput(l10n),
-                  const SizedBox(height: 24),
-
-                  _buildSectionLabel(l10n.posizioneGPSLabel),
-                  _buildGPSInput(l10n),
-                  const SizedBox(height: 32),
-
-                  _buildStatsSummary(l10n),
-                  const SizedBox(height: 40),
-                ],
+                ),
               ),
             ),
-          ),
-          if (_isSaving)
-            const Opacity(
-              opacity: 0.3,
-              child: ModalBarrier(dismissible: false, color: Colors.black),
+            const SizedBox(height: 24),
+            Text(l10n.noteLabel.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextFormField(controller: _noteController, maxLines: 3, decoration: InputDecoration(hintText: l10n.placeholderNote, border: InputBorder.none)),
+              ),
             ),
-          if (_isSaving)
-            const Center(child: CircularProgressIndicator()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-    );
-  }
-
-  Widget _buildDatePicker(AppLocalizations l10n) {
-    final locale = Localizations.localeOf(context).languageCode;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: ListTile(
-        leading: const Icon(Icons.calendar_today, color: Colors.blue),
-        title: Text(l10n.date),
-        trailing: Text(DateFormat.yMMMd(locale).format(_selectedDate)),
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: _selectedDate,
-            firstDate: DateTime(2000),
-            lastDate: DateTime.now(),
-          );
-          if (picked != null) setState(() => _selectedDate = picked);
-        },
-      ),
-    );
-  }
-
-  Widget _buildKmInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _kmAttualiController,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: l10n.currentKm,
-        prefixIcon: const Icon(Icons.speed, color: Colors.blue),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (value) {
-        final val = _parseToDouble(value ?? '');
-        if (val == null) return l10n.requiredField;
-        if (_previousRifornimento != null && val <= _previousRifornimento!.kmAttuali) {
-          return l10n.mustBeGreaterThan(_previousRifornimento!.kmAttuali.toInt().toString());
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildBenzinaInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _litriBenzinaController,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: l10n.gasLiters,
-        prefixIcon: const Icon(Icons.local_gas_station, color: Colors.blue),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (value) => _parseToDouble(value ?? '') == null ? l10n.insertNumber : null,
-    );
-  }
-
-  Widget _buildPercentualeOlioInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _percentualeOlioController,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: '${l10n.oilPercentage} (%)',
-        prefixIcon: const Icon(Icons.percent, color: Colors.blue),
-        border: const OutlineInputBorder(),
-      ),
-    );
-  }
-
-  Widget _buildLitriOlioInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _litriOlioController,
-      enabled: _scooterHasMiscelatore,
-      decoration: InputDecoration(
-        labelText: _scooterHasMiscelatore ? l10n.oilLiters : '${l10n.oilLiters} ${l10n.calculatedLabel}',
-        prefixIcon: const Icon(Icons.oil_barrel, color: Colors.blue),
-        border: const OutlineInputBorder(),
-      ),
-    );
-  }
-
-  Widget _buildCostoInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _costoController,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: l10n.costoLabel,
-        prefixIcon: const Icon(Icons.payments_outlined, color: Colors.blue),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (value) {
-        if (value != null && value.trim().isNotEmpty) {
-          if (_parseToDouble(value) == null) return l10n.erroreCostoNonValido;
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildNoteInput(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _noteController,
-      maxLines: 3,
-      maxLength: 250,
-      decoration: InputDecoration(
-        labelText: l10n.noteLabel,
-        hintText: l10n.placeholderNote,
-        alignLabelWithHint: true,
-        prefixIcon: const Padding(
-          padding: EdgeInsets.only(bottom: 45.0),
-          child: Icon(Icons.notes, color: Colors.blue),
+            const SizedBox(height: 24),
+            Text(l10n.fotoRicevuta.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: hasImage
+                    ? Row(children: [
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: _newImageFile != null
+                          ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
+                          : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover)
+                  ),
+                  const Spacer(),
+                  TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _newImageFile = null;
+                          _currentImgName = null;
+                        });
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: Text(l10n.rimuoviFoto)
+                  ),
+                ])
+                    : InkWell(onTap: _scegliFoto, child: Row(children: [
+                  const Icon(Icons.camera_alt, size: 32, color: Colors.grey),
+                  const SizedBox(width: 16),
+                  Text(l10n.selezionaFoto, style: const TextStyle(fontSize: 16)),
+                ])),
+              ),
+            ),
+          ],
         ),
-        border: const OutlineInputBorder(),
       ),
     );
-  }
-
-  Widget _buildGPSInput(AppLocalizations l10n) {
-    final bool hasLocation = _latitudine != null && _longitudine != null;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: ListTile(
-        leading: Icon(
-          hasLocation ? Icons.map : Icons.map_outlined,
-          color: hasLocation ? Colors.green : Colors.blue,
-        ),
-        title: Text(hasLocation ? l10n.posizioneSalvata : l10n.aggiungiPosizione),
-        trailing: hasLocation
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : const Icon(Icons.chevron_right),
-        onTap: () async {
-          final result = await context.pushNamed<LatLng>(
-            'location-picker',
-            extra: {'lat': _latitudine, 'lon': _longitudine},
-          );
-
-          if (result != null) {
-            setState(() {
-              _latitudine = result.latitude;
-              _longitudine = result.longitude;
-            });
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatsSummary(AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          _buildStatRow(l10n.kmTraveled, "${_kmPercorsi.toStringAsFixed(1)} km"),
-          const Divider(height: 24),
-          _buildStatRow(l10n.averageConsumption, "${_mediaConsumo.toStringAsFixed(2)} km/L"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _kmAttualiController.dispose();
-    _litriBenzinaController.dispose();
-    _litriOlioController.dispose();
-    _percentualeOlioController.dispose();
-    _costoController.dispose();
-    _noteController.dispose();
-    super.dispose();
   }
 }

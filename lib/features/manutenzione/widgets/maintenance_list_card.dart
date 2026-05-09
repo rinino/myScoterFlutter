@@ -52,12 +52,12 @@ class MaintenanceListCard extends ConsumerWidget {
               actions: <Widget>[
                 TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(l10n.cancel.toUpperCase()) // Usato cancel esistente
+                    child: Text(l10n.cancel.toUpperCase())
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   child: Text(
-                      l10n.delete.toUpperCase(), // Usato delete esistente
+                      l10n.delete.toUpperCase(),
                       style: const TextStyle(color: Colors.red)
                   ),
                 ),
@@ -67,8 +67,8 @@ class MaintenanceListCard extends ConsumerWidget {
         );
       },
       onDismissed: (direction) {
-        // FIX: aggiornato idScooter in scooterId
-        ref.read(manutenzioneListProvider(manutenzione.scooterId).notifier).deleteManutenzione(manutenzione.id!);
+        // FIX: Usiamo il nuovo ActionsProvider per la sincronizzazione in tempo reale!
+        ref.read(manutenzioneActionsProvider).deleteManutenzione(manutenzione.id!);
         ref.read(messageProvider.notifier).show(l10n.maintenanceDeleted, type: MessageType.success);
       },
       background: Container(

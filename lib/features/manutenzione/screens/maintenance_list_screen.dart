@@ -7,7 +7,6 @@ import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.
 import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
-// Widget modulari
 import '../widgets/maintenance_empty_state.dart';
 import '../widgets/maintenance_summary_header.dart';
 import '../widgets/maintenance_list_card.dart';
@@ -20,7 +19,8 @@ class MaintenanceListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final manutenzioniAsync = ref.watch(manutenzioneListProvider(scooter.id!));
+    // FIX: Ora chiama il corretto Stream Provider
+    final manutenzioniAsync = ref.watch(manutenzioniStreamProvider(scooter.id!));
     final currencySymbol = ref.watch(currencyProvider);
 
     return Scaffold(
@@ -28,7 +28,6 @@ class MaintenanceListScreen extends ConsumerWidget {
         title: Text('${scooter.marca} ${scooter.modello}'),
         centerTitle: true,
         actions: [
-          // FIX: Ora l'icona è add_circle, blu e di dimensione 30, identica ai rifornimenti
           IconButton(
             icon: const Icon(Icons.add_circle, color: Colors.blue, size: 30),
             onPressed: () {
@@ -54,13 +53,10 @@ class MaintenanceListScreen extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Manteniamo il Summary Header come richiesto
                 MaintenanceSummaryHeader(
                   manutenzioni: manutenzioni,
                   currencySymbol: currencySymbol,
                 ),
-
-                // FIX: Aggiungiamo l'etichetta grigia "MANUTENZIONI" per uguaglianza con l'altra schermata
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                   child: Text(
@@ -73,7 +69,6 @@ class MaintenanceListScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-
                 Expanded(
                   child: ListView.builder(
                     itemCount: manutenzioni.length,

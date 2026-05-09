@@ -8,6 +8,20 @@ class ManutenzioneRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
+  // NUOVO: Ascolto in tempo reale
+  Stream<List<Manutenzione>> streamManutenzioni(String scooterId) {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('scooterId', isEqualTo: scooterId)
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList());
+  }
+
   Future<String?> insertManutenzione(Manutenzione manutenzione) async {
     final userId = _currentUserId;
     if (userId == null) return null;

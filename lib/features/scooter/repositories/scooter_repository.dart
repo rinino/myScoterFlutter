@@ -8,10 +8,21 @@ class ScooterRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
+  // NUOVO METODO STREAM PER LA SINCRONIZZAZIONE IN TEMPO REALE
+  Stream<List<Scooter>> streamAllScooters() {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Scooter.fromMap(doc.data(), doc.id)).toList());
+  }
+
   Future<String?> insertScooter(Scooter scooter) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
     scooter.userId = userId;
     final ref = await _db.collection(_collectionName).add(scooter.toMap());
     return ref.id;
@@ -20,12 +31,7 @@ class ScooterRepository {
   Future<List<Scooter>> getAllScooters() async {
     final userId = _currentUserId;
     if (userId == null) return [];
-
-    final snapshot = await _db
-        .collection(_collectionName)
-        .where('userId', isEqualTo: userId)
-        .get();
-
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).get();
     return snapshot.docs.map((doc) => Scooter.fromMap(doc.data(), doc.id)).toList();
   }
 
@@ -40,17 +46,8 @@ class ScooterRepository {
   Future<Scooter?> getScooterByTarga(String targa) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
-    final snapshot = await _db
-        .collection(_collectionName)
-        .where('userId', isEqualTo: userId)
-        .where('targa', isEqualTo: targa)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      return Scooter.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
-    }
+    final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).where('targa', isEqualTo: targa).limit(1).get();
+    if (snapshot.docs.isNotEmpty) return Scooter.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
     return null;
   }
 
@@ -76,7 +73,6 @@ class ScooterRepository {
   Future<void> deleteAllScooters() async {
     final userId = _currentUserId;
     if (userId == null) return;
-
     final snapshot = await _db.collection(_collectionName).where('userId', isEqualTo: userId).get();
     for (var doc in snapshot.docs) {
       await doc.reference.delete();

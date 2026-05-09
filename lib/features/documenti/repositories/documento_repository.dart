@@ -8,10 +8,34 @@ class DocumentoRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
+  // NUOVO: Stream in tempo reale con ordinamento
+  Stream<List<Documento>> streamDocumenti(String scooterId) {
+    final userId = _currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _db
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .where('scooterId', isEqualTo: scooterId)
+        .snapshots()
+        .map((snapshot) {
+      var docs = snapshot.docs.map((doc) => Documento.fromMap(doc.data(), doc.id)).toList();
+
+      // Manteniamo il tuo ordinamento personalizzato per le scadenze
+      docs.sort((a, b) {
+        if (a.dataScadenza == null && b.dataScadenza == null) return 0;
+        if (a.dataScadenza == null) return 1;
+        if (b.dataScadenza == null) return -1;
+        return a.dataScadenza!.compareTo(b.dataScadenza!);
+      });
+
+      return docs;
+    });
+  }
+
   Future<String?> insertDocumento(Documento documento) async {
     final userId = _currentUserId;
     if (userId == null) return null;
-
     documento.userId = userId;
     final ref = await _db.collection(_collectionName).add(documento.toMap());
     return ref.id;
@@ -25,13 +49,10 @@ class DocumentoRepository {
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
         .where('scooterId', isEqualTo: scooterId)
-        .orderBy('dataScadenza', descending: false)
         .get();
 
     var docs = snapshot.docs.map((doc) => Documento.fromMap(doc.data(), doc.id)).toList();
 
-    // Siccome Firestore non tratta facilmente i "null" negli ordinamenti,
-    // sistemiamo a mano i documenti senza scadenza in fondo
     docs.sort((a, b) {
       if (a.dataScadenza == null && b.dataScadenza == null) return 0;
       if (a.dataScadenza == null) return 1;

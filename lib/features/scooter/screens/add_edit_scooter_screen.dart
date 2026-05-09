@@ -7,8 +7,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
-// FIX: Aggiunto l'import del gestore Cloud Storage
 import '../../../core/services/cloud_storage_manager.dart';
+import '../../../core/services/local_image_cache.dart';
 
 class AddEditScooterScreen extends StatefulWidget {
   final Scooter? scooter;
@@ -29,8 +29,11 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   late TextEditingController _annoController;
 
   bool _miscelatore = false;
-  File? _imageFile;
   bool _isProcessing = false;
+
+  // Nuova logica Immagini
+  String? _currentImgName;
+  File? _newImageFile;
 
   @override
   void initState() {
@@ -38,35 +41,30 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     _marcaController = TextEditingController(text: widget.scooter?.marca ?? '');
     _modelloController = TextEditingController(text: widget.scooter?.modello ?? '');
     _cilindrataController = TextEditingController(
-        text: (widget.scooter != null && widget.scooter!.cilindrata != 0)
-            ? widget.scooter!.cilindrata.toString()
-            : ''
+        text: (widget.scooter != null && widget.scooter!.cilindrata != 0) ? widget.scooter!.cilindrata.toString() : ''
     );
     _targaController = TextEditingController(text: widget.scooter?.targa ?? '');
     _annoController = TextEditingController(
-        text: (widget.scooter != null && widget.scooter!.anno != 0)
-            ? widget.scooter!.anno.toString()
-            : ''
+        text: (widget.scooter != null && widget.scooter!.anno != 0) ? widget.scooter!.anno.toString() : ''
     );
     _miscelatore = widget.scooter?.miscelatore ?? false;
 
-    if (widget.scooter?.imgName != null) {
-      _imageFile = File(widget.scooter!.imgName!);
-    }
+    // FIX: Estraiamo solo il NOME del file (retrocompatibilità con vecchi path assoluti)
+    _currentImgName = widget.scooter?.imgName != null ? p.basename(widget.scooter!.imgName!) : null;
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70, // Compressione ottimale per il Cloud
+      imageQuality: 70,
       maxWidth: 1024,
       maxHeight: 1024,
     );
 
     if (pickedFile != null) {
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _newImageFile = File(pickedFile.path);
       });
     }
   }
@@ -75,28 +73,24 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     if (_isProcessing) return;
     if (_formKey.currentState!.validate()) {
       setState(() => _isProcessing = true);
-      String? finalImagePath = widget.scooter?.imgName;
+
+      String? finalImgName = _currentImgName;
+      final appDir = await getApplicationDocumentsDirectory();
 
       try {
-        if (_imageFile != null && _imageFile!.path != widget.scooter?.imgName) {
-          final appDir = await getApplicationDocumentsDirectory();
-          final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(_imageFile!.path)}';
-          final savedImage = File(p.join(appDir.path, fileName));
-
-          await _imageFile!.copy(savedImage.path);
-          finalImagePath = savedImage.path;
+        if (_newImageFile != null) {
+          final fileName = 'scooter_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
+          final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
+          finalImgName = fileName; // SALVIAMO SOLO IL NOME
 
           // ☁️ UPLOAD SUL CLOUD!
           CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
 
-          if (widget.scooter?.imgName != null) {
-            final oldImage = File(widget.scooter!.imgName!);
-            if (await oldImage.exists()) {
-              await oldImage.delete();
-            }
-            // ☁️ ELIMINA LA VECCHIA FOTO DAL CLOUD!
-            final oldFileName = p.basename(widget.scooter!.imgName!);
-            CloudStorageManager.shared.deleteImageSilently(fileName: oldFileName);
+          // Eliminiamo la vecchia foto se esisteva
+          if (_currentImgName != null) {
+            final oldFile = File(p.join(appDir.path, _currentImgName!));
+            if (await oldFile.exists()) await oldFile.delete();
+            CloudStorageManager.shared.deleteImageSilently(fileName: _currentImgName!);
           }
         }
       } catch (e) {
@@ -111,7 +105,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         targa: _targaController.text.trim().toUpperCase(),
         anno: int.tryParse(_annoController.text) ?? 0,
         miscelatore: _miscelatore,
-        imgName: finalImagePath,
+        imgName: finalImgName,
       );
 
       if (mounted) {
@@ -158,8 +152,10 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.blue, width: 2),
                         ),
-                        child: _imageFile != null
-                            ? ClipOval(child: Image.file(_imageFile!, fit: BoxFit.cover))
+                        child: _newImageFile != null
+                            ? ClipOval(child: Image.file(_newImageFile!, fit: BoxFit.cover))
+                            : (_currentImgName != null && _currentImgName!.isNotEmpty)
+                            ? ClipOval(child: CloudSyncImage(imagePath: _currentImgName!, width: 120, height: 120, fit: BoxFit.cover))
                             : const Icon(Icons.camera_alt, size: 40, color: Colors.blue),
                       ),
                     ),
@@ -176,40 +172,26 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
                   _buildTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
 
                   _buildTextField(
-                      _targaController,
-                      l10n.licensePlate,
-                      Icons.badge,
-                      l10n,
+                      _targaController, l10n.licensePlate, Icons.badge, l10n,
                       isUppercase: true,
                       customValidator: (value) {
                         if (value == null || value.trim().isEmpty) return l10n.requiredField;
-
                         final cleanValue = value.replaceAll(' ', '');
                         final targaRegex = RegExp(r'^[a-zA-Z0-9]{5,7}$');
-                        if (!targaRegex.hasMatch(cleanValue)) {
-                          return l10n.invalidLicensePlate;
-                        }
+                        if (!targaRegex.hasMatch(cleanValue)) return l10n.invalidLicensePlate;
                         return null;
                       }
                   ),
 
                   _buildTextField(
-                      _annoController,
-                      l10n.year,
-                      Icons.calendar_today,
-                      l10n,
+                      _annoController, l10n.year, Icons.calendar_today, l10n,
                       isNumber: true,
                       customValidator: (value) {
                         if (value == null || value.trim().isEmpty) return l10n.requiredField;
-
                         final anno = int.tryParse(value);
                         if (anno == null) return l10n.insertNumber;
-
                         final currentYear = DateTime.now().year;
-                        if (anno < 1900 || anno > currentYear) {
-                          return l10n.invalidYear;
-                        }
-
+                        if (anno < 1900 || anno > currentYear) return l10n.invalidYear;
                         return null;
                       }
                   ),
@@ -241,13 +223,8 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   }
 
   Widget _buildTextField(
-      TextEditingController controller,
-      String label,
-      IconData icon,
-      AppLocalizations l10n, {
-        bool isNumber = false,
-        bool isUppercase = false,
-        String? Function(String?)? customValidator,
+      TextEditingController controller, String label, IconData icon, AppLocalizations l10n, {
+        bool isNumber = false, bool isUppercase = false, String? Function(String?)? customValidator,
       }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -262,12 +239,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         ),
         validator: customValidator ?? (value) {
           if (value == null || value.trim().isEmpty) return l10n.requiredField;
-
-          if (isNumber) {
-            final parsedValue = int.tryParse(value);
-            if (parsedValue == null) return l10n.insertNumber;
-          }
-
+          if (isNumber && int.tryParse(value) == null) return l10n.insertNumber;
           return null;
         },
       ),

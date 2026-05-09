@@ -1,5 +1,3 @@
-// lib/features/rifornimento/screens/rifornimento_detail_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:myscooter/features/rifornimento/models/rifornimento.dart';
 import '../../../l10n/app_localizations.dart';
 
-class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in ConsumerWidget
+class RifornimentoDetailScreen extends ConsumerStatefulWidget {
   final String scooterId;
   final Rifornimento rifornimento;
 
@@ -17,6 +15,19 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
     required this.scooterId,
     required this.rifornimento
   });
+
+  @override
+  ConsumerState<RifornimentoDetailScreen> createState() => _RifornimentoDetailScreenState();
+}
+
+class _RifornimentoDetailScreenState extends ConsumerState<RifornimentoDetailScreen> {
+  late Rifornimento _currentRif;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentRif = widget.rifornimento;
+  }
 
   Future<void> _launchMapUrl(String url) async {
     final uri = Uri.parse(url);
@@ -47,7 +58,6 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
                 title: Text(l10n.apriInGoogleMaps),
                 onTap: () {
                   Navigator.pop(ctx);
-                  //final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lon';
                   final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lon';
                   _launchMapUrl(url);
                 },
@@ -70,23 +80,28 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) { // Aggiunto WidgetRef
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(rifornimento.formattedDataRifornimento),
+        title: Text(_currentRif.formattedDataRifornimento),
         centerTitle: true,
-        // --- IL TASTO MODIFICA È TORNATO QUI! ---
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              context.pushNamed(
+            onPressed: () async {
+              final result = await context.pushNamed(
                 'add-edit-rifornimento',
-                pathParameters: {'scooterId': scooterId.toString()},
-                extra: rifornimento,
+                pathParameters: {'scooterId': widget.scooterId},
+                extra: _currentRif,
               );
+
+              if (result != null && result is Rifornimento) {
+                setState(() {
+                  _currentRif = result;
+                });
+              }
             },
           ),
         ],
@@ -97,7 +112,6 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // CARD DATI PRINCIPALI
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -105,20 +119,20 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      _buildDetailRow(Icons.calendar_today, l10n.date, rifornimento.formattedDataRifornimento),
+                      _buildDetailRow(Icons.calendar_today, l10n.date, _currentRif.formattedDataRifornimento),
                       const Divider(),
-                      _buildDetailRow(Icons.speed, l10n.currentKm, "${rifornimento.kmAttuali.toStringAsFixed(1)} km"),
+                      _buildDetailRow(Icons.speed, l10n.currentKm, "${_currentRif.kmAttuali.toStringAsFixed(1)} km"),
                       const Divider(),
-                      _buildDetailRow(Icons.local_gas_station, l10n.gasLiters, "${rifornimento.litriBenzina.toStringAsFixed(2)} L"),
+                      _buildDetailRow(Icons.local_gas_station, l10n.gasLiters, "${_currentRif.litriBenzina.toStringAsFixed(2)} L"),
 
-                      if (rifornimento.litriOlio != null) ...[
+                      if (_currentRif.litriOlio != null) ...[
                         const Divider(),
-                        _buildDetailRow(Icons.oil_barrel, l10n.oilLiters, "${rifornimento.litriOlio!.toStringAsFixed(2)} L"),
+                        _buildDetailRow(Icons.oil_barrel, l10n.oilLiters, "${_currentRif.litriOlio!.toStringAsFixed(2)} L"),
                       ],
 
-                      if (rifornimento.costo != null) ...[
+                      if (_currentRif.costo != null) ...[
                         const Divider(),
-                        _buildDetailRow(Icons.payments_outlined, l10n.costoLabel, "€ ${rifornimento.costo!.toStringAsFixed(2)}"),
+                        _buildDetailRow(Icons.payments_outlined, l10n.costoLabel, "€ ${_currentRif.costo!.toStringAsFixed(2)}"),
                       ],
                     ],
                   ),
@@ -127,19 +141,19 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
 
               const SizedBox(height: 16),
 
-              // STATISTICHE
               Card(
                 elevation: 2,
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+                // FIX: Sostituito withOpacity(0.4) con withValues(alpha: 0.4)
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      _buildDetailRow(Icons.route, l10n.kmTraveled, "${rifornimento.kmPercorsi.toStringAsFixed(1)} km"),
+                      _buildDetailRow(Icons.route, l10n.kmTraveled, "${_currentRif.kmPercorsi.toStringAsFixed(1)} km"),
                       const Divider(),
                       _buildDetailRow(Icons.analytics, l10n.averageConsumption,
-                          rifornimento.mediaConsumo != null ? "${rifornimento.mediaConsumo!.toStringAsFixed(2)} km/L" : "-"),
+                          _currentRif.mediaConsumo != null ? "${_currentRif.mediaConsumo!.toStringAsFixed(2)} km/L" : "-"),
                     ],
                   ),
                 ),
@@ -147,8 +161,7 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
 
               const SizedBox(height: 16),
 
-              // NOTE
-              if (rifornimento.note != null && rifornimento.note!.isNotEmpty) ...[
+              if (_currentRif.note != null && _currentRif.note!.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(l10n.noteLabel.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -160,7 +173,7 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
                     width: double.infinity,
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      rifornimento.note!,
+                      _currentRif.note!,
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -168,8 +181,7 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
                 const SizedBox(height: 16),
               ],
 
-              // MAPPA
-              if (rifornimento.latitudine != null && rifornimento.longitudine != null) ...[
+              if (_currentRif.latitudine != null && _currentRif.longitudine != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(l10n.posizioneGPSLabel.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -179,20 +191,20 @@ class RifornimentoDetailScreen extends ConsumerWidget { // Trasformato in Consum
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: GestureDetector(
-                    onTap: () => _showMapOptions(context, rifornimento.latitudine!, rifornimento.longitudine!, l10n),
+                    onTap: () => _showMapOptions(context, _currentRif.latitudine!, _currentRif.longitudine!, l10n),
                     child: AbsorbPointer(
                       child: SizedBox(
                         height: 200,
                         width: double.infinity,
                         child: GoogleMap(
                           initialCameraPosition: CameraPosition(
-                            target: LatLng(rifornimento.latitudine!, rifornimento.longitudine!),
+                            target: LatLng(_currentRif.latitudine!, _currentRif.longitudine!),
                             zoom: 15.0,
                           ),
                           markers: {
                             Marker(
                               markerId: const MarkerId('distributore_pin'),
-                              position: LatLng(rifornimento.latitudine!, rifornimento.longitudine!),
+                              position: LatLng(_currentRif.latitudine!, _currentRif.longitudine!),
                             )
                           },
                           zoomControlsEnabled: false,

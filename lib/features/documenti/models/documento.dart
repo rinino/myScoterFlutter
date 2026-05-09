@@ -63,11 +63,10 @@ class Documento {
     return Documento(
       id: documentId,
       userId: map['userId'] as String?,
-      scooterId: map['scooterId'] as String,
-      // FIX CRITICO: Ignora maiuscole/minuscole
+      scooterId: map['scooterId'] as String? ?? '',
       tipo: TipoDocumento.values.firstWhere(
             (e) => e.name.toLowerCase() == map['tipo'].toString().toLowerCase(),
-        orElse: () => TipoDocumento.libretto,
+        orElse: () => TipoDocumento.altro,
       ),
       tipoCustom: map['tipoCustom'] as String?,
       dataScadenza: map['dataScadenza'] != null ? (map['dataScadenza'] as Timestamp).toDate() : null,

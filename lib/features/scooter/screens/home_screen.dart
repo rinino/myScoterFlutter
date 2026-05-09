@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
 import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
+import 'package:myscooter/core/services/local_image_cache.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
@@ -20,7 +20,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Lucchetto anti-doppio tocco!
   bool _isNavigating = false;
 
   Future<bool?> _confirmDelete(BuildContext context, Scooter scooter) {
@@ -45,11 +44,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    await ref.read(scooterListProvider.notifier).refreshScooters();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    // Listener per i messaggi (SnackBar)
     ref.listen<UiMessage?>(messageProvider, (previous, next) {
       if (next != null) {
         final Color? bgColor = next.type == MessageType.error
@@ -60,7 +62,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SnackBar(
             content: Text(next.message),
             backgroundColor: bgColor,
-            // FIX: Cambiato in "fixed" per evitare l'eccezione di rendering
             behavior: SnackBarBehavior.fixed,
           ),
         );
@@ -68,7 +69,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    // Listener per errori di caricamento lista
     ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
       if (next.hasError && !next.isLoading) {
         ref.read(messageProvider.notifier).show(
@@ -115,10 +115,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      // FIX EDGE-TO-EDGE: SafeArea aggiunta qui
       body: SafeArea(
-        top: false, // L'AppBar protegge già la parte alta
-        bottom: true, // Protegge il contenuto dalla barra delle gesture in basso
+        top: false,
+        bottom: true,
         child: Column(
           children: [
             _buildTopLogo(),
@@ -138,9 +137,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: scooterState.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) => Center(child: Text(error.toString())),
-                data: (scooters) => scooters.isEmpty
-                    ? _buildEmptyState(context)
-                    : _buildScooterList(context, scooters),
+                data: (scooters) => RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: scooters.isEmpty
+                      ? _buildEmptyState(context)
+                      : _buildScooterList(context, scooters),
+                ),
               ),
             ),
           ],
@@ -188,27 +190,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.two_wheeler, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(l10n.noScooterFound, style: const TextStyle(color: Colors.grey)),
-          Text(l10n.addScooterPrompt, style: const TextStyle(color: Colors.grey)),
-        ],
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        const Icon(Icons.two_wheeler, size: 64, color: Colors.grey),
+        const SizedBox(height: 16),
+        Center(child: Text(l10n.noScooterFound, style: const TextStyle(color: Colors.grey))),
+        Center(child: Text(l10n.addScooterPrompt, style: const TextStyle(color: Colors.grey))),
+      ],
     );
   }
 
   Widget _buildScooterList(BuildContext context, List<Scooter> scooters) {
     final l10n = AppLocalizations.of(context)!;
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: scooters.length,
       padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (context, index) {
         final scooter = scooters[index];
-        bool hasValidImage = scooter.imgName != null && File(scooter.imgName!).existsSync();
+        bool hasImage = scooter.imgName != null && scooter.imgName!.isNotEmpty;
 
         return Dismissible(
           key: Key(scooter.id.toString()),
@@ -239,13 +241,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: hasValidImage ? Colors.blue : Colors.grey.withValues(alpha: 0.3),
+                    color: hasImage ? Colors.blue : Colors.grey.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
                 child: ClipOval(
-                  child: hasValidImage
-                      ? Image.file(File(scooter.imgName!), fit: BoxFit.cover)
+                  child: hasImage
+                      ? CloudSyncImage(imagePath: scooter.imgName!, fit: BoxFit.cover, width: 60, height: 60)
                       : const Icon(Icons.moped, color: Colors.grey),
                 ),
               ),

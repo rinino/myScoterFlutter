@@ -9,11 +9,17 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:myscooter/core/auth/auth_manager.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
-import 'package:myscooter/core/services/local_image_cache.dart'; // FIX: Aggiunto per le immagini
+import 'package:myscooter/core/services/local_image_cache.dart';
+import '../../scooter/widgets/image_viewer_page.dart';
 import '../../../l10n/app_localizations.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _onRefresh(WidgetRef ref) async {
+    await ref.read(scooterListProvider.notifier).refreshScooters();
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
 
   Future<void> _handleLogin(BuildContext context, WidgetRef ref, Future<bool> Function() loginMethod) async {
     final l10n = AppLocalizations.of(context)!;
@@ -96,17 +102,26 @@ class ProfileScreen extends ConsumerWidget {
 
       final batch = db.batch();
 
+      // FIX: Aggiunte le graffe obbligatorie nei cicli for
       final scooters = await db.collection('scooters').where('userId', isEqualTo: userId).get();
-      for (var doc in scooters.docs) batch.delete(doc.reference);
+      for (var doc in scooters.docs) {
+        batch.delete(doc.reference);
+      }
 
       final rifornimenti = await db.collection('rifornimenti').where('userId', isEqualTo: userId).get();
-      for (var doc in rifornimenti.docs) batch.delete(doc.reference);
+      for (var doc in rifornimenti.docs) {
+        batch.delete(doc.reference);
+      }
 
       final manutenzioni = await db.collection('manutenzioni').where('userId', isEqualTo: userId).get();
-      for (var doc in manutenzioni.docs) batch.delete(doc.reference);
+      for (var doc in manutenzioni.docs) {
+        batch.delete(doc.reference);
+      }
 
       final documenti = await db.collection('documenti').where('userId', isEqualTo: userId).get();
-      for (var doc in documenti.docs) batch.delete(doc.reference);
+      for (var doc in documenti.docs) {
+        batch.delete(doc.reference);
+      }
 
       batch.delete(db.collection('utenti').doc(userId));
 
@@ -136,26 +151,29 @@ class ProfileScreen extends ConsumerWidget {
         title: Text(l10n.profiloTitle),
         centerTitle: true,
       ),
-      body: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          final user = snapshot.data;
-          final isAnonymous = user == null || user.isAnonymous;
+      body: RefreshIndicator(
+        onRefresh: () => _onRefresh(ref),
+        child: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            final user = snapshot.data;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: isAnonymous
-                ? _buildGuestView(context, ref, l10n)
-                : _buildUserView(context, ref, l10n, user!),
-          );
-        },
+            // FIX: Rimozione del warning user! tramite controllo if/else sicuro
+            if (user == null || user.isAnonymous) {
+              return _buildGuestView(context, ref, l10n);
+            } else {
+              return _buildUserView(context, ref, l10n, user);
+            }
+          },
+        ),
       ),
     );
   }
 
   Widget _buildGuestView(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16.0),
       children: [
         Row(
           children: [
@@ -200,7 +218,6 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildUserView(BuildContext context, WidgetRef ref, AppLocalizations l10n, User user) {
-    // FIX CRITICO: Legge il documento da Firestore invece di affidarsi solo ai dati base di Google
     return StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('utenti').doc(user.uid).snapshots(),
         builder: (context, snapshot) {
@@ -220,17 +237,39 @@ class ProfileScreen extends ConsumerWidget {
             }
           }
 
-          return Column(
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
             children: [
               Center(
-                child: ClipOval(
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    color: Colors.blue,
-                    child: (photoUrl != null && photoUrl.isNotEmpty)
-                        ? CloudSyncImage(imagePath: photoUrl, width: 100, height: 100, fit: BoxFit.cover)
-                        : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 32))),
+                child: GestureDetector(
+                  onTap: () {
+                    if (photoUrl != null && photoUrl.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          fullscreenDialog: true,
+                          builder: (context) => ImageViewerPage(
+                            imagePath: photoUrl!,
+                            title: displayName,
+                            heroTag: 'profile_image_${user.uid}',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Hero(
+                    tag: 'profile_image_${user.uid}',
+                    child: ClipOval(
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        color: Colors.blue,
+                        child: (photoUrl != null && photoUrl.isNotEmpty)
+                            ? CloudSyncImage(imagePath: photoUrl, width: 100, height: 100, fit: BoxFit.cover)
+                            : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 32))),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -266,12 +305,14 @@ class ProfileScreen extends ConsumerWidget {
                 label: Text(l10n.esci),
                 style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
               ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => _deleteAccount(context, ref, l10n, user),
-                icon: const Icon(Icons.delete_forever),
-                label: Text(l10n.eliminaAccount, style: const TextStyle(fontSize: 16)),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+              const SizedBox(height: 64),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => _deleteAccount(context, ref, l10n, user),
+                  icon: const Icon(Icons.delete_forever),
+                  label: Text(l10n.eliminaAccount, style: const TextStyle(fontSize: 16)),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                ),
               ),
               const SizedBox(height: 24),
             ],

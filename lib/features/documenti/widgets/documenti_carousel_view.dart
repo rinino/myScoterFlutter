@@ -8,14 +8,15 @@ import '../models/documento.dart';
 import '../providers/documento_provider.dart';
 
 class DocumentiCarouselView extends ConsumerWidget {
-  final String scooterId; // FIX: Ora è String
+  final String scooterId;
 
   const DocumentiCarouselView({super.key, required this.scooterId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final asyncDocs = ref.watch(documentoListProvider(scooterId));
+    // FIX: Ora ascoltiamo lo Stream!
+    final asyncDocs = ref.watch(documentiStreamProvider(scooterId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +78,8 @@ class DocumentiCarouselView extends ConsumerWidget {
               TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
               TextButton(
                 onPressed: () {
-                  ref.read(documentoListProvider(scooterId).notifier).deleteDocumento(doc.id!);
+                  // FIX: Chiamiamo l'actions provider invece del vecchio notifier
+                  ref.read(documentoActionsProvider).deleteDocumento(doc.id!);
                   Navigator.pop(ctx);
                 },
                 child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),

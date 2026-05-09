@@ -11,17 +11,15 @@ import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.dart';
 import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
+import 'package:myscooter/core/services/cloud_storage_manager.dart';
+import 'package:myscooter/core/services/local_image_cache.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
 class AddEditMaintenanceScreen extends ConsumerStatefulWidget {
   final String scooterId;
   final Manutenzione? manutenzione;
 
-  const AddEditMaintenanceScreen({
-    super.key,
-    required this.scooterId,
-    this.manutenzione,
-  });
+  const AddEditMaintenanceScreen({super.key, required this.scooterId, this.manutenzione});
 
   @override
   ConsumerState<AddEditMaintenanceScreen> createState() => _AddEditMaintenanceScreenState();
@@ -31,7 +29,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
 
-  // Variabili di stato del form
   late TextEditingController _titoloController;
   late DateTime _data;
   late TextEditingController _kmController;
@@ -40,14 +37,13 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
   late TextEditingController _costoController;
   late TextEditingController _noteController;
 
-  String? _imagePath;
-  String? _oldImagePath; // Memorizza la foto originale per l'eliminazione se cambiata
+  String? _currentImgName;
+  File? _newImageFile;
 
   @override
   void initState() {
     super.initState();
     final m = widget.manutenzione;
-
     _titoloController = TextEditingController(text: m?.titolo ?? '');
     _data = m?.data ?? DateTime.now();
     _kmController = TextEditingController(text: m != null ? m.km.toString().replaceAll('.0', '') : '');
@@ -56,8 +52,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     _costoController = TextEditingController(text: m?.costo != null ? m!.costo.toString() : '');
     _noteController = TextEditingController(text: m?.note ?? '');
 
-    _imagePath = m?.nomeFoto;
-    _oldImagePath = m?.nomeFoto;
+    _currentImgName = m?.nomeFoto != null ? p.basename(m!.nomeFoto!) : null;
   }
 
   @override
@@ -70,17 +65,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     super.dispose();
   }
 
-  // --- LOGICA FILE ---
-  Future<void> _deleteFile(String? path) async {
-    if (path != null && path.isNotEmpty) {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
-      }
-    }
-  }
-
-  // --- SELEZIONE DATA ---
   Future<void> _selezionaData(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -88,33 +72,17 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _data) {
-      setState(() => _data = picked);
-    }
+    if (picked != null && picked != _data) setState(() => _data = picked);
   }
 
-  // --- GESTIONE FOTO ---
   Future<void> _scegliFoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-
     if (pickedFile != null) {
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'maint_${DateTime.now().millisecondsSinceEpoch}${p.extension(pickedFile.path)}';
-      final savedImage = await File(pickedFile.path).copy(p.join(directory.path, fileName));
-
-      // Se l'utente scatta più foto prima di salvare, eliminiamo quella precedente temporanea
-      if (_imagePath != null && _imagePath != _oldImagePath) {
-        await _deleteFile(_imagePath);
-      }
-
-      setState(() {
-        _imagePath = savedImage.path;
-      });
+      setState(() => _newImageFile = File(pickedFile.path));
     }
   }
 
-  // --- TRADUZIONE CATEGORIE ---
   String _translateCategory(CategoriaManutenzione cat, AppLocalizations l10n) {
     switch (cat) {
       case CategoriaManutenzione.motore: return l10n.cat_motore;
@@ -128,58 +96,66 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     }
   }
 
-  // --- PARSING NUMERICO (VIRGOLA -> PUNTO) ---
   double? _parseNumber(String value) {
     if (value.isEmpty) return null;
-    final cleaned = value.replaceAll(',', '.').trim();
-    return double.tryParse(cleaned);
+    return double.tryParse(value.replaceAll(',', '.').trim());
   }
 
-  // --- SALVATAGGIO ---
   Future<void> _salvaDati() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
-    final km = _parseNumber(_kmController.text) ?? 0.0;
-    final costo = _parseNumber(_costoController.text);
-
-    final nuovaManutenzione = Manutenzione(
-      id: widget.manutenzione?.id,
-      scooterId: widget.scooterId, // FIX: scooterId al posto di idScooter
-      data: _data,
-      km: km,
-      categoria: _categoria,
-      categoriaCustom: _categoria == CategoriaManutenzione.altro ? _categoriaCustomController.text : null,
-      titolo: _titoloController.text.trim(),
-      costo: costo,
-      note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
-      nomeFoto: _imagePath,
-    );
+    String? finalImgName = _currentImgName;
+    final appDir = await getApplicationDocumentsDirectory();
 
     try {
-      final notifier = ref.read(manutenzioneListProvider(widget.scooterId).notifier);
+      if (_newImageFile != null) {
+        final fileName = 'maint_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
+        final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
+        finalImgName = fileName;
 
-      // Se abbiamo cambiato o rimosso la foto originale, eliminiamo il vecchio file fisico
-      if (widget.manutenzione != null && _oldImagePath != null && _imagePath != _oldImagePath) {
-        await _deleteFile(_oldImagePath);
+        CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
+
+        if (_currentImgName != null) {
+          final oldFile = File(p.join(appDir.path, _currentImgName!));
+          if (await oldFile.exists()) await oldFile.delete();
+          CloudStorageManager.shared.deleteImageSilently(fileName: _currentImgName!);
+        }
+      } else if (_currentImgName == null && widget.manutenzione?.nomeFoto != null) {
+        final oldFileName = p.basename(widget.manutenzione!.nomeFoto!);
+        final oldFile = File(p.join(appDir.path, oldFileName));
+        if (await oldFile.exists()) await oldFile.delete();
+        CloudStorageManager.shared.deleteImageSilently(fileName: oldFileName);
       }
 
+      final nuovaManutenzione = Manutenzione(
+        id: widget.manutenzione?.id,
+        scooterId: widget.scooterId,
+        data: _data,
+        km: _parseNumber(_kmController.text) ?? 0.0,
+        categoria: _categoria,
+        categoriaCustom: _categoria == CategoriaManutenzione.altro ? _categoriaCustomController.text : null,
+        titolo: _titoloController.text.trim(),
+        costo: _parseNumber(_costoController.text),
+        note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
+        nomeFoto: finalImgName,
+      );
+
+      final actions = ref.read(manutenzioneActionsProvider);
       if (widget.manutenzione == null) {
-        await notifier.addManutenzione(nuovaManutenzione);
+        await actions.addManutenzione(nuovaManutenzione);
       } else {
-        await notifier.updateManutenzione(nuovaManutenzione);
+        await actions.updateManutenzione(nuovaManutenzione);
       }
 
       if (mounted) {
-        context.pop();
+        context.pop(nuovaManutenzione);
         ref.read(messageProvider.notifier).show(l10n.maintenanceSaved, type: MessageType.success);
       }
     } catch (e) {
-      if (mounted) {
-        ref.read(messageProvider.notifier).show(l10n.errorSaving, type: MessageType.error);
-      }
+      if (mounted) ref.read(messageProvider.notifier).show(l10n.errorSaving, type: MessageType.error);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -191,6 +167,8 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     final currencySymbol = ref.watch(currencyProvider);
     final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
 
+    final bool hasImage = _newImageFile != null || (_currentImgName != null && _currentImgName!.isNotEmpty);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.manutenzione == null ? l10n.nuovoIntervento : l10n.modificaIntervento),
@@ -201,14 +179,11 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.check, color: Colors.blue),
-              onPressed: _salvaDati,
-            ),
+            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _salvaDati),
         ],
       ),
       body: SafeArea(
-        top: false, // AppBar protegge già la parte superiore
+        top: false,
         bottom: true,
         child: Form(
           key: _formKey,
@@ -218,10 +193,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               _buildSectionHeader(l10n.infoPrincipali),
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -250,11 +222,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
                       TextFormField(
                         controller: _kmController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                            labelText: l10n.currentKm,
-                            border: InputBorder.none,
-                            suffixText: "km"
-                        ),
+                        decoration: InputDecoration(labelText: l10n.currentKm, border: InputBorder.none, suffixText: "km"),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) return l10n.datiMancanti;
                           if (_parseNumber(val) == null) return l10n.insertNumber;
@@ -270,27 +238,18 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               _buildSectionHeader(l10n.categoria),
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
                       DropdownButtonFormField<CategoriaManutenzione>(
-                        value: _categoria,
+                        // FIX: Usiamo initialValue al posto di value
+                        initialValue: _categoria,
                         decoration: const InputDecoration(border: InputBorder.none),
                         isExpanded: true,
-                        items: CategoriaManutenzione.values.map((cat) {
-                          return DropdownMenuItem(
-                            value: cat,
-                            child: Text(_translateCategory(cat, l10n)),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) setState(() => _categoria = val);
-                        },
+                        items: CategoriaManutenzione.values.map((cat) => DropdownMenuItem(value: cat, child: Text(_translateCategory(cat, l10n)))).toList(),
+                        onChanged: (val) { if (val != null) setState(() => _categoria = val); },
                       ),
                       if (_categoria == CategoriaManutenzione.altro) ...[
                         const Divider(),
@@ -310,10 +269,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               _buildSectionHeader(l10n.dettagliAggiuntivi),
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -321,15 +277,9 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
                       TextFormField(
                         controller: _costoController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: l10n.costoOpzionale,
-                          border: InputBorder.none,
-                          suffixText: currencySymbol,
-                        ),
+                        decoration: InputDecoration(labelText: l10n.costoOpzionale, border: InputBorder.none, suffixText: currencySymbol),
                         validator: (val) {
-                          if (val != null && val.isNotEmpty && _parseNumber(val) == null) {
-                            return l10n.insertNumber;
-                          }
+                          if (val != null && val.isNotEmpty && _parseNumber(val) == null) return l10n.insertNumber;
                           return null;
                         },
                       ),
@@ -338,10 +288,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
                         controller: _noteController,
                         maxLines: 3,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: l10n.notePlaceholder,
-                          border: InputBorder.none,
-                        ),
+                        decoration: InputDecoration(hintText: l10n.notePlaceholder, border: InputBorder.none),
                       ),
                     ],
                   ),
@@ -352,32 +299,25 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               _buildSectionHeader(l10n.fotoRicevuta),
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: _imagePath != null && File(_imagePath!).existsSync()
+                  child: hasImage
                       ? Row(
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_imagePath!),
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
+                        child: _newImageFile != null
+                            ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
+                            : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover),
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () async {
-                          // Se la foto è nuova (non ancora salvata), la eliminiamo subito
-                          if (_imagePath != _oldImagePath) {
-                            await _deleteFile(_imagePath);
-                          }
-                          setState(() => _imagePath = null);
+                        onPressed: () {
+                          setState(() {
+                            _newImageFile = null;
+                            _currentImgName = null;
+                          });
                         },
                         style: TextButton.styleFrom(foregroundColor: Colors.red),
                         child: Text(l10n.rimuoviFoto),
@@ -407,10 +347,7 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
-      ),
+      child: Text(title.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
     );
   }
 }
