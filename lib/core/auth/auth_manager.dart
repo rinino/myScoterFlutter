@@ -2,12 +2,14 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // FIX: Necessario per pulizia e creazione profilo
+import 'package:firebase_storage/firebase_storage.dart'; // FIX: Necessario per pulizia storage
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:google_sign_in/google_sign_in.dart' as g_sign_in;
 
 import '../database/migration_manager.dart';
-import '../services/local_image_cache.dart'; // Import per la gestione della cache immagini
+import '../services/local_image_cache.dart';
 
 class AuthManager extends ChangeNotifier {
   static final AuthManager shared = AuthManager._internal();
@@ -48,12 +50,14 @@ class AuthManager extends ChangeNotifier {
     try {
       setSyncing(true);
       final currentUser = FirebaseAuth.instance.currentUser;
+      User? finalUser;
 
       if (currentUser != null && currentUser.isAnonymous) {
         try {
           final credential = EmailAuthProvider.credential(email: email, password: password);
-          await currentUser.linkWithCredential(credential);
-          await currentUser.sendEmailVerification();
+          final result = await currentUser.linkWithCredential(credential);
+          finalUser = result.user;
+          await finalUser?.sendEmailVerification();
         } on FirebaseAuthException catch (e) {
           if (e.code == 'credential-already-in-use') {
             return "Email già in uso. Vai su 'Accedi' per fare il login.";
@@ -62,8 +66,15 @@ class AuthManager extends ChangeNotifier {
         }
       } else {
         final creds = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-        await creds.user?.sendEmailVerification();
+        finalUser = creds.user;
+        await finalUser?.sendEmailVerification();
       }
+
+      // FIX: Crea il documento del profilo utente per coerenza con iOS
+      if (finalUser != null) {
+        await _creaOAggiornaProfiloUtente(finalUser, 'email');
+      }
+
       currentUserId = FirebaseAuth.instance.currentUser?.uid;
       notifyListeners();
       return null;
@@ -77,10 +88,20 @@ class AuthManager extends ChangeNotifier {
   Future<String?> signInWithEmail(String email, String password) async {
     try {
       setSyncing(true);
-      // Puliamo la cache locale prima di accedere per forzare il caricamento dei dati corretti dal cloud
       await LocalImageCache.shared.clearCache();
 
+      // FIX: Rileviamo l'UID dell'Ospite prima di fare il login
+      final oldAnonymousUid = FirebaseAuth.instance.currentUser?.isAnonymous == true
+          ? FirebaseAuth.instance.currentUser?.uid
+          : null;
+
       final creds = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+
+      // FIX: Se l'utente era un ospite e ha fatto login su un account esistente, distruggiamo i dati fantasma
+      if (oldAnonymousUid != null && oldAnonymousUid != creds.user?.uid) {
+        await _deleteGhostData(oldAnonymousUid);
+      }
+
       currentUserId = creds.user?.uid;
       notifyListeners();
       return null;
@@ -116,24 +137,32 @@ class AuthManager extends ChangeNotifier {
       );
 
       final currentUser = FirebaseAuth.instance.currentUser;
+      User? finalUser;
 
       if (currentUser != null && currentUser.isAnonymous) {
+        final oldAnonymousUid = currentUser.uid;
         try {
-          // Tenta di unire i dati locali all'account Google
-          await currentUser.linkWithCredential(credential);
+          final res = await currentUser.linkWithCredential(credential);
+          finalUser = res.user;
         } on FirebaseAuthException catch (e) {
-          // Se l'account Google esiste già, effettua il login diretto svuotando la cache
           if (e.code == 'credential-already-in-use') {
-            debugPrint("ADR: Credenziale Google già esistente. Eseguo il Login diretto.");
             await LocalImageCache.shared.clearCache();
-            await FirebaseAuth.instance.signInWithCredential(credential);
+            final res = await FirebaseAuth.instance.signInWithCredential(credential);
+            finalUser = res.user;
+            // FIX: Distruzione dati fantasma
+            await _deleteGhostData(oldAnonymousUid);
           } else {
             rethrow;
           }
         }
       } else {
         await LocalImageCache.shared.clearCache();
-        await FirebaseAuth.instance.signInWithCredential(credential);
+        final res = await FirebaseAuth.instance.signInWithCredential(credential);
+        finalUser = res.user;
+      }
+
+      if (finalUser != null) {
+        await _creaOAggiornaProfiloUtente(finalUser, 'google');
       }
 
       currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -159,22 +188,32 @@ class AuthManager extends ChangeNotifier {
 
       final oauthCredential = OAuthProvider('apple.com').credential(idToken: appleCredential.identityToken, rawNonce: nonce);
       final currentUser = FirebaseAuth.instance.currentUser;
+      User? finalUser;
 
       if (currentUser != null && currentUser.isAnonymous) {
+        final oldAnonymousUid = currentUser.uid;
         try {
-          await currentUser.linkWithCredential(oauthCredential);
+          final res = await currentUser.linkWithCredential(oauthCredential);
+          finalUser = res.user;
         } on FirebaseAuthException catch (e) {
           if (e.code == 'credential-already-in-use') {
-            debugPrint("ADR: Credenziale Apple già esistente. Eseguo il Login diretto.");
             await LocalImageCache.shared.clearCache();
-            await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+            final res = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+            finalUser = res.user;
+            // FIX: Distruzione dati fantasma
+            await _deleteGhostData(oldAnonymousUid);
           } else {
             rethrow;
           }
         }
       } else {
         await LocalImageCache.shared.clearCache();
-        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+        final res = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+        finalUser = res.user;
+      }
+
+      if (finalUser != null) {
+        await _creaOAggiornaProfiloUtente(finalUser, 'apple');
       }
 
       currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -198,8 +237,6 @@ class AuthManager extends ChangeNotifier {
       await googleSignIn.signOut();
 
       currentUserId = null;
-
-      // Svuota la cache locale al logout per garantire che un nuovo login parta da dati puliti
       await LocalImageCache.shared.clearCache();
 
       notifyListeners();
@@ -208,6 +245,69 @@ class AuthManager extends ChangeNotifier {
       debugPrint("ADR: Errore SignOut - $e");
     } finally {
       setSyncing(false);
+    }
+  }
+
+  // --- METODI PRIVATI DI SUPPORTO (PULIZIA E COERENZA DB) ---
+
+  Future<void> _deleteGhostData(String uid) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final storage = FirebaseStorage.instance;
+      final collections = ['scooters', 'rifornimenti', 'manutenzioni', 'documenti', 'utenti'];
+
+      WriteBatch batch = db.batch();
+
+      for (String collection in collections) {
+        final snap = await db.collection(collection).where('userId', isEqualTo: uid).get();
+        for (var doc in snap.docs) {
+          batch.delete(doc.reference);
+        }
+      }
+
+      await batch.commit();
+
+      // Elimina Immagini Orfane su Storage
+      try {
+        final listResult = await storage.ref("images/$uid").listAll();
+        for (var item in listResult.items) {
+          await item.delete();
+        }
+      } catch (_) {}
+
+    } catch (e) {
+      debugPrint("ADR: Errore eliminazione dati fantasma: $e");
+    }
+  }
+
+  Future<void> _creaOAggiornaProfiloUtente(User user, String provider) async {
+    try {
+      final docRef = FirebaseFirestore.instance.collection('utenti').doc(user.uid);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        // Genera nome e cognome dal displayName (se disponibili)
+        String nome = '';
+        String cognome = '';
+        if (user.displayName != null && user.displayName!.isNotEmpty) {
+          final parti = user.displayName!.split(' ');
+          nome = parti.first;
+          if (parti.length > 1) {
+            cognome = parti.sublist(1).join(' ');
+          }
+        }
+
+        await docRef.set({
+          'email': user.email ?? '',
+          'nome': nome,
+          'cognome': cognome,
+          'nomeFotoProfilo': user.photoURL,
+          'provider': provider,
+          'dataRegistrazione': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      debugPrint("ADR: Errore creazione profilo base: $e");
     }
   }
 
