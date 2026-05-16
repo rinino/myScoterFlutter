@@ -8,7 +8,6 @@ class DocumentoRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // NUOVO: Stream in tempo reale con ordinamento
   Stream<List<Documento>> streamDocumenti(String scooterId) {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
@@ -21,7 +20,6 @@ class DocumentoRepository {
         .map((snapshot) {
       var docs = snapshot.docs.map((doc) => Documento.fromMap(doc.data(), doc.id)).toList();
 
-      // Manteniamo il tuo ordinamento personalizzato per le scadenze
       docs.sort((a, b) {
         if (a.dataScadenza == null && b.dataScadenza == null) return 0;
         if (a.dataScadenza == null) return 1;
@@ -64,8 +62,11 @@ class DocumentoRepository {
   }
 
   Future<bool> updateDocumento(Documento documento) async {
-    if (documento.id == null || _currentUserId == null) return false;
+    final userId = _currentUserId;
+    if (documento.id == null || userId == null) return false;
     try {
+      // FIX CRITICO: Sicurezza ID Utente
+      documento.userId = userId;
       await _db.collection(_collectionName).doc(documento.id).set(documento.toMap());
       return true;
     } catch (e) {

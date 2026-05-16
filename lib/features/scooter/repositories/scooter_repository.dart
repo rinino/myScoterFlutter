@@ -8,7 +8,6 @@ class ScooterRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // NUOVO METODO STREAM PER LA SINCRONIZZAZIONE IN TEMPO REALE
   Stream<List<Scooter>> streamAllScooters() {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
@@ -52,8 +51,11 @@ class ScooterRepository {
   }
 
   Future<bool> updateScooter(Scooter scooter) async {
-    if (scooter.id == null || _currentUserId == null) return false;
+    final userId = _currentUserId;
+    if (scooter.id == null || userId == null) return false;
     try {
+      // FIX CRITICO: Sicurezza ID Utente
+      scooter.userId = userId;
       await _db.collection(_collectionName).doc(scooter.id).set(scooter.toMap());
       return true;
     } catch (e) {

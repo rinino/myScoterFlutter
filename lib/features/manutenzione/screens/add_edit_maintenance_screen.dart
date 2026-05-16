@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:firebase_auth/firebase_auth.dart'; // FIX: Aggiunto l'import per recuperare l'ID utente
 
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.dart';
@@ -132,6 +133,8 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
 
       final nuovaManutenzione = Manutenzione(
         id: widget.manutenzione?.id,
+        // FIX: Inserito l'ID utente! Evita che sovrascriva null su Firebase
+        userId: widget.manutenzione?.userId ?? FirebaseAuth.instance.currentUser?.uid,
         scooterId: widget.scooterId,
         data: _data,
         km: _parseNumber(_kmController.text) ?? 0.0,
@@ -244,7 +247,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
                   child: Column(
                     children: [
                       DropdownButtonFormField<CategoriaManutenzione>(
-                        // FIX: Usiamo initialValue al posto di value
                         initialValue: _categoria,
                         decoration: const InputDecoration(border: InputBorder.none),
                         isExpanded: true,

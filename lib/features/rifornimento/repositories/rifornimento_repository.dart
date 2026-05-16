@@ -8,7 +8,6 @@ class RifornimentoRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // NUOVO METODO STREAM
   Stream<List<Rifornimento>> streamRifornimentiForScooter(String scooterId) {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
@@ -44,8 +43,11 @@ class RifornimentoRepository {
   }
 
   Future<bool> updateRifornimento(Rifornimento rifornimento) async {
-    if (rifornimento.id == null || _currentUserId == null) return false;
+    final userId = _currentUserId;
+    if (rifornimento.id == null || userId == null) return false;
     try {
+      // FIX CRITICO: Sicurezza ID Utente
+      rifornimento.userId = userId;
       await _db.collection(_collectionName).doc(rifornimento.id).set(rifornimento.toMap());
       return true;
     } catch (e) {

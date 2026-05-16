@@ -61,17 +61,38 @@ class Manutenzione {
   }
 
   factory Manutenzione.fromMap(Map<String, dynamic> map, String documentId) {
+    // Mappatura personalizzata per garantire la compatibilità con i dati inseriti da iOS
+    CategoriaManutenzione parsedCategoria = CategoriaManutenzione.altro;
+    final rawCat = map['categoria']?.toString().toLowerCase() ?? '';
+
+    if (rawCat == 'motore') {
+      parsedCategoria = CategoriaManutenzione.motore;
+    } else if (rawCat.contains('accensione') || rawCat == 'impianto_elettrico') {
+      parsedCategoria = CategoriaManutenzione.accensione;
+    } else if (rawCat.contains('alimentazione')) {
+      parsedCategoria = CategoriaManutenzione.alimentazione;
+    } else if (rawCat.contains('oliocambio')) {
+      parsedCategoria = CategoriaManutenzione.olioCambio;
+    } else if (rawCat.contains('trasmissione')) {
+      parsedCategoria = CategoriaManutenzione.trasmissione;
+    } else if (rawCat.contains('freni') || rawCat.contains('gomme')) {
+      parsedCategoria = CategoriaManutenzione.freniGomme;
+    } else if (rawCat.contains('carrozzeria')) {
+      parsedCategoria = CategoriaManutenzione.carrozzeria;
+    } else {
+      parsedCategoria = CategoriaManutenzione.values.firstWhere(
+            (e) => e.name.toLowerCase() == rawCat,
+        orElse: () => CategoriaManutenzione.altro,
+      );
+    }
+
     return Manutenzione(
       id: documentId,
       userId: map['userId'] as String?,
       scooterId: map['scooterId'] as String,
       data: (map['data'] as Timestamp).toDate(),
       km: (map['km'] as num).toDouble(),
-      // FIX CRITICO: Ignora maiuscole/minuscole
-      categoria: CategoriaManutenzione.values.firstWhere(
-            (e) => e.name.toLowerCase() == map['categoria'].toString().toLowerCase(),
-        orElse: () => CategoriaManutenzione.altro,
-      ),
+      categoria: parsedCategoria,
       categoriaCustom: map['categoriaCustom'] as String?,
       titolo: map['titolo'] as String,
       costo: map['costo'] != null ? (map['costo'] as num).toDouble() : null,

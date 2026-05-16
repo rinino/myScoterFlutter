@@ -8,7 +8,6 @@ class ManutenzioneRepository {
 
   String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // NUOVO: Ascolto in tempo reale
   Stream<List<Manutenzione>> streamManutenzioni(String scooterId) {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
@@ -17,9 +16,12 @@ class ManutenzioneRepository {
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
         .where('scooterId', isEqualTo: scooterId)
-        .orderBy('data', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList());
+        .map((snapshot) {
+      var docs = snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList();
+      docs.sort((a, b) => b.data.compareTo(a.data));
+      return docs;
+    });
   }
 
   Future<String?> insertManutenzione(Manutenzione manutenzione) async {
@@ -39,15 +41,19 @@ class ManutenzioneRepository {
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
         .where('scooterId', isEqualTo: scooterId)
-        .orderBy('data', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList();
+    var docs = snapshot.docs.map((doc) => Manutenzione.fromMap(doc.data(), doc.id)).toList();
+    docs.sort((a, b) => b.data.compareTo(a.data));
+    return docs;
   }
 
   Future<bool> updateManutenzione(Manutenzione manutenzione) async {
-    if (manutenzione.id == null || _currentUserId == null) return false;
+    final userId = _currentUserId;
+    if (manutenzione.id == null || userId == null) return false;
     try {
+      // FIX CRITICO: Forza sempre l'inserimento dell'ID utente! Blocca l'errore alla radice.
+      manutenzione.userId = userId;
       await _db.collection(_collectionName).doc(manutenzione.id).set(manutenzione.toMap());
       return true;
     } catch (e) {
