@@ -14,20 +14,22 @@ class NotificationService {
 
   Future<void> init() async {
     tz.initializeTimeZones();
+
+    // Inizializzazione ESCLUSIVA per Android
     const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
-      requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true,
-    );
+
     const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid, iOS: initializationSettingsIOS,
+      android: initializationSettingsAndroid,
     );
 
     await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
 
+    // Richiesta permessi notifiche per Android 13+
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
 
+    // Richiesta permessi allarmi esatti (necessari per i solleciti programmati)
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.requestExactAlarmsPermission();
@@ -59,7 +61,7 @@ class NotificationService {
     );
     const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
-    // FIX: Uso corretto dei named parameters (id, title, body, notificationDetails)
+    // FIX: Ripristinati i parametri nominati richiesti dal plugin
     await flutterLocalNotificationsPlugin.show(
       id: 999,
       title: title,
@@ -99,7 +101,7 @@ class NotificationService {
       );
       const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
-      // FIX: Parametri nominati e rimozione del deprecated uiLocalNotificationDateInterpretation
+      // FIX: Ripristinati i parametri nominati e rimosso quello deprecato
       await flutterLocalNotificationsPlugin.zonedSchedule(
         id: id,
         title: title,
@@ -115,7 +117,6 @@ class NotificationService {
 
   Future<void> cancelAllReminders() async {
     try {
-      // FIX: Uso di id come parametro nominato
       await flutterLocalNotificationsPlugin.cancel(id: 1003);
       await flutterLocalNotificationsPlugin.cancel(id: 1007);
       await flutterLocalNotificationsPlugin.cancel(id: 1014);
@@ -161,7 +162,7 @@ class NotificationService {
       );
       const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
 
-      // FIX: Parametri nominati
+      // FIX: Ripristinati i parametri nominati e rimosso quello deprecato
       await flutterLocalNotificationsPlugin.zonedSchedule(
         id: notificationId,
         title: title,
@@ -175,7 +176,6 @@ class NotificationService {
 
   Future<void> cancelNotifications(String docId) async {
     try {
-      // FIX: Uso di id come parametro nominato
       await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode.abs() + 15);
       await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode.abs() + 3);
       await flutterLocalNotificationsPlugin.cancel(id: docId.hashCode.abs() + 0);

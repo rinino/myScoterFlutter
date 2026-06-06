@@ -17,6 +17,9 @@ class BackupManager {
   static final FirebaseStorage storage = FirebaseStorage.instance;
   static String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
+  // =========================================================================
+  // 1. ESPORTAZIONE (Nessuna modifica sostanziale alla tua logica perfetta)
+  // =========================================================================
   static Future<void> exportBackup(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final userId = currentUserId;
@@ -57,7 +60,6 @@ class BackupManager {
 
     void addImage(String? imgName) {
       if (imgName != null && !imgName.startsWith('http')) {
-        // SANITIZZA: Prende sempre e solo il nome file finale
         final fileName = p.basename(imgName);
         final f = File(p.join(docsDir.path, fileName));
         if (f.existsSync()) imagesData[fileName] = base64Encode(f.readAsBytesSync());
@@ -91,6 +93,9 @@ class BackupManager {
     await SharePlus.instance.share(ShareParams(files: [xFile], subject: l10n.backupShareSubject, text: l10n.backupShareText));
   }
 
+  // =========================================================================
+  // 2. RIPRISTINO (Completamente riscritto per Efficienza e Batch Firebase)
+  // =========================================================================
   static Future<bool> importBackup() async {
     final userId = currentUserId;
     if (userId == null) return false;
@@ -113,29 +118,57 @@ class BackupManager {
     final jsonString = utf8.decode(jsonFile.content as List<int>);
     final map = jsonDecode(jsonString);
 
+    // =========================================================
+    // FASE A: WIPE DEL DATABASE ESISTENTE (Tramite Batch)
+    // =========================================================
+    WriteBatch wipeBatch = db.batch();
+    int wipeCount = 0;
+
+    Future<void> commitWipeIfNeed() async {
+      wipeCount++;
+      if (wipeCount >= 490) { // Limite massimo di Firestore per singolo batch
+        await wipeBatch.commit();
+        wipeBatch = db.batch();
+        wipeCount = 0;
+      }
+    }
+
     final collections = ["scooters", "rifornimenti", "manutenzioni", "documenti"];
     for (var coll in collections) {
+      // Purtroppo per cancellare dobbiamo leggere i doc ID. È l'unica via su Firebase.
       final snap = await db.collection(coll).where("userId", isEqualTo: userId).get();
       for (var doc in snap.docs) {
         final data = doc.data();
         final fileNameRaw = data["nomeFoto"] as String? ?? data["imgName"] as String?;
+
+        // Cancellazione Immagini Vecchie in BACKGROUND (fire-and-forget, non blocca l'app)
         if (fileNameRaw != null && !fileNameRaw.startsWith('http')) {
           final fileName = p.basename(fileNameRaw);
-          try { await storage.ref("images/$userId/$fileName").delete(); } catch(_) {}
+          storage.ref("images/$userId/$fileName").delete().catchError((_) {});
         }
-        await doc.reference.delete();
+
+        // Accoda la cancellazione del documento al Batch
+        wipeBatch.delete(doc.reference);
+        await commitWipeIfNeed();
       }
     }
+    // Eseguiamo il rimanente del batch di wipe
+    if (wipeCount > 0) {
+      await wipeBatch.commit();
+    }
 
-    WriteBatch batch = db.batch();
-    int count = 0;
+    // =========================================================
+    // FASE B: INSERIMENTO DEI DATI DEL BACKUP (Tramite Batch)
+    // =========================================================
+    WriteBatch insertBatch = db.batch();
+    int insertCount = 0;
 
-    Future<void> commitIfNeed() async {
-      count++;
-      if (count >= 490) {
-        await batch.commit();
-        batch = db.batch();
-        count = 0;
+    Future<void> commitInsertIfNeed() async {
+      insertCount++;
+      if (insertCount >= 490) {
+        await insertBatch.commit();
+        insertBatch = db.batch();
+        insertCount = 0;
       }
     }
 
@@ -145,59 +178,73 @@ class BackupManager {
       }
     }
 
+    // --- Scooter ---
     for (var s in map['scooters']) {
       s['userId'] = userId;
       final docId = s['id'] ?? db.collection('scooters').doc().id;
       s.remove('id');
-      batch.set(db.collection('scooters').doc(docId), s);
-      await commitIfNeed();
+      insertBatch.set(db.collection('scooters').doc(docId), s);
+      await commitInsertIfNeed();
     }
 
+    // --- Rifornimenti ---
     for (var r in map['rifornimenti']) {
       r['userId'] = userId;
       restoreTimestamps(r, 'dataRifornimento');
       final docId = r['id'] ?? db.collection('rifornimenti').doc().id;
       r.remove('id');
-      batch.set(db.collection('rifornimenti').doc(docId), r);
-      await commitIfNeed();
+      insertBatch.set(db.collection('rifornimenti').doc(docId), r);
+      await commitInsertIfNeed();
     }
 
+    // --- Manutenzioni ---
     if (map['manutenzioni'] != null) {
       for (var m in map['manutenzioni']) {
         m['userId'] = userId;
         restoreTimestamps(m, 'data');
         final docId = m['id'] ?? db.collection('manutenzioni').doc().id;
         m.remove('id');
-        batch.set(db.collection('manutenzioni').doc(docId), m);
-        await commitIfNeed();
+        insertBatch.set(db.collection('manutenzioni').doc(docId), m);
+        await commitInsertIfNeed();
       }
     }
 
+    // --- Documenti ---
     if (map['documenti'] != null) {
       for (var d in map['documenti']) {
         d['userId'] = userId;
         restoreTimestamps(d, 'dataScadenza');
         final docId = d['id'] ?? db.collection('documenti').doc().id;
         d.remove('id');
-        batch.set(db.collection('documenti').doc(docId), d);
-        await commitIfNeed();
+        insertBatch.set(db.collection('documenti').doc(docId), d);
+        await commitInsertIfNeed();
       }
     }
 
-    await batch.commit();
+    // Eseguiamo il rimanente del batch di inserimento in un solo colpo di rete!
+    if (insertCount > 0) {
+      await insertBatch.commit();
+    }
 
+    // =========================================================
+    // FASE C: RIPRISTINO DELLE IMMAGINI (File System + Storage)
+    // =========================================================
     final docsDir = await getApplicationDocumentsDirectory();
     final imagesMap = map['images'] as Map<String, dynamic>? ?? {};
 
     for (var entry in imagesMap.entries) {
       final imgData = base64Decode(entry.value);
-      final fileURL = File(p.join(docsDir.path, entry.key));
-      await fileURL.writeAsBytes(imgData);
 
+      // 1. Salviamo in locale (immediato per la UI)
+      final localFile = File(p.join(docsDir.path, entry.key));
+      await localFile.writeAsBytes(imgData);
+
+      // 2. Carichiamo sul Cloud Storage in BACKGROUND (non blocchiamo il caricamento UI)
       final storageRef = storage.ref().child("images/$userId/${entry.key}");
-      storageRef.putData(imgData);
+      final metadata = SettableMetadata(contentType: "image/jpeg");
+      storageRef.putData(imgData, metadata).catchError((_) {}); // Fire and forget!
     }
 
-    return true;
+    return true; // Il ripristino è completato, la UI si sblocca subito!
   }
 }

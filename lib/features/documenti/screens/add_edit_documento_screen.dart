@@ -12,8 +12,14 @@ import 'package:myscooter/l10n/app_localizations.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/services/cloud_storage_manager.dart';
 import 'package:myscooter/core/services/local_image_cache.dart';
+
+// FIX: Importiamo i Colori e il Glassmorphism
+import 'package:myscooter/core/theme/app_colors.dart';
+
 import '../../documenti/models/documento.dart';
 import '../../documenti/providers/documento_provider.dart';
+import '../../../core/widgets/glass_background.dart';
+import '../../../core/widgets/glass_card.dart';
 
 class AddEditDocumentoScreen extends ConsumerStatefulWidget {
   final String scooterId;
@@ -47,7 +53,6 @@ class _AddEditDocumentoScreenState extends ConsumerState<AddEditDocumentoScreen>
     _haScadenza = d?.dataScadenza != null || d == null;
     _dataScadenza = d?.dataScadenza ?? DateTime.now().add(const Duration(days: 365));
     _noteController = TextEditingController(text: d?.note ?? '');
-
     _currentImgName = d?.nomeFoto != null ? p.basename(d!.nomeFoto!) : null;
   }
 
@@ -79,9 +84,7 @@ class _AddEditDocumentoScreenState extends ConsumerState<AddEditDocumentoScreen>
         final fileName = 'doc_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
         final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
         finalImgName = fileName;
-
         CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
-
         if (_currentImgName != null) {
           final oldFile = File(p.join(appDir.path, _currentImgName!));
           if (await oldFile.exists()) await oldFile.delete();
@@ -105,9 +108,7 @@ class _AddEditDocumentoScreenState extends ConsumerState<AddEditDocumentoScreen>
         nomeFoto: finalImgName,
       );
 
-      // FIX: Chiamata corretta al nuovo actions provider
       final actions = ref.read(documentoActionsProvider);
-
       if (widget.documento == null) {
         await actions.addDocumento(nuovoDocumento, l10n);
       } else {
@@ -129,120 +130,188 @@ class _AddEditDocumentoScreenState extends ConsumerState<AddEditDocumentoScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
-
     final bool hasImage = _newImageFile != null || (_currentImgName != null && _currentImgName!.isNotEmpty);
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
+      extendBodyBehindAppBar: true,        // FIX: Glass effect
       appBar: AppBar(
         title: Text(widget.documento == null ? l10n.aggiungi : l10n.modificaIntervento),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, size: 28),
+          color: AppColors.primaryDocument, // FIX: Icona Verde
+          onPressed: () => context.pop(),
+        ),
         actions: [
           if (_isSaving)
             const Padding(padding: EdgeInsets.only(right: 16), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
           else
-            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _salvaDati),
+            IconButton(
+                icon: const Icon(Icons.check, size: 28),
+                color: AppColors.primaryDocument, // FIX: Icona Verde
+                onPressed: _salvaDati
+            ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(l10n.infoPrincipali.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-              child: Padding(
+      body: Stack(
+        children: [
+          // FIX: Sfondo in vetro Verde
+          const GlassBackground(
+            primaryColor: AppColors.primaryDocument,
+            secondaryColor: AppColors.secondaryDocument,
+          ),
+
+          SafeArea(
+            child: Form(
+              key: _formKey,
+              child: ListView(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<TipoDocumento>(
-                      // FIX: Usiamo initialValue invece di value (Flutter 3.33+)
-                      initialValue: _tipo,
-                      decoration: const InputDecoration(border: InputBorder.none),
-                      items: TipoDocumento.values.map((t) => DropdownMenuItem(value: t, child: Text(t.getLocalizedName(l10n)))).toList(),
-                      onChanged: (val) { if (val != null) setState(() => _tipo = val); },
-                    ),
-                    if (_tipo == TipoDocumento.altro) ...[
-                      const Divider(),
-                      TextFormField(
-                        controller: _tipoCustomController,
-                        decoration: InputDecoration(labelText: l10n.specificaAltro, border: InputBorder.none),
-                        validator: (val) => val == null || val.trim().isEmpty ? l10n.datiMancanti : null,
-                      ),
-                    ],
-                    const Divider(),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.haScadenza),
-                      value: _haScadenza,
-                      onChanged: (val) => setState(() => _haScadenza = val),
-                    ),
-                    if (_haScadenza) ...[
-                      const Divider(),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(context: context, initialDate: _dataScadenza!, firstDate: DateTime(2000), lastDate: DateTime(2100));
-                          if (picked != null) setState(() => _dataScadenza = picked);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                            Text(l10n.dataScadenza, style: const TextStyle(fontSize: 16)),
-                            Text(dateFormat.format(_dataScadenza!), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          ]),
+                children: [
+                  _buildSectionHeader(l10n.infoPrincipali),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.folder_special, color: AppColors.primaryDocument.withOpacity(0.8), size: 22),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<TipoDocumento>(
+                                initialValue: _tipo,
+                                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                items: TipoDocumento.values.map((t) => DropdownMenuItem(value: t, child: Text(t.getLocalizedName(l10n)))).toList(),
+                                onChanged: (val) { if (val != null) setState(() => _tipo = val); },
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    ]
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(l10n.noteLabel.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextFormField(controller: _noteController, maxLines: 3, decoration: InputDecoration(hintText: l10n.placeholderNote, border: InputBorder.none)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(l10n.fotoRicevuta.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: hasImage
-                    ? Row(children: [
-                  ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: _newImageFile != null
-                          ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
-                          : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover)
+                        if (_tipo == TipoDocumento.altro) ...[
+                          const Divider(height: 1),
+                          _buildModernTextField(_tipoCustomController, l10n.specificaAltro, Icons.edit, l10n),
+                        ],
+                        const Divider(height: 1),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.haScadenza, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          value: _haScadenza,
+                          activeColor: AppColors.primaryDocument,
+                          onChanged: (val) => setState(() => _haScadenza = val),
+                        ),
+                        if (_haScadenza) ...[
+                          const Divider(height: 1),
+                          InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(context: context, initialDate: _dataScadenza!, firstDate: DateTime(2000), lastDate: DateTime(2100));
+                              if (picked != null) setState(() => _dataScadenza = picked);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.event, color: AppColors.primaryDocument.withOpacity(0.8), size: 22),
+                                  const SizedBox(width: 16),
+                                  Text(l10n.dataScadenza, style: const TextStyle(fontSize: 16)),
+                                  const Spacer(),
+                                  Text(dateFormat.format(_dataScadenza!), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          )
+                        ]
+                      ],
+                    ),
                   ),
-                  const Spacer(),
-                  TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _newImageFile = null;
-                          _currentImgName = null;
-                        });
-                      },
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: Text(l10n.rimuoviFoto)
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(l10n.noteLabel),
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildModernTextField(_noteController, l10n.placeholderNote, Icons.notes, l10n, isRequired: false, maxLines: 3),
                   ),
-                ])
-                    : InkWell(onTap: _scegliFoto, child: Row(children: [
-                  const Icon(Icons.camera_alt, size: 32, color: Colors.grey),
-                  const SizedBox(width: 16),
-                  Text(l10n.selezionaFoto, style: const TextStyle(fontSize: 16)),
-                ])),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(l10n.fotoRicevuta),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    child: hasImage
+                        ? Row(children: [
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: _newImageFile != null
+                              ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
+                              : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover)
+                      ),
+                      const Spacer(),
+                      TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _newImageFile = null;
+                              _currentImgName = null;
+                            });
+                          },
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: Text(l10n.rimuoviFoto)
+                      ),
+                    ])
+                        : InkWell(
+                        onTap: _scegliFoto,
+                        child: Row(children: [
+                          Icon(Icons.camera_alt, size: 32, color: AppColors.primaryDocument.withOpacity(0.8)),
+                          const SizedBox(width: 16),
+                          Text(l10n.selezionaFoto, style: const TextStyle(fontSize: 16)),
+                        ])
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+      child: Text(title.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildModernTextField(
+      TextEditingController controller, String label, IconData icon, AppLocalizations l10n, {
+        bool isRequired = true, int maxLines = 1,
+      }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: maxLines > 1 ? 12.0 : 0),
+            child: Icon(icon, color: AppColors.primaryDocument.withOpacity(0.8), size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              maxLines: maxLines,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: label,
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              validator: (val) {
+                if (isRequired && (val == null || val.trim().isEmpty)) return l10n.datiMancanti;
+                return null;
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

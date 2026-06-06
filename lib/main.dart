@@ -4,25 +4,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart'; // Necessario per SystemChrome
 
-// FIX: Aggiunto l'import per inizializzare Firebase
+// Inizializzazione Firebase
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // FIX: Necessario per la persistenza offline!
 
 // Import corretti per l'architettura
 import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/routing/app_router.dart';
 import 'package:myscooter/core/providers/locale_provider.dart';
 
+// FIX: Importiamo il nostro nuovo file dei colori centralizzato
+import 'package:myscooter/core/theme/app_colors.dart';
+
 import 'core/notifications/notification_service.dart';
 import 'l10n/app_localizations.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FIX: Inizializza Firebase prima di qualsiasi altra cosa!
+  // Inizializza Firebase prima di qualsiasi altra cosa!
   await Firebase.initializeApp();
+
+  // FIX: IL TEST DEL GARAGE - Abilitiamo la persistenza offline di Firestore
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, // Mantiene i dati localmente senza limiti di spazio
+  );
 
   // Inizializza notifiche e impostazioni grafiche...
   await NotificationService().init();
@@ -75,8 +84,8 @@ class MyApp extends ConsumerWidget {
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
-            colorSchemeSeed: Colors.blue,
-            // FIX: Gestione corretta delle icone status bar nel tema chiaro
+            // FIX: Ora usiamo il blu del nostro Design System
+            colorSchemeSeed: AppColors.primaryBlue,
             appBarTheme: const AppBarTheme(
               systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarIconBrightness: Brightness.dark, // Icone nere su sfondo chiaro
@@ -90,8 +99,8 @@ class MyApp extends ConsumerWidget {
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
-            colorSchemeSeed: Colors.blue,
-            // FIX: Gestione corretta delle icone status bar nel tema scuro
+            // FIX: Ora usiamo il blu del nostro Design System
+            colorSchemeSeed: AppColors.primaryBlue,
             appBarTheme: const AppBarTheme(
               systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarIconBrightness: Brightness.light, // Icone bianche su sfondo scuro

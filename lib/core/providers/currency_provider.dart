@@ -1,21 +1,27 @@
-
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final currencyProvider = StateNotifierProvider<CurrencyNotifier, String>((ref) {
+// FIX: Sintassi moderna con NotifierProvider invece del vecchio StateNotifierProvider
+final currencyProvider = NotifierProvider<CurrencyNotifier, String>(() {
   return CurrencyNotifier();
 });
 
-class CurrencyNotifier extends StateNotifier<String> {
-  CurrencyNotifier() : super('EUR') {
-    _loadCurrency();
-  }
-
+class CurrencyNotifier extends Notifier<String> {
   static const _key = 'selected_currency';
+
+  @override
+  String build() {
+    // Stato iniziale di default (Euro)
+    _loadCurrency();
+    return '€';
+  }
 
   Future<void> _loadCurrency() async {
     final prefs = await SharedPreferences.getInstance();
-    state = prefs.getString(_key) ?? 'EUR';
+    final savedCurrency = prefs.getString(_key);
+    if (savedCurrency != null) {
+      state = savedCurrency;
+    }
   }
 
   Future<void> setCurrency(String currency) async {

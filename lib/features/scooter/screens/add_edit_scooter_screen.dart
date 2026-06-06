@@ -5,11 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../core/widgets/glass_background.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/widgets/glass_card.dart';
 import '../model/scooter.dart';
 import '../../../core/services/cloud_storage_manager.dart';
 import '../../../core/services/local_image_cache.dart';
 
+// FIX: Importiamo i nostri nuovi widget del Design System
+import '../../../core/theme/app_colors.dart';
 class AddEditScooterScreen extends StatefulWidget {
   final Scooter? scooter;
 
@@ -31,7 +35,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
   bool _miscelatore = false;
   bool _isProcessing = false;
 
-  // Nuova logica Immagini
   String? _currentImgName;
   File? _newImageFile;
 
@@ -49,7 +52,6 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     );
     _miscelatore = widget.scooter?.miscelatore ?? false;
 
-    // FIX: Estraiamo solo il NOME del file (retrocompatibilità con vecchi path assoluti)
     _currentImgName = widget.scooter?.imgName != null ? p.basename(widget.scooter!.imgName!) : null;
   }
 
@@ -63,9 +65,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     );
 
     if (pickedFile != null) {
-      setState(() {
-        _newImageFile = File(pickedFile.path);
-      });
+      setState(() => _newImageFile = File(pickedFile.path));
     }
   }
 
@@ -81,12 +81,10 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         if (_newImageFile != null) {
           final fileName = 'scooter_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
           final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
-          finalImgName = fileName; // SALVIAMO SOLO IL NOME
+          finalImgName = fileName;
 
-          // ☁️ UPLOAD SUL CLOUD!
           CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
 
-          // Eliminiamo la vecchia foto se esisteva
           if (_currentImgName != null) {
             final oldFile = File(p.join(appDir.path, _currentImgName!));
             if (await oldFile.exists()) await oldFile.delete();
@@ -94,7 +92,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
           }
         }
       } catch (e) {
-        debugPrint("Errore nel salvataggio dell'immagine: $e");
+        debugPrint("Errore salvataggio immagine: $e");
       }
 
       final newScooter = Scooter(
@@ -108,9 +106,7 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
         imgName: finalImgName,
       );
 
-      if (mounted) {
-        context.pop(newScooter);
-      }
+      if (mounted) context.pop(newScooter);
     }
   }
 
@@ -119,92 +115,116 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Lo scaffold è trasparente
+      extendBodyBehindAppBar: true,        // FIX: Facciamo scorrere il vetro sotto l'appbar
       appBar: AppBar(
         title: Text(widget.scooter == null ? l10n.addScooter : l10n.editScooter),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, size: 28),
+          color: AppColors.primaryBlue, // FIX: Icona X Blu
           onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.check, size: 28),
-            color: Theme.of(context).colorScheme.primary,
+            color: AppColors.primaryBlue, // FIX: Icona Check Blu
             onPressed: _isProcessing ? null : () => _saveForm(),
           ),
         ],
       ),
       body: Stack(
         children: [
-          AbsorbPointer(
-            absorbing: _isProcessing,
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
-                children: [
-                  Center(
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        width: 120, height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.blue, width: 2),
+          // FIX: Il nostro magico sfondo sfocato
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
+
+          SafeArea(
+            child: AbsorbPointer(
+              absorbing: _isProcessing,
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  children: [
+                    // FOTO PROFILO
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 120, height: 120,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.5), width: 2),
+                          ),
+                          child: _newImageFile != null
+                              ? ClipOval(child: Image.file(_newImageFile!, fit: BoxFit.cover))
+                              : (_currentImgName != null && _currentImgName!.isNotEmpty)
+                              ? ClipOval(child: CloudSyncImage(imagePath: _currentImgName!, width: 120, height: 120, fit: BoxFit.cover))
+                              : const Icon(Icons.camera_alt, size: 40, color: AppColors.primaryBlue),
                         ),
-                        child: _newImageFile != null
-                            ? ClipOval(child: Image.file(_newImageFile!, fit: BoxFit.cover))
-                            : (_currentImgName != null && _currentImgName!.isNotEmpty)
-                            ? ClipOval(child: CloudSyncImage(imagePath: _currentImgName!, width: 120, height: 120, fit: BoxFit.cover))
-                            : const Icon(Icons.camera_alt, size: 40, color: Colors.blue),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
-                  _buildSectionTitle(l10n.generalInfo),
-                  _buildTextField(_marcaController, l10n.brand, Icons.branding_watermark, l10n),
-                  _buildTextField(_modelloController, l10n.model, Icons.moped, l10n),
+                    // BLOCCO 1: Info Generali (IN VETRO)
+                    GlassCard(
+                      child: Column(
+                        children: [
+                          _buildModernTextField(_marcaController, l10n.brand, Icons.branding_watermark, l10n),
+                          const Divider(height: 1),
+                          _buildModernTextField(_modelloController, l10n.model, Icons.moped, l10n),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-                  const SizedBox(height: 16),
-                  _buildSectionTitle(l10n.details),
-
-                  _buildTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
-
-                  _buildTextField(
-                      _targaController, l10n.licensePlate, Icons.badge, l10n,
-                      isUppercase: true,
-                      customValidator: (value) {
-                        if (value == null || value.trim().isEmpty) return l10n.requiredField;
-                        final cleanValue = value.replaceAll(' ', '');
-                        final targaRegex = RegExp(r'^[a-zA-Z0-9]{5,7}$');
-                        if (!targaRegex.hasMatch(cleanValue)) return l10n.invalidLicensePlate;
-                        return null;
-                      }
-                  ),
-
-                  _buildTextField(
-                      _annoController, l10n.year, Icons.calendar_today, l10n,
-                      isNumber: true,
-                      customValidator: (value) {
-                        if (value == null || value.trim().isEmpty) return l10n.requiredField;
-                        final anno = int.tryParse(value);
-                        if (anno == null) return l10n.insertNumber;
-                        final currentYear = DateTime.now().year;
-                        if (anno < 1900 || anno > currentYear) return l10n.invalidYear;
-                        return null;
-                      }
-                  ),
-
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: Text(l10n.autoMixer),
-                    subtitle: Text(l10n.autoMixerDesc),
-                    value: _miscelatore,
-                    secondary: const Icon(Icons.opacity),
-                    onChanged: (val) => setState(() => _miscelatore = val),
-                  ),
-                ],
+                    // BLOCCO 2: Dettagli Motore (IN VETRO)
+                    GlassCard(
+                      child: Column(
+                        children: [
+                          _buildModernTextField(_cilindrataController, '${l10n.displacement} (cc)', Icons.speed, l10n, isNumber: true),
+                          const Divider(height: 1),
+                          _buildModernTextField(
+                              _targaController, l10n.licensePlate, Icons.badge, l10n,
+                              isUppercase: true,
+                              customValidator: (value) {
+                                if (value == null || value.trim().isEmpty) return l10n.requiredField;
+                                final targaRegex = RegExp(r'^[a-zA-Z0-9]{5,7}$');
+                                if (!targaRegex.hasMatch(value.replaceAll(' ', ''))) return l10n.invalidLicensePlate;
+                                return null;
+                              }
+                          ),
+                          const Divider(height: 1),
+                          _buildModernTextField(
+                              _annoController, l10n.year, Icons.calendar_today, l10n,
+                              isNumber: true,
+                              customValidator: (value) {
+                                if (value == null || value.trim().isEmpty) return l10n.requiredField;
+                                final anno = int.tryParse(value);
+                                if (anno == null) return l10n.insertNumber;
+                                if (anno < 1900 || anno > DateTime.now().year) return l10n.invalidYear;
+                                return null;
+                              }
+                          ),
+                          const Divider(height: 1),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(l10n.autoMixer, style: const TextStyle(fontWeight: FontWeight.w500)),
+                            value: _miscelatore,
+                            activeColor: AppColors.primaryBlue,
+                            secondary: Icon(Icons.opacity, color: AppColors.primaryBlue.withOpacity(0.8)),
+                            onChanged: (val) => setState(() => _miscelatore = val),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -215,33 +235,35 @@ class _AddEditScooterScreenState extends State<AddEditScooterScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-    );
-  }
-
-  Widget _buildTextField(
+  // FIX: Questo metodo replica ESATTAMENTE il modernTextField di iOS!
+  Widget _buildModernTextField(
       TextEditingController controller, String label, IconData icon, AppLocalizations l10n, {
         bool isNumber = false, bool isUppercase = false, String? Function(String?)? customValidator,
       }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        textCapitalization: isUppercase ? TextCapitalization.characters : TextCapitalization.none,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-        validator: customValidator ?? (value) {
-          if (value == null || value.trim().isEmpty) return l10n.requiredField;
-          if (isNumber && int.tryParse(value) == null) return l10n.insertNumber;
-          return null;
-        },
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primaryBlue.withOpacity(0.8), size: 22),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+              textCapitalization: isUppercase ? TextCapitalization.characters : TextCapitalization.none,
+              decoration: InputDecoration(
+                labelText: label,
+                border: InputBorder.none, // Togliamo i bordi del campo!
+                isDense: true,
+              ),
+              validator: customValidator ?? (value) {
+                if (value == null || value.trim().isEmpty) return l10n.requiredField;
+                if (isNumber && int.tryParse(value) == null) return l10n.insertNumber;
+                return null;
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

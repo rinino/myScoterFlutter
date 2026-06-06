@@ -7,6 +7,11 @@ import '../../../../core/database/backup_manager.dart';
 import '../../../../core/providers/message_provider.dart';
 import '../../../l10n/app_localizations.dart';
 
+// FIX: Importiamo i componenti del Design System
+import 'package:myscooter/core/theme/app_colors.dart';
+import 'package:myscooter/core/widgets/glass_background.dart';
+import 'package:myscooter/core/widgets/glass_card.dart';
+
 class BackupRestoreScreen extends ConsumerStatefulWidget {
   const BackupRestoreScreen({super.key});
 
@@ -37,7 +42,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // FIX: BackupManager.importBackup ora gestisce direttamente Firestore! Non serve passare dbHelper
       final success = await BackupManager.importBackup();
 
       if (success) {
@@ -68,90 +72,131 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
+      extendBodyBehindAppBar: true,        // FIX: Effetto vetro sotto l'AppBar
       appBar: AppBar(
-        title: Text(l10n.backupRestoreTitle),
+        title: Text(l10n.backupRestoreTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primaryBlue), // Icona back blu
       ),
       body: Stack(
         children: [
-          ListView(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
-            children: [
-              Text(l10n.backupSection, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-              const SizedBox(height: 8),
-              Card(
-                elevation: 0,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.backupDesc, style: const TextStyle(fontSize: 15)),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _esporta,
-                          icon: const Icon(Icons.upload_file),
-                          label: Text(l10n.createBackupBtn),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.blue.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
+          // FIX: Sfondo in vetro globale
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
 
-              Text(l10n.restoreSection, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-              const SizedBox(height: 8),
-              Card(
-                elevation: 0,
-                color: Colors.red.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: Colors.redAccent, width: 1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+          SafeArea(
+            child: Stack(
+              children: [
+                ListView(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 24),
+                  children: [
+                    _buildSectionHeader(l10n.backupSection),
+                    GlassCard(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(l10n.restoreDesc, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.cloud_upload_outlined, color: AppColors.primaryBlue, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(l10n.backupDesc, style: const TextStyle(fontSize: 15, height: 1.4)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _esporta,
+                              icon: const Icon(Icons.upload_file),
+                              label: Text(l10n.createBackupBtn, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryBlue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 4,
+                                disabledBackgroundColor: AppColors.primaryBlue.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _ripristina,
-                          icon: const Icon(Icons.download),
-                          label: Text(l10n.restoreBtn),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.red.withValues(alpha: 0.5),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    _buildSectionHeader(l10n.restoreSection),
+                    GlassCard(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                    l10n.restoreDesc,
+                                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15, height: 1.4)
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _ripristina,
+                              icon: const Icon(Icons.download),
+                              label: Text(l10n.restoreBtn, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 4,
+                                disabledBackgroundColor: Colors.redAccent.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+
+                if (_isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
+      child: Text(
+          title.toUpperCase(),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.0)
       ),
     );
   }

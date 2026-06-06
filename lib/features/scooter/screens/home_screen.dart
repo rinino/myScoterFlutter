@@ -7,7 +7,12 @@ import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/services/local_image_cache.dart';
 
+// FIX: Aggiunti i widget del Design System
+import 'package:myscooter/core/theme/app_colors.dart';
+
+import '../../../core/widgets/glass_background.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/widgets/glass_card.dart';
 import '../model/scooter.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -31,10 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text(l10n.deleteScooterTitle),
         content: Text(l10n.deleteScooterContent(scooter.modello)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel)
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(l10n.delete, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -59,54 +61,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : (next.type == MessageType.success ? Colors.green.shade800 : null);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message),
-            backgroundColor: bgColor,
-            behavior: SnackBarBehavior.fixed,
-          ),
+          SnackBar(content: Text(next.message), backgroundColor: bgColor, behavior: SnackBarBehavior.fixed),
         );
         ref.read(messageProvider.notifier).clear();
-      }
-    });
-
-    ref.listen<AsyncValue<List<Scooter>>>(scooterListProvider, (previous, next) {
-      if (next.hasError && !next.isLoading) {
-        ref.read(messageProvider.notifier).show(
-            '${l10n.noDataPresent}: ${next.error}',
-            type: MessageType.error
-        );
       }
     });
 
     final scooterState = ref.watch(scooterListProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX
+      extendBodyBehindAppBar: true,        // FIX
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        title: Text(l10n.appTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        backgroundColor: Colors.transparent, // FIX: AppBar invisibile
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.settings),
+          icon: const Icon(Icons.settings, color: AppColors.primaryBlue),
           onPressed: (scooterState.isLoading || _isNavigating) ? null : () => context.push('/settings'),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle, size: 28),
+            icon: const Icon(Icons.add_circle, size: 28, color: AppColors.primaryBlue),
             onPressed: (scooterState.isLoading || _isNavigating) ? null : () async {
               setState(() => _isNavigating = true);
-
               try {
                 final Scooter? resultScooter = await context.push<Scooter?>('/add-edit-scooter');
-
                 if (resultScooter != null) {
                   await ref.read(scooterListProvider.notifier).addScooter(resultScooter);
-                  if (mounted) {
-                    ref.read(messageProvider.notifier).show(
-                        l10n.scooterAdded,
-                        type: MessageType.success
-                    );
-                  }
+                  if (mounted) ref.read(messageProvider.notifier).show(l10n.scooterAdded, type: MessageType.success);
                 }
               } finally {
                 if (mounted) setState(() => _isNavigating = false);
@@ -115,72 +99,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        bottom: true,
-        child: Column(
-          children: [
-            _buildTopLogo(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l10n.myScooters,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+      body: Stack(
+        children: [
+          // FIX: Background globale
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopLogo(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.myScooters,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: scooterState.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text(error.toString())),
-                data: (scooters) => RefreshIndicator(
-                  onRefresh: _onRefresh,
-                  child: scooters.isEmpty
-                      ? _buildEmptyState(context)
-                      : _buildScooterList(context, scooters),
+                Expanded(
+                  child: scooterState.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => Center(child: Text(error.toString())),
+                    data: (scooters) => RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: scooters.isEmpty
+                          ? _buildEmptyState(context)
+                          : _buildScooterList(context, scooters),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTopLogo() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.only(top: 10.0, bottom: 20.0),
       child: Center(
         child: Container(
-          width: 120, height: 120,
+          width: 100, height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(
-                color: Colors.cyan.withValues(alpha: 0.4),
-                blurRadius: 15, spreadRadius: 2,
-              ),
+              BoxShadow(color: AppColors.secondaryCyan.withOpacity(0.4), blurRadius: 15, spreadRadius: 2),
             ],
-            gradient: const RadialGradient(
-              colors: [Colors.white, Colors.cyanAccent],
-              stops: [0.9, 1.0],
-            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(3.0),
-            child: Container(
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/loghetto1_scritta128.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.two_wheeler, size: 50, color: Colors.grey),
-                ),
-              ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/loghetto1_scritta128.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.two_wheeler, size: 50, color: Colors.grey),
             ),
           ),
         ),
@@ -193,7 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.15),
         const Icon(Icons.two_wheeler, size: 64, color: Colors.grey),
         const SizedBox(height: 16),
         Center(child: Text(l10n.noScooterFound, style: const TextStyle(color: Colors.grey))),
@@ -207,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: scooters.length,
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16), // Padding globale
       itemBuilder: (context, index) {
         final scooter = scooters[index];
         bool hasImage = scooter.imgName != null && scooter.imgName!.isNotEmpty;
@@ -223,42 +202,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.redAccent,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(16)),
             child: const Icon(Icons.delete_forever, color: Colors.white, size: 30),
           ),
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(10),
-              leading: Container(
-                width: 60, height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: hasImage ? Colors.blue : Colors.grey.withValues(alpha: 0.3),
-                    width: 2,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            // FIX: Applicata la GlassCard!
+            child: GlassCard(
+              padding: EdgeInsets.zero, // Il ListTile gestisce il suo padding interno
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  width: 60, height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: hasImage ? AppColors.primaryBlue : Colors.grey.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: hasImage
+                        ? CloudSyncImage(imagePath: scooter.imgName!, fit: BoxFit.cover, width: 60, height: 60)
+                        : const Icon(Icons.moped, color: Colors.grey),
                   ),
                 ),
-                child: ClipOval(
-                  child: hasImage
-                      ? CloudSyncImage(imagePath: scooter.imgName!, fit: BoxFit.cover, width: 60, height: 60)
-                      : const Icon(Icons.moped, color: Colors.grey),
-                ),
+                title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                subtitle: Text('${l10n.licensePlateShort}: ${scooter.targa}'),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                onTap: () {
+                  context.push('/scooter-detail', extra: scooter).then((_) {
+                    ref.read(scooterListProvider.notifier).refreshScooters();
+                  });
+                },
               ),
-              title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${l10n.licensePlateShort}: ${scooter.targa}'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                context.push('/scooter-detail', extra: scooter).then((_) {
-                  ref.read(scooterListProvider.notifier).refreshScooters();
-                });
-              },
             ),
           ),
         );

@@ -13,6 +13,11 @@ import 'package:myscooter/core/services/local_image_cache.dart';
 import '../../scooter/widgets/image_viewer_page.dart';
 import '../../../l10n/app_localizations.dart';
 
+// FIX: Importiamo i componenti del Design System
+import 'package:myscooter/core/theme/app_colors.dart';
+import 'package:myscooter/core/widgets/glass_background.dart';
+import 'package:myscooter/core/widgets/glass_card.dart';
+
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -90,6 +95,7 @@ class ProfileScreen extends ConsumerWidget {
       final db = FirebaseFirestore.instance;
       final storage = FirebaseStorage.instance;
 
+      // 1. ELIMINAZIONE FOTO DA CLOUD STORAGE
       try {
         final storageRef = storage.ref().child("images/$userId");
         final listResult = await storageRef.listAll();
@@ -97,36 +103,41 @@ class ProfileScreen extends ConsumerWidget {
           await item.delete();
         }
       } catch(e) {
-        debugPrint("Nessuna foto da eliminare o errore Storage: $e");
+        debugPrint("ADR: Nessuna foto da eliminare o errore Storage: $e");
       }
 
-      final batch = db.batch();
+      // 2. ELIMINAZIONE DATI NUCLEARE A CHUNK (Sicurezza contro il limite dei 500 doc)
+      WriteBatch batch = db.batch();
+      int count = 0;
 
-      // FIX: Aggiunte le graffe obbligatorie nei cicli for
-      final scooters = await db.collection('scooters').where('userId', isEqualTo: userId).get();
-      for (var doc in scooters.docs) {
-        batch.delete(doc.reference);
+      Future<void> commitIfNeed() async {
+        count++;
+        if (count >= 490) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
       }
 
-      final rifornimenti = await db.collection('rifornimenti').where('userId', isEqualTo: userId).get();
-      for (var doc in rifornimenti.docs) {
-        batch.delete(doc.reference);
+      final collections = ['scooters', 'rifornimenti', 'manutenzioni', 'documenti'];
+      for (var coll in collections) {
+        final snap = await db.collection(coll).where('userId', isEqualTo: userId).get();
+        for (var doc in snap.docs) {
+          batch.delete(doc.reference);
+          await commitIfNeed();
+        }
       }
 
-      final manutenzioni = await db.collection('manutenzioni').where('userId', isEqualTo: userId).get();
-      for (var doc in manutenzioni.docs) {
-        batch.delete(doc.reference);
-      }
-
-      final documenti = await db.collection('documenti').where('userId', isEqualTo: userId).get();
-      for (var doc in documenti.docs) {
-        batch.delete(doc.reference);
-      }
-
+      // Elimina il profilo utente
       batch.delete(db.collection('utenti').doc(userId));
+      await commitIfNeed();
 
-      await batch.commit();
+      // Invia gli ultimi residui
+      if (count > 0) {
+        await batch.commit();
+      }
 
+      // 3. ELIMINAZIONE AUTENTICAZIONE
       await user.delete();
       await AuthManager.shared.signOut();
       await ref.read(scooterListProvider.notifier).refreshScooters();
@@ -147,25 +158,41 @@ class ProfileScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
+      extendBodyBehindAppBar: true,        // FIX: Glass effect
       appBar: AppBar(
-        title: Text(l10n.profiloTitle),
+        title: Text(l10n.profiloTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primaryBlue),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _onRefresh(ref),
-        child: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            final user = snapshot.data;
+      body: Stack(
+        children: [
+          // FIX: Sfondo in vetro
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
 
-            // FIX: Rimozione del warning user! tramite controllo if/else sicuro
-            if (user == null || user.isAnonymous) {
-              return _buildGuestView(context, ref, l10n);
-            } else {
-              return _buildUserView(context, ref, l10n, user);
-            }
-          },
-        ),
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () => _onRefresh(ref),
+              child: StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+
+                  if (user == null || user.isAnonymous) {
+                    return _buildGuestView(context, ref, l10n);
+                  } else {
+                    return _buildUserView(context, ref, l10n, user);
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -175,43 +202,72 @@ class ProfileScreen extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16.0),
       children: [
-        Row(
-          children: [
-            const CircleAvatar(radius: 30, backgroundColor: Colors.grey, child: Icon(Icons.person, color: Colors.white, size: 30)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.utenteOspite, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                  Text(l10n.datiLocali, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                ],
+        GlassCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, color: AppColors.primaryBlue, size: 36),
               ),
-            ),
-          ],
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.utenteOspite, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                    const SizedBox(height: 4),
+                    Text(l10n.datiLocali, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 32),
+
         ElevatedButton.icon(
           onPressed: () => _handleLogin(context, ref, AuthManager.shared.signInWithGoogle),
           icon: const Icon(Icons.account_circle),
-          label: Text(l10n.accediGoogle),
-          style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.white, foregroundColor: Colors.black),
+          label: Text(l10n.accediGoogle, style: const TextStyle(fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 56),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 2,
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         if (Platform.isIOS) ...[
           ElevatedButton.icon(
             onPressed: () => _handleLogin(context, ref, AuthManager.shared.signInWithApple),
             icon: const Icon(Icons.apple),
-            label: Text(l10n.accediApple),
-            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.black, foregroundColor: Colors.white),
+            label: Text(l10n.accediApple, style: const TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 2,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
         ],
         OutlinedButton.icon(
           onPressed: () => context.push('/email-auth'),
           icon: const Icon(Icons.email_outlined),
-          label: Text(l10n.accediEmail),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+          label: Text(l10n.accediEmail, style: const TextStyle(fontWeight: FontWeight.bold)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 56),
+            foregroundColor: AppColors.primaryBlue,
+            side: const BorderSide(color: AppColors.primaryBlue, width: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
         ),
       ],
     );
@@ -241,57 +297,70 @@ class ProfileScreen extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
             children: [
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    if (photoUrl != null && photoUrl.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          fullscreenDialog: true,
-                          builder: (context) => ImageViewerPage(
-                            imagePath: photoUrl!,
-                            title: displayName,
-                            heroTag: 'profile_image_${user.uid}',
+              GlassCard(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (photoUrl != null && photoUrl.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                fullscreenDialog: true,
+                                builder: (context) => ImageViewerPage(
+                                  imagePath: photoUrl!,
+                                  title: displayName,
+                                  heroTag: 'profile_image_${user.uid}',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Hero(
+                          tag: 'profile_image_${user.uid}',
+                          child: ClipOval(
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              color: AppColors.primaryBlue,
+                              child: (photoUrl != null && photoUrl.isNotEmpty)
+                                  ? CloudSyncImage(imagePath: photoUrl, width: 120, height: 120, fit: BoxFit.cover)
+                                  : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold))),
+                            ),
                           ),
                         ),
-                      );
-                    }
-                  },
-                  child: Hero(
-                    tag: 'profile_image_${user.uid}',
-                    child: ClipOval(
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        color: Colors.blue,
-                        child: (photoUrl != null && photoUrl.isNotEmpty)
-                            ? CloudSyncImage(imagePath: photoUrl, width: 100, height: 100, fit: BoxFit.cover)
-                            : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 32))),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    Text(
+                      displayName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (user.email != null) ...[
+                      const SizedBox(height: 8),
+                      Text(user.email!, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  displayName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-                ),
-              ),
-              if (user.email != null)
-                Center(
-                  child: Text(user.email!, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                ),
               const SizedBox(height: 32),
+
               ElevatedButton.icon(
                 onPressed: () => context.push('/edit-profile'),
                 icon: const Icon(Icons.edit),
-                label: Text(l10n.modificaProfilo),
-                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.blue.withValues(alpha: 0.1), foregroundColor: Colors.blue, elevation: 0),
+                label: Text(l10n.modificaProfilo, style: const TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () async {
                   await AuthManager.shared.signOut();
@@ -302,16 +371,25 @@ class ProfileScreen extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.logout),
-                label: Text(l10n.esci),
-                style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+                label: Text(l10n.esci, style: const TextStyle(fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  foregroundColor: AppColors.primaryBlue,
+                  side: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
               ),
               const SizedBox(height: 64),
               Center(
                 child: TextButton.icon(
                   onPressed: () => _deleteAccount(context, ref, l10n, user),
                   icon: const Icon(Icons.delete_forever),
-                  label: Text(l10n.eliminaAccount, style: const TextStyle(fontSize: 16)),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  label: Text(l10n.eliminaAccount, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

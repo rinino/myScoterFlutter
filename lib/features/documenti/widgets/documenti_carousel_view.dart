@@ -2,20 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
 import 'package:myscooter/l10n/app_localizations.dart';
+
+// FIX: Importiamo i Colori e la GlassCard
+import 'package:myscooter/core/theme/app_colors.dart';
+
+import '../../../core/widgets/glass_card.dart';
 import '../models/documento.dart';
 import '../providers/documento_provider.dart';
 
 class DocumentiCarouselView extends ConsumerWidget {
   final String scooterId;
-
   const DocumentiCarouselView({super.key, required this.scooterId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    // FIX: Ora ascoltiamo lo Stream!
     final asyncDocs = ref.watch(documentiStreamProvider(scooterId));
 
     return Column(
@@ -56,13 +58,13 @@ class DocumentiCarouselView extends ConsumerWidget {
     final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
 
     Color getExpiryColor(DateTime? expiry) {
-      if (expiry == null) return Colors.green;
+      if (expiry == null) return AppColors.primaryDocument;
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final exp = DateTime(expiry.year, expiry.month, expiry.day);
-      if (exp.isBefore(today) || exp.isAtSameMomentAs(today)) return Colors.red;
-      if (exp.difference(today).inDays <= 30) return Colors.orange;
-      return Colors.green;
+      if (exp.isBefore(today) || exp.isAtSameMomentAs(today)) return AppColors.statusExpired;
+      if (exp.difference(today).inDays <= 30) return AppColors.statusWarning;
+      return AppColors.statusValid;
     }
 
     final color = getExpiryColor(doc.dataScadenza);
@@ -78,7 +80,6 @@ class DocumentiCarouselView extends ConsumerWidget {
               TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
               TextButton(
                 onPressed: () {
-                  // FIX: Chiamiamo l'actions provider invece del vecchio notifier
                   ref.read(documentoActionsProvider).deleteDocumento(doc.id!);
                   Navigator.pop(ctx);
                 },
@@ -91,34 +92,32 @@ class DocumentiCarouselView extends ConsumerWidget {
       child: Container(
         width: 130,
         margin: const EdgeInsets.only(right: 12, bottom: 4, top: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(doc.tipo.icon, size: 28, color: color),
-            const Spacer(),
-            Text(
-              doc.tipo == TipoDocumento.altro ? (doc.tipoCustom ?? l10n.cat_altro) : doc.tipo.getLocalizedName(l10n),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              doc.dataScadenza != null ? l10n.scadeIl : l10n.senzaScadenza,
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-            if (doc.dataScadenza != null)
+        // FIX: Applicata la GlassCard al posto del Container colorato
+        child: GlassCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(doc.tipo.icon, size: 28, color: color),
+              const Spacer(),
               Text(
-                dateFormat.format(doc.dataScadenza!),
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                doc.tipo == TipoDocumento.altro ? (doc.tipoCustom ?? l10n.cat_altro) : doc.tipo.getLocalizedName(l10n),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                doc.dataScadenza != null ? l10n.scadeIl : l10n.senzaScadenza,
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+              if (doc.dataScadenza != null)
+                Text(
+                  dateFormat.format(doc.dataScadenza!),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -130,18 +129,17 @@ class DocumentiCarouselView extends ConsumerWidget {
       child: Container(
         width: 130,
         margin: const EdgeInsets.only(right: 12, bottom: 4, top: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.withValues(alpha: 0.5), style: BorderStyle.solid, width: 2),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add_circle, size: 32, color: Colors.blue),
-            const SizedBox(height: 8),
-            Text(l10n.aggiungi, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-          ],
+        // FIX: Applicata la GlassCard
+        child: GlassCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_circle, size: 32, color: AppColors.primaryDocument),
+              const SizedBox(height: 8),
+              Text(l10n.aggiungi, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDocument)),
+            ],
+          ),
         ),
       ),
     );

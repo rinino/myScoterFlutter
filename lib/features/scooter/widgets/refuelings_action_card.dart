@@ -3,23 +3,21 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
 
+// FIX: Importiamo i Colori e la GlassCard
+import 'package:myscooter/core/theme/app_colors.dart';
+import 'package:myscooter/core/widgets/glass_card.dart';
+
 class RefuelingsActionCard extends StatelessWidget {
   final Scooter scooter;
-
   const RefuelingsActionCard({super.key, required this.scooter});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-      ),
+    return GlassCard(
+      padding: EdgeInsets.zero, // Il padding lo gestisce l'InkWell interno
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           context.push('/refuelings/${scooter.id!}', extra: scooter);
         },
@@ -30,23 +28,16 @@ class RefuelingsActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: AppColors.primaryBlue.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.local_gas_station,
-                  size: 28,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                child: const Icon(Icons.local_gas_station, size: 28, color: AppColors.primaryBlue),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   l10n.refuelingData,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
               const Icon(Icons.chevron_right, color: Colors.grey),

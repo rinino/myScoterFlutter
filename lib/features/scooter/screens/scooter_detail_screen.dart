@@ -12,7 +12,11 @@ import 'package:myscooter/core/notifications/notification_service.dart';
 import 'package:myscooter/features/documenti/providers/documento_provider.dart';
 import 'package:myscooter/features/documenti/models/documento.dart';
 
+// FIX: Importiamo i widget del Design System
+import 'package:myscooter/core/theme/app_colors.dart';
+
 // IMPORT WIDGETS
+import '../../../core/widgets/glass_background.dart';
 import '../widgets/scooter_header_image.dart';
 import '../widgets/scooter_info_card.dart';
 import '../widgets/image_viewer_page.dart';
@@ -115,15 +119,12 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
     // --- LOGICA DI CONTROLLO SCADENZE IN TEMPO REALE ---
     ref.listen<AsyncValue<List<Documento>>>(documentiStreamProvider(_currentScooter.id!), (previous, next) {
       next.whenData((documenti) {
-        // Eseguiamo il controllo solo la prima volta che si apre la schermata
-        // per evitare fastidiosi "beep" ogni volta che la lista si ricarica.
         if (!_hasCheckedScadenze) {
           _hasCheckedScadenze = true;
 
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
 
-          // Trova tutti i documenti scaduti oggi o nei giorni passati
           final scaduti = documenti.where((d) {
             if (d.dataScadenza == null) return false;
             final exp = DateTime(d.dataScadenza!.year, d.dataScadenza!.month, d.dataScadenza!.day);
@@ -131,12 +132,9 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
           }).toList();
 
           if (scaduti.isNotEmpty) {
-            // 1. Lancia la notifica al volo sul telefono
             NotificationService().showInstantNotificationForExpiredDocs(scaduti, l10n);
-            // 2. Programma silenziosamente i solleciti futuri (3, 7 e 14 giorni)
             NotificationService().scheduleFutureReminders(scaduti, l10n);
           } else {
-            // Se tutti i documenti sono in regola, annulliamo eventuali vecchi solleciti!
             NotificationService().cancelAllReminders();
           }
         }
@@ -145,70 +143,90 @@ class _ScooterDetailScreenState extends ConsumerState<ScooterDetailScreen> {
     // ----------------------------------------------------
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Sfondo trasparente
+      extendBodyBehindAppBar: true,        // FIX: La UI scorre sotto la barra in alto
       appBar: AppBar(
-        title: Text('${_currentScooter.marca} ${_currentScooter.modello}'),
+        title: Text(
+          '${_currentScooter.marca} ${_currentScooter.modello}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent, // FIX: AppBar invisibile per mostrare il vetro
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
+            color: AppColors.primaryBlue, // FIX: Icona in tema
             onPressed: isUIBlocked ? null : _navigateToEditScooter,
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        bottom: true,
-        child: Stack(
-          children: [
-            AbsorbPointer(
-              absorbing: isUIBlocked,
-              child: Opacity(
-                opacity: isUIBlocked ? 0.6 : 1.0,
-                child: ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
-                    ScooterHeaderImage(
-                      imgPath: _currentScooter.imgName,
-                      scooterId: _currentScooter.id!,
-                      onTap: _openImageViewer,
+      body: Stack(
+        children: [
+          // FIX: Aggiunto lo sfondo in vetro
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
+
+          SafeArea(
+            bottom: false, // Lasciamo che il bottone PDF arrivi fino in fondo
+            child: Stack(
+              children: [
+                AbsorbPointer(
+                  absorbing: isUIBlocked,
+                  child: Opacity(
+                    opacity: isUIBlocked ? 0.6 : 1.0,
+                    child: ListView(
+                      padding: const EdgeInsets.all(16.0),
+                      children: [
+                        ScooterHeaderImage(
+                          imgPath: _currentScooter.imgName,
+                          scooterId: _currentScooter.id!,
+                          onTap: _openImageViewer,
+                        ),
+                        const SizedBox(height: 24),
+                        ScooterInfoCard(scooter: _currentScooter),
+                        DocumentiCarouselView(scooterId: _currentScooter.id!),
+                        const SizedBox(height: 16),
+                        RefuelingsActionCard(scooter: _currentScooter),
+                        const SizedBox(height: 12),
+                        MaintenanceActionCard(scooter: _currentScooter),
+                        const SizedBox(height: 100), // Spazio extra per non coprire l'ultimo elemento col bottone
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    ScooterInfoCard(scooter: _currentScooter),
-                    DocumentiCarouselView(scooterId: _currentScooter.id!),
-                    const SizedBox(height: 16),
-                    RefuelingsActionCard(scooter: _currentScooter),
-                    const SizedBox(height: 12),
-                    MaintenanceActionCard(scooter: _currentScooter),
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  onPressed: _isGeneratingPDF || isUIBlocked ? null : _generaPDF,
-                  icon: _isGeneratingPDF
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Icon(Icons.picture_as_pdf, color: Colors.white),
-                  label: Text(
-                    l10n.esportaPDF,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 4,
                   ),
                 ),
-              ),
+
+                // Bottone PDF moderno e fluttuante
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 16),
+                    child: ElevatedButton.icon(
+                      onPressed: _isGeneratingPDF || isUIBlocked ? null : _generaPDF,
+                      icon: _isGeneratingPDF
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.picture_as_pdf, color: Colors.white),
+                      label: Text(
+                        l10n.esportaPDF,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Bordi più arrotondati
+                        elevation: 8,
+                        shadowColor: AppColors.primaryBlue.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                ),
+                if (isUIBlocked)
+                  const Center(child: CircularProgressIndicator()),
+              ],
             ),
-            if (isUIBlocked)
-              const Center(child: CircularProgressIndicator()),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

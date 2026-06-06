@@ -8,6 +8,11 @@ import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
+// FIX: Importiamo la GlassCard e i Colori
+import 'package:myscooter/core/theme/app_colors.dart';
+
+import '../../../core/widgets/glass_card.dart';
+
 class MaintenanceListCard extends ConsumerWidget {
   final Manutenzione manutenzione;
   final String currencySymbol;
@@ -67,7 +72,6 @@ class MaintenanceListCard extends ConsumerWidget {
         );
       },
       onDismissed: (direction) {
-        // FIX: Usiamo il nuovo ActionsProvider per la sincronizzazione in tempo reale!
         ref.read(manutenzioneActionsProvider).deleteManutenzione(manutenzione.id!);
         ref.read(messageProvider.notifier).show(l10n.maintenanceDeleted, type: MessageType.success);
       },
@@ -77,70 +81,72 @@ class MaintenanceListCard extends ConsumerWidget {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            context.push('/maintenance-detail', extra: manutenzione);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(manutenzione.categoria.icon, color: Theme.of(context).colorScheme.primary, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          dateFormat.format(manutenzione.data),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${manutenzione.km.toStringAsFixed(0)} km',
-                      style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  manutenzione.titolo,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _translateCategory(context, l10n, manutenzione),
-                  style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-                ),
-                if (manutenzione.costo != null || (manutenzione.nomeFoto != null && manutenzione.nomeFoto!.isNotEmpty)) ...[
-                  const Divider(height: 24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // FIX: Sostituiamo Card() con GlassCard()
+        child: GlassCard(
+          padding: EdgeInsets.zero, // Il Padding è gestito dall'InkWell interno
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              context.push('/maintenance-detail', extra: manutenzione);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (manutenzione.costo != null)
-                        Text(
-                          '${manutenzione.costo!.toStringAsFixed(2)} $currencySymbol',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.secondary,
+                      Row(
+                        children: [
+                          Icon(manutenzione.categoria.icon, color: AppColors.primaryMaintenance, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            dateFormat.format(manutenzione.data),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
-                        ),
-                      if (manutenzione.costo == null) const Spacer(),
-                      if (manutenzione.nomeFoto != null && manutenzione.nomeFoto!.isNotEmpty)
-                        const Icon(Icons.receipt_long, color: Colors.grey, size: 20),
+                        ],
+                      ),
+                      Text(
+                        '${manutenzione.km.toStringAsFixed(0)} km',
+                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  Text(
+                    manutenzione.titolo,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _translateCategory(context, l10n, manutenzione),
+                    style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                  if (manutenzione.costo != null || (manutenzione.nomeFoto != null && manutenzione.nomeFoto!.isNotEmpty)) ...[
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (manutenzione.costo != null)
+                          Text(
+                            '${manutenzione.costo!.toStringAsFixed(2)} $currencySymbol',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        if (manutenzione.costo == null) const Spacer(),
+                        if (manutenzione.nomeFoto != null && manutenzione.nomeFoto!.isNotEmpty)
+                          const Icon(Icons.receipt_long, color: Colors.grey, size: 20),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:firebase_auth/firebase_auth.dart'; // FIX: Aggiunto l'import per recuperare l'ID utente
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.dart';
@@ -15,6 +15,11 @@ import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/services/cloud_storage_manager.dart';
 import 'package:myscooter/core/services/local_image_cache.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
+
+// FIX: Importiamo i widget del Design System e i Colori
+import 'package:myscooter/core/theme/app_colors.dart';
+import '../../../core/widgets/glass_background.dart';
+import '../../../core/widgets/glass_card.dart';
 
 class AddEditMaintenanceScreen extends ConsumerStatefulWidget {
   final String scooterId;
@@ -52,7 +57,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     _categoriaCustomController = TextEditingController(text: m?.categoriaCustom ?? '');
     _costoController = TextEditingController(text: m?.costo != null ? m!.costo.toString() : '');
     _noteController = TextEditingController(text: m?.note ?? '');
-
     _currentImgName = m?.nomeFoto != null ? p.basename(m!.nomeFoto!) : null;
   }
 
@@ -105,7 +109,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
   Future<void> _salvaDati() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
 
     String? finalImgName = _currentImgName;
@@ -116,7 +119,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
         final fileName = 'maint_${DateTime.now().millisecondsSinceEpoch}${p.extension(_newImageFile!.path)}';
         final savedImage = await _newImageFile!.copy(p.join(appDir.path, fileName));
         finalImgName = fileName;
-
         CloudStorageManager.shared.uploadImageSilently(fileName: fileName, localFile: savedImage);
 
         if (_currentImgName != null) {
@@ -133,7 +135,6 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
 
       final nuovaManutenzione = Manutenzione(
         id: widget.manutenzione?.id,
-        // FIX: Inserito l'ID utente! Evita che sovrascriva null su Firebase
         userId: widget.manutenzione?.userId ?? FirebaseAuth.instance.currentUser?.uid,
         scooterId: widget.scooterId,
         data: _data,
@@ -169,12 +170,20 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     final l10n = AppLocalizations.of(context)!;
     final currencySymbol = ref.watch(currencyProvider);
     final dateFormat = DateFormat('dd MMM yyyy', Localizations.localeOf(context).languageCode);
-
     final bool hasImage = _newImageFile != null || (_currentImgName != null && _currentImgName!.isNotEmpty);
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
+      extendBodyBehindAppBar: true,        // FIX: Glass effect
       appBar: AppBar(
         title: Text(widget.manutenzione == null ? l10n.nuovoIntervento : l10n.modificaIntervento),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, size: 28),
+          color: AppColors.primaryMaintenance, // FIX: Icona X Arancione
+          onPressed: () => context.pop(),
+        ),
         actions: [
           if (_isSaving)
             const Padding(
@@ -182,166 +191,139 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
               child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
             )
           else
-            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _salvaDati),
+            IconButton(
+                icon: const Icon(Icons.check, size: 28),
+                color: AppColors.primaryMaintenance, // FIX: Icona Spunta Arancione
+                onPressed: _salvaDati
+            ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        bottom: true,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              _buildSectionHeader(l10n.infoPrincipali),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _titoloController,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(labelText: l10n.titoloIntervento, border: InputBorder.none),
-                        validator: (val) => val == null || val.trim().isEmpty ? l10n.datiMancanti : null,
-                      ),
-                      const Divider(),
-                      InkWell(
-                        onTap: () => _selezionaData(context),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(l10n.dataIntervento, style: const TextStyle(fontSize: 16)),
-                              Text(dateFormat.format(_data), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            ],
+      body: Stack(
+        children: [
+          // FIX: Sfondo in vetro Arancione
+          const GlassBackground(
+            primaryColor: AppColors.primaryMaintenance,
+            secondaryColor: AppColors.secondaryMaintenance,
+          ),
+          SafeArea(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  _buildSectionHeader(l10n.infoPrincipali),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildModernTextField(_titoloController, l10n.titoloIntervento, Icons.build, l10n),
+                        const Divider(height: 1),
+                        InkWell(
+                          onTap: () => _selezionaData(context),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today, color: AppColors.primaryMaintenance.withOpacity(0.8), size: 22),
+                                const SizedBox(width: 16),
+                                Text(l10n.dataIntervento, style: const TextStyle(fontSize: 16)),
+                                const Spacer(),
+                                Text(dateFormat.format(_data), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const Divider(),
-                      TextFormField(
-                        controller: _kmController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(labelText: l10n.currentKm, border: InputBorder.none, suffixText: "km"),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) return l10n.datiMancanti;
-                          if (_parseNumber(val) == null) return l10n.insertNumber;
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionHeader(l10n.categoria),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<CategoriaManutenzione>(
-                        initialValue: _categoria,
-                        decoration: const InputDecoration(border: InputBorder.none),
-                        isExpanded: true,
-                        items: CategoriaManutenzione.values.map((cat) => DropdownMenuItem(value: cat, child: Text(_translateCategory(cat, l10n)))).toList(),
-                        onChanged: (val) { if (val != null) setState(() => _categoria = val); },
-                      ),
-                      if (_categoria == CategoriaManutenzione.altro) ...[
-                        const Divider(),
-                        TextFormField(
-                          controller: _categoriaCustomController,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration: InputDecoration(labelText: l10n.specificaAltro, border: InputBorder.none),
-                          validator: (val) => val == null || val.trim().isEmpty ? l10n.datiMancanti : null,
-                        ),
-                      ]
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionHeader(l10n.dettagliAggiuntivi),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _costoController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(labelText: l10n.costoOpzionale, border: InputBorder.none, suffixText: currencySymbol),
-                        validator: (val) {
-                          if (val != null && val.isNotEmpty && _parseNumber(val) == null) return l10n.insertNumber;
-                          return null;
-                        },
-                      ),
-                      const Divider(),
-                      TextFormField(
-                        controller: _noteController,
-                        maxLines: 3,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(hintText: l10n.notePlaceholder, border: InputBorder.none),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionHeader(l10n.fotoRicevuta),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.withAlpha(50))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: hasImage
-                      ? Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: _newImageFile != null
-                            ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
-                            : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _newImageFile = null;
-                            _currentImgName = null;
-                          });
-                        },
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: Text(l10n.rimuoviFoto),
-                      ),
-                    ],
-                  )
-                      : InkWell(
-                    onTap: _scegliFoto,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.photo_library_outlined, size: 32, color: Colors.grey),
-                        const SizedBox(width: 16),
-                        Text(l10n.selezionaFoto, style: const TextStyle(fontSize: 16)),
+                        const Divider(height: 1),
+                        _buildModernTextField(_kmController, l10n.currentKm, Icons.speed, l10n, isNumber: true, suffix: "km"),
                       ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(l10n.categoria),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.category, color: AppColors.primaryMaintenance.withOpacity(0.8), size: 22),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<CategoriaManutenzione>(
+                                initialValue: _categoria,
+                                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                isExpanded: true,
+                                items: CategoriaManutenzione.values.map((cat) => DropdownMenuItem(value: cat, child: Text(_translateCategory(cat, l10n)))).toList(),
+                                onChanged: (val) { if (val != null) setState(() => _categoria = val); },
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_categoria == CategoriaManutenzione.altro) ...[
+                          const Divider(height: 1),
+                          _buildModernTextField(_categoriaCustomController, l10n.specificaAltro, Icons.edit, l10n),
+                        ]
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(l10n.dettagliAggiuntivi),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildModernTextField(_costoController, l10n.costoOpzionale, Icons.payments, l10n, isNumber: true, suffix: currencySymbol, isRequired: false),
+                        const Divider(height: 1),
+                        _buildModernTextField(_noteController, l10n.notePlaceholder, Icons.notes, l10n, isRequired: false, maxLines: 3),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(l10n.fotoRicevuta),
+                  GlassCard(
+                    padding: const EdgeInsets.all(16.0),
+                    child: hasImage
+                        ? Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: _newImageFile != null
+                              ? Image.file(_newImageFile!, width: 60, height: 60, fit: BoxFit.cover)
+                              : CloudSyncImage(imagePath: _currentImgName, width: 60, height: 60, fit: BoxFit.cover),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _newImageFile = null;
+                              _currentImgName = null;
+                            });
+                          },
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: Text(l10n.rimuoviFoto),
+                        ),
+                      ],
+                    )
+                        : InkWell(
+                      onTap: _scegliFoto,
+                      child: Row(
+                        children: [
+                          Icon(Icons.photo_library_outlined, size: 32, color: AppColors.primaryMaintenance.withOpacity(0.8)),
+                          const SizedBox(width: 16),
+                          Text(l10n.selezionaFoto, style: const TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -350,6 +332,45 @@ class _AddEditMaintenanceScreenState extends ConsumerState<AddEditMaintenanceScr
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
       child: Text(title.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+    );
+  }
+
+  // FIX: ModernTextField riutilizzato per l'estetica in vetro
+  Widget _buildModernTextField(
+      TextEditingController controller, String label, IconData icon, AppLocalizations l10n, {
+        bool isNumber = false, bool isRequired = true, String? suffix, int maxLines = 1,
+      }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: maxLines > 1 ? 12.0 : 0),
+            child: Icon(icon, color: AppColors.primaryMaintenance.withOpacity(0.8), size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              maxLines: maxLines,
+              textCapitalization: TextCapitalization.sentences,
+              keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+              decoration: InputDecoration(
+                labelText: label,
+                suffixText: suffix,
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              validator: (val) {
+                if (isRequired && (val == null || val.trim().isEmpty)) return l10n.datiMancanti;
+                if (isNumber && val != null && val.isNotEmpty && _parseNumber(val) == null) return l10n.insertNumber;
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

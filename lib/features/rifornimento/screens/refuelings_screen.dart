@@ -1,4 +1,3 @@
-// lib/features/rifornimento/screens/refuelings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,11 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/message_provider.dart';
 import '../../../l10n/app_localizations.dart';
+
+// FIX: Importiamo il Design System
+import 'package:myscooter/core/theme/app_colors.dart';
+import 'package:myscooter/core/widgets/glass_background.dart';
+
 import '../../scooter/model/scooter.dart';
 import '../models/rifornimento.dart';
 import '../../scooter/widgets/refuelings_list_section.dart';
 
-// NUOVO PROVIDER STREAM PER I RIFORNIMENTI
 final rifornimentiStreamProvider = StreamProvider.autoDispose.family<List<Rifornimento>, String>((ref, scooterId) {
   final repo = ref.read(rifornimentoRepoProvider);
   return repo.streamRifornimentiForScooter(scooterId);
@@ -18,7 +21,6 @@ final rifornimentiStreamProvider = StreamProvider.autoDispose.family<List<Riforn
 
 class RefuelingsScreen extends ConsumerWidget {
   final Scooter scooter;
-
   const RefuelingsScreen({super.key, required this.scooter});
 
   Future<void> _confirmAndDelete(BuildContext context, WidgetRef ref, Rifornimento rif) async {
@@ -37,7 +39,6 @@ class RefuelingsScreen extends ConsumerWidget {
         ],
       ),
     );
-
     if (confirm == true) {
       try {
         await ref.read(rifornimentoRepoProvider).deleteRifornimento(rif.id!);
@@ -56,35 +57,49 @@ class RefuelingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final String locale = Localizations.localeOf(context).languageCode;
-
-    // Ascoltiamo lo stream dei rifornimenti!
     final rifornimentiAsync = ref.watch(rifornimentiStreamProvider(scooter.id!));
 
     return Scaffold(
+      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
+      extendBodyBehindAppBar: true,        // FIX: Glass effect
       appBar: AppBar(
         title: Text(l10n.refuelingData),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: rifornimentiAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text(l10n.errorLoadingRefuelings)),
-            data: (rifornimenti) {
-              return RefuelingsListSection(
-                rifornimenti: rifornimenti,
-                isLoading: false,
-                locale: locale,
-                onAddTap: () {
-                  context.push('/add-edit-rifornimento/${scooter.id!}');
-                },
-                onRifornimentoTap: (rif) {
-                  context.push('/rifornimento-detail/${scooter.id!}', extra: rif);
-                },
-                onDeleteConfirm: (rif) => _confirmAndDelete(context, ref, rif),
-              );
-            }
-        ),
+      body: Stack(
+        children: [
+          // FIX: Aggiunto lo sfondo in vetro
+          const GlassBackground(
+            primaryColor: AppColors.primaryBlue,
+            secondaryColor: AppColors.secondaryCyan,
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: rifornimentiAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => Center(child: Text(l10n.errorLoadingRefuelings)),
+                  data: (rifornimenti) {
+                    return RefuelingsListSection(
+                      rifornimenti: rifornimenti,
+                      isLoading: false,
+                      locale: locale,
+                      onAddTap: () {
+                        context.push('/add-edit-rifornimento/${scooter.id!}');
+                      },
+                      onRifornimentoTap: (rif) {
+                        context.push('/rifornimento-detail/${scooter.id!}', extra: rif);
+                      },
+                      onDeleteConfirm: (rif) => _confirmAndDelete(context, ref, rif),
+                    );
+                  }
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
