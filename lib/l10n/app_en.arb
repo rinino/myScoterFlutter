@@ -277,5 +277,19 @@
     "placeholders": {
       "documento": { "type": "String" }
     }
-  }
+  },
+
+
+  "statistiche": "Statistics",
+  "imperialConverterTitle": "Imperial Converter",
+  "imperialConverterDesc": "Enter values in Miles/Gallons. They will be automatically converted to Km and Liters to match the standard.",
+  "milesLabel": "Miles",
+  "gallonsLabel": "US Gallons",
+  "apply": "Apply",
+  "piaggioStandardTitle": "The Piaggio Standard",
+  "piaggioStandardDesc": "To respect the mechanics and history of classic European scooters, the app strictly uses the metric system (Km, Liters, and Milliliters for oil). If you use the imperial system, use the built-in calculator to automatically fill in the fields!",
+  "ok": "OK"
+
+
+
 }

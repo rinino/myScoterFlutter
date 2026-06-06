@@ -1533,6 +1533,60 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Il documento {documento} scade oggi.'**
   String notificaScadenza0Corpo(String documento);
+
+  /// No description provided for @statistiche.
+  ///
+  /// In it, this message translates to:
+  /// **'Statistiche'**
+  String get statistiche;
+
+  /// No description provided for @imperialConverterTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Convertitore Imperiale'**
+  String get imperialConverterTitle;
+
+  /// No description provided for @imperialConverterDesc.
+  ///
+  /// In it, this message translates to:
+  /// **'Inserisci i valori in Miglia/Galloni. Verranno convertiti automaticamente in Km e Litri per rispettare lo standard.'**
+  String get imperialConverterDesc;
+
+  /// No description provided for @milesLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Miglia (Miles)'**
+  String get milesLabel;
+
+  /// No description provided for @gallonsLabel.
+  ///
+  /// In it, this message translates to:
+  /// **'Galloni (US Gallons)'**
+  String get gallonsLabel;
+
+  /// No description provided for @apply.
+  ///
+  /// In it, this message translates to:
+  /// **'Applica'**
+  String get apply;
+
+  /// No description provided for @piaggioStandardTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Lo Standard Piaggio'**
+  String get piaggioStandardTitle;
+
+  /// No description provided for @piaggioStandardDesc.
+  ///
+  /// In it, this message translates to:
+  /// **'Per rispettare la meccanica e la storia degli scooter classici europei, l\'app utilizza esclusivamente il sistema metrico (Km, Litri e Millilitri per l\'olio). Se utilizzi il sistema imperiale (Miglia e Galloni), usa la calcolatrice integrata per compilare i campi!'**
+  String get piaggioStandardDesc;
+
+  /// No description provided for @ok.
+  ///
+  /// In it, this message translates to:
+  /// **'OK'**
+  String get ok;
 }
 
 class _AppLocalizationsDelegate

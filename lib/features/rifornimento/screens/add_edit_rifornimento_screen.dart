@@ -10,8 +10,8 @@ import '../../../core/widgets/glass_background.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../scooter/model/scooter.dart';
 
-// FIX: Importiamo il Design System
 import 'package:myscooter/core/theme/app_colors.dart';
+import 'package:myscooter/core/services/imperial_converter_service.dart';
 
 class AddEditRifornimentoScreen extends ConsumerStatefulWidget {
   final String scooterId;
@@ -92,7 +92,13 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
 
   void _setupControllersListeners() {
     _kmAttualiController.addListener(_calculateStats);
-    _litriBenzinaController.addListener(_calculateStats);
+
+    // FIX: Ora la benzina ascolta sia le statistiche sia il calcolo dell'olio
+    _litriBenzinaController.addListener(() {
+      _calculateStats();
+      _calculateCalculatedLitriOlio();
+    });
+
     _percentualeOlioController.addListener(_calculateCalculatedLitriOlio);
   }
 
@@ -171,12 +177,126 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // --- BOTTOM SHEET: CONVERTITORE VOLANTE ---
+  void _showImperialConverter(BuildContext context, AppLocalizations l10n) {
+    final TextEditingController milesController = TextEditingController();
+    final TextEditingController gallonsController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calculate, color: AppColors.primaryBlue, size: 28),
+                    const SizedBox(width: 12),
+                    Text(l10n.imperialConverterTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(l10n.imperialConverterDesc, style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: milesController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: l10n.milesLabel, border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.speed)),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: gallonsController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: l10n.gallonsLabel, border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.local_gas_station)),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      final double? miles = _parseToDouble(milesController.text);
+                      final double? gallons = _parseToDouble(gallonsController.text);
+
+                      if (miles != null) {
+                        _kmAttualiController.text = ImperialConverterService.milesToKilometers(miles).toStringAsFixed(1);
+                      }
+                      if (gallons != null) {
+                        _litriBenzinaController.text = ImperialConverterService.gallonsToLiters(gallons).toStringAsFixed(2);
+                      }
+
+                      _calculateStats();
+                      _calculateCalculatedLitriOlio(); // FIX: Forza il ricalcolo dell'olio
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(l10n.apply, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- DIALOG: INFO FILOSOFIA PIAGGIO ---
+  void _showInfoDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.primaryBlue),
+            const SizedBox(width: 8),
+            Expanded(child: Text(l10n.averageConsumptionCalcTitle, style: const TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.averageConsumptionCalcDesc),
+              const SizedBox(height: 16),
+              Text(l10n.piaggioStandardTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue)),
+              const SizedBox(height: 4),
+              Text(l10n.piaggioStandardDesc),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: Colors.transparent, // FIX: Sfondo trasparente
-      extendBodyBehindAppBar: true,        // FIX: Glass effect
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(widget.rifornimento == null ? l10n.addRefueling : l10n.editRefueling),
         centerTitle: true,
@@ -184,14 +304,14 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, size: 28),
-          color: AppColors.primaryBlue, // FIX: Colore a tema
+          color: AppColors.primaryBlue,
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           if (!_isLoadingData)
             IconButton(
               icon: const Icon(Icons.check, size: 28),
-              color: AppColors.primaryBlue, // FIX: Colore a tema
+              color: AppColors.primaryBlue,
               onPressed: _isSaving ? null : _saveRifornimento,
             )
         ],
@@ -200,7 +320,6 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
-          // FIX: Aggiunto lo sfondo in vetro
           const GlassBackground(
             primaryColor: AppColors.primaryBlue,
             secondaryColor: AppColors.secondaryCyan,
@@ -213,7 +332,11 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionLabel(l10n.dateAndKm),
+                    _buildSectionLabel(
+                      l10n.dateAndKm,
+                      actionIcon: Icons.calculate_outlined,
+                      onActionTap: () => _showImperialConverter(context, l10n),
+                    ),
                     GlassCard(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -283,10 +406,22 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
     );
   }
 
-  Widget _buildSectionLabel(String text) {
+  Widget _buildSectionLabel(String text, {IconData? actionIcon, VoidCallback? onActionTap}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(text.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(text.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+          if (actionIcon != null)
+            IconButton(
+              icon: Icon(actionIcon, color: AppColors.primaryBlue, size: 22),
+              onPressed: onActionTap,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+        ],
+      ),
     );
   }
 
@@ -347,7 +482,6 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
                 if (isRequired && (val == null || val.trim().isEmpty)) return l10n.requiredField;
                 if (val != null && val.isNotEmpty && isNumber && _parseToDouble(val) == null) return l10n.insertNumber;
 
-                // Controllo speciale per i km
                 if (controller == _kmAttualiController) {
                   final doubleVal = _parseToDouble(val ?? '');
                   if (doubleVal != null && _previousRifornimento != null && doubleVal <= _previousRifornimento!.kmAttuali) {
@@ -399,6 +533,19 @@ class _AddEditRifornimentoScreenState extends ConsumerState<AddEditRifornimentoS
       ),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(l10n.statistiche.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+              IconButton(
+                icon: const Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
+                onPressed: () => _showInfoDialog(context, l10n),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              )
+            ],
+          ),
+          const SizedBox(height: 12),
           _buildStatRow(l10n.kmTraveled, "${_kmPercorsi.toStringAsFixed(1)} km"),
           const Divider(height: 24),
           _buildStatRow(l10n.averageConsumption, "${_mediaConsumo.toStringAsFixed(2)} km/L"),

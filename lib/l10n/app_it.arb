@@ -277,9 +277,17 @@
         "placeholders": {
             "documento": { "type": "String" }
         }
-    }
+    },
 
-
+    "statistiche": "Statistiche",
+    "imperialConverterTitle": "Convertitore Imperiale",
+    "imperialConverterDesc": "Inserisci i valori in Miglia/Galloni. Verranno convertiti automaticamente in Km e Litri per rispettare lo standard.",
+    "milesLabel": "Miglia (Miles)",
+    "gallonsLabel": "Galloni (US Gallons)",
+    "apply": "Applica",
+    "piaggioStandardTitle": "Lo Standard Piaggio",
+    "piaggioStandardDesc": "Per rispettare la meccanica e la storia degli scooter classici europei, l'app utilizza esclusivamente il sistema metrico (Km, Litri e Millilitri per l'olio). Se utilizzi il sistema imperiale (Miglia e Galloni), usa la calcolatrice integrata per compilare i campi!",
+    "ok": "OK"
 
 
 }

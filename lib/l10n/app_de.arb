@@ -261,5 +261,19 @@
     "placeholders": {
       "documento": { "type": "String" }
     }
-  }
+  },
+
+  "statistiche": "Statistiken",
+  "imperialConverterTitle": "Imperialer Umrechner",
+  "imperialConverterDesc": "Gib Werte in Meilen/Gallonen ein. Sie werden automatisch in Km und Liter umgerechnet, um dem Standard zu entsprechen.",
+  "milesLabel": "Meilen",
+  "gallonsLabel": "US-Gallonen",
+  "apply": "Anwenden",
+  "piaggioStandardTitle": "Der Piaggio-Standard",
+  "piaggioStandardDesc": "Um die Mechanik und Geschichte klassischer europäischer Roller zu respektieren, verwendet die App ausschließlich das metrische System (Km, Liter und Milliliter für Öl). Wenn du das imperiale System nutzt, verwende den integrierten Taschenrechner, um die Felder auszufüllen!",
+  "ok": "OK"
+
+
+
+
 }

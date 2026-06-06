@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/legacy.dart'; // Nota: se passi a Riverpod più recente, questo diventerà 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Notifier per gestire il cambio lingua e la persistenza
@@ -10,12 +10,17 @@ class LocaleNotifier extends StateNotifier<Locale?> {
 
   static const _key = 'selected_language';
 
+  // Lista di sicurezza delle lingue supportate dalla nostra app
+  static const supportedLocales = ['it', 'en', 'es', 'fr', 'de', 'pt'];
+
   // Carica la lingua all'avvio
   Future<void> _loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
     final code = prefs.getString(_key);
-    if (code != null) {
-      state = Locale(code);
+
+    // FIX: Evita crash controllando che non sia vuoto e che sia supportato
+    if (code != null && code.trim().isNotEmpty && supportedLocales.contains(code.trim())) {
+      state = Locale(code.trim());
     } else {
       state = null; // null significa "Lingua di Sistema"
     }
@@ -24,12 +29,23 @@ class LocaleNotifier extends StateNotifier<Locale?> {
   // Cambia la lingua e salva
   Future<void> setLocale(String? languageCode) async {
     final prefs = await SharedPreferences.getInstance();
-    if (languageCode == null) {
+
+    // FIX: Se passiamo null o una stringa vuota, resettiamo alla lingua di sistema
+    if (languageCode == null || languageCode.trim().isEmpty) {
       state = null;
       await prefs.remove(_key);
     } else {
-      state = Locale(languageCode);
-      await prefs.setString(_key, languageCode);
+      final cleanCode = languageCode.trim();
+
+      // Controllo di sicurezza aggiuntivo
+      if (supportedLocales.contains(cleanCode)) {
+        state = Locale(cleanCode);
+        await prefs.setString(_key, cleanCode);
+      } else {
+        // Fallback se arriva un codice strano
+        state = null;
+        await prefs.remove(_key);
+      }
     }
   }
 }

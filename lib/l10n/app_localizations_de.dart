@@ -754,4 +754,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String notificaScadenza0Corpo(String documento) {
     return 'Das Dokument $documento läuft heute ab.';
   }
+
+  @override
+  String get statistiche => 'Statistiken';
+
+  @override
+  String get imperialConverterTitle => 'Imperialer Umrechner';
+
+  @override
+  String get imperialConverterDesc =>
+      'Gib Werte in Meilen/Gallonen ein. Sie werden automatisch in Km und Liter umgerechnet, um dem Standard zu entsprechen.';
+
+  @override
+  String get milesLabel => 'Meilen';
+
+  @override
+  String get gallonsLabel => 'US-Gallonen';
+
+  @override
+  String get apply => 'Anwenden';
+
+  @override
+  String get piaggioStandardTitle => 'Der Piaggio-Standard';
+
+  @override
+  String get piaggioStandardDesc =>
+      'Um die Mechanik und Geschichte klassischer europäischer Roller zu respektieren, verwendet die App ausschließlich das metrische System (Km, Liter und Milliliter für Öl). Wenn du das imperiale System nutzt, verwende den integrierten Taschenrechner, um die Felder auszufüllen!';
+
+  @override
+  String get ok => 'OK';
 }

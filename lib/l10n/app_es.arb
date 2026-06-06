@@ -261,5 +261,19 @@
     "placeholders": {
       "documento": { "type": "String" }
     }
-  }
+  },
+
+  "statistiche": "Estadísticas",
+  "imperialConverterTitle": "Conversor Imperial",
+  "imperialConverterDesc": "Introduce los valores en Millas/Galones. Se convertirán automáticamente a Km y Litros para respetar el estándar.",
+  "milesLabel": "Millas",
+  "gallonsLabel": "Galones (EE. UU.)",
+  "apply": "Aplicar",
+  "piaggioStandardTitle": "El Estándar Piaggio",
+  "piaggioStandardDesc": "Para respetar la mecánica y la historia de los scooters clásicos europeos, la aplicación utiliza exclusivamente el sistema métrico (Km, Litros y Mililitros para el aceite). Si usas el sistema imperial, ¡utiliza la calculadora integrada para rellenar automáticamente los campos!",
+  "ok": "OK"
+
+
+
+
 }
