@@ -781,4 +781,49 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get valuta => 'Valuta';
+
+  @override
+  String get valutaEuro => 'Euro (€)';
+
+  @override
+  String get valutaDollaro => 'Dollaro (\$)';
+
+  @override
+  String get valutaSterlina => 'Sterlina (£)';
+
+  @override
+  String get linguaSistema => 'Sistema';
+
+  @override
+  String get linguaItaliano => 'Italiano';
+
+  @override
+  String get linguaInglese => 'English';
+
+  @override
+  String get linguaSpagnolo => 'Español';
+
+  @override
+  String get linguaFrancese => 'Français';
+
+  @override
+  String get linguaTedesco => 'Deutsch';
+
+  @override
+  String get linguaPortoghese => 'Português';
+
+  @override
+  String get andamentoConsumi => 'Andamento Consumi';
+
+  @override
+  String get nonDisponibile => 'N/D';
+
+  @override
+  String get documentoGenerico => 'Documento';
+
+  @override
+  String get errore => 'Errore';
 }

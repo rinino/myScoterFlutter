@@ -288,7 +288,23 @@
   "apply": "Apply",
   "piaggioStandardTitle": "The Piaggio Standard",
   "piaggioStandardDesc": "To respect the mechanics and history of classic European scooters, the app strictly uses the metric system (Km, Liters, and Milliliters for oil). If you use the imperial system, use the built-in calculator to automatically fill in the fields!",
-  "ok": "OK"
+  "ok": "OK",
+
+  "valuta": "Currency",
+  "valutaEuro": "Euro (€)",
+  "valutaDollaro": "Dollar ($)",
+  "valutaSterlina": "Pound (£)",
+  "linguaSistema": "System",
+  "linguaItaliano": "Italian",
+  "linguaInglese": "English",
+  "linguaSpagnolo": "Spanish",
+  "linguaFrancese": "French",
+  "linguaTedesco": "German",
+  "linguaPortoghese": "Portuguese",
+  "andamentoConsumi": "Consumption Trend",
+  "nonDisponibile": "N/A",
+  "documentoGenerico": "Document",
+  "errore": "Error"
 
 
 

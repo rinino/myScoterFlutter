@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeService extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  // FIX PRO: Impostiamo ThemeMode.dark come valore di default iniziale!
+  ThemeMode _themeMode = ThemeMode.dark;
 
   ThemeMode get themeMode => _themeMode;
 
@@ -27,9 +28,11 @@ class ThemeService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final savedThemeIndex = prefs.getInt('theme_mode');
 
+    // Se c'è un tema salvato, lo applica
     if (savedThemeIndex != null && savedThemeIndex >= 0 && savedThemeIndex < ThemeMode.values.length) {
       _themeMode = ThemeMode.values[savedThemeIndex];
       notifyListeners();
     }
+    // Se non c'è nulla di salvato (primo avvio), _themeMode resterà ThemeMode.dark
   }
 }

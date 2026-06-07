@@ -1,9 +1,8 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // FIX PRO: Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gal/gal.dart';
-
 import '../../../../core/providers/message_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/services/local_image_cache.dart';
@@ -35,11 +34,14 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
   }
 
   Future<void> _shareImage() async {
+    HapticFeedback.mediumImpact(); // FIX PRO: Vibrazione condivisione
     final l10n = AppLocalizations.of(context)!;
+
     if (_isNetwork) {
       ref.read(messageProvider.notifier).show(l10n.funzioneInArrivo, type: MessageType.info);
       return;
     }
+
     try {
       final xFile = XFile(widget.imagePath);
       await SharePlus.instance.share(
@@ -55,12 +57,16 @@ class _ImageViewerPageState extends ConsumerState<ImageViewerPage> {
   }
 
   Future<void> _saveToGallery() async {
+    HapticFeedback.mediumImpact(); // FIX PRO: Vibrazione salvataggio
     final l10n = AppLocalizations.of(context)!;
+
     if (_isNetwork) {
       ref.read(messageProvider.notifier).show(l10n.funzioneInArrivo, type: MessageType.info);
       return;
     }
+
     setState(() => _isSaving = true);
+
     try {
       await Gal.putImage(widget.imagePath);
       ref.read(messageProvider.notifier).show(l10n.imageSaved, type: MessageType.success);

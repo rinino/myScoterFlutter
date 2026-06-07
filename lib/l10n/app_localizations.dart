@@ -1587,6 +1587,96 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'OK'**
   String get ok;
+
+  /// No description provided for @valuta.
+  ///
+  /// In it, this message translates to:
+  /// **'Valuta'**
+  String get valuta;
+
+  /// No description provided for @valutaEuro.
+  ///
+  /// In it, this message translates to:
+  /// **'Euro (€)'**
+  String get valutaEuro;
+
+  /// No description provided for @valutaDollaro.
+  ///
+  /// In it, this message translates to:
+  /// **'Dollaro (\$)'**
+  String get valutaDollaro;
+
+  /// No description provided for @valutaSterlina.
+  ///
+  /// In it, this message translates to:
+  /// **'Sterlina (£)'**
+  String get valutaSterlina;
+
+  /// No description provided for @linguaSistema.
+  ///
+  /// In it, this message translates to:
+  /// **'Sistema'**
+  String get linguaSistema;
+
+  /// No description provided for @linguaItaliano.
+  ///
+  /// In it, this message translates to:
+  /// **'Italiano'**
+  String get linguaItaliano;
+
+  /// No description provided for @linguaInglese.
+  ///
+  /// In it, this message translates to:
+  /// **'English'**
+  String get linguaInglese;
+
+  /// No description provided for @linguaSpagnolo.
+  ///
+  /// In it, this message translates to:
+  /// **'Español'**
+  String get linguaSpagnolo;
+
+  /// No description provided for @linguaFrancese.
+  ///
+  /// In it, this message translates to:
+  /// **'Français'**
+  String get linguaFrancese;
+
+  /// No description provided for @linguaTedesco.
+  ///
+  /// In it, this message translates to:
+  /// **'Deutsch'**
+  String get linguaTedesco;
+
+  /// No description provided for @linguaPortoghese.
+  ///
+  /// In it, this message translates to:
+  /// **'Português'**
+  String get linguaPortoghese;
+
+  /// No description provided for @andamentoConsumi.
+  ///
+  /// In it, this message translates to:
+  /// **'Andamento Consumi'**
+  String get andamentoConsumi;
+
+  /// No description provided for @nonDisponibile.
+  ///
+  /// In it, this message translates to:
+  /// **'N/D'**
+  String get nonDisponibile;
+
+  /// No description provided for @documentoGenerico.
+  ///
+  /// In it, this message translates to:
+  /// **'Documento'**
+  String get documentoGenerico;
+
+  /// No description provided for @errore.
+  ///
+  /// In it, this message translates to:
+  /// **'Errore'**
+  String get errore;
 }
 
 class _AppLocalizationsDelegate

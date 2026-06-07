@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // FIX PRO: Haptic Feedback
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-
 import 'package:myscooter/core/auth/auth_manager.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
@@ -13,22 +13,22 @@ import 'package:myscooter/core/services/local_image_cache.dart';
 import '../../scooter/widgets/image_viewer_page.dart';
 import '../../../l10n/app_localizations.dart';
 
-// FIX: Importiamo i componenti del Design System
 import 'package:myscooter/core/theme/app_colors.dart';
 import 'package:myscooter/core/widgets/glass_background.dart';
-import 'package:myscooter/core/widgets/glass_card.dart';
+import 'package:myscooter/core/widgets/custom_glass_card.dart'; // FIX PRO
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   Future<void> _onRefresh(WidgetRef ref) async {
+    HapticFeedback.mediumImpact(); // FIX PRO
     await ref.read(scooterListProvider.notifier).refreshScooters();
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
   Future<void> _handleLogin(BuildContext context, WidgetRef ref, Future<bool> Function() loginMethod) async {
+    HapticFeedback.lightImpact(); // FIX PRO
     final l10n = AppLocalizations.of(context)!;
-
     final bool? wantsToProceed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -45,12 +45,18 @@ class ProfileScreen extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.of(dialogContext).pop(false);
+              },
               child: Text(l10n.annulla, style: const TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.of(dialogContext).pop(true);
+              },
               child: Text(l10n.procedi),
             ),
           ],
@@ -75,6 +81,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref, AppLocalizations l10n, User user) async {
+    HapticFeedback.heavyImpact(); // FIX PRO: Warning vibe
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -82,8 +89,21 @@ class ProfileScreen extends ConsumerWidget {
         content: Text(l10n.eliminaAccountConferma),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.annulla, style: const TextStyle(color: Colors.grey))),
-          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), onPressed: () => Navigator.of(ctx).pop(true), child: Text(l10n.eliminaDefinitivamente)),
+          TextButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.of(ctx).pop(false);
+              },
+              child: Text(l10n.annulla, style: const TextStyle(color: Colors.grey))
+          ),
+          ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.of(ctx).pop(true);
+              },
+              child: Text(l10n.eliminaDefinitivamente)
+          ),
         ],
       ),
     );
@@ -95,7 +115,6 @@ class ProfileScreen extends ConsumerWidget {
       final db = FirebaseFirestore.instance;
       final storage = FirebaseStorage.instance;
 
-      // 1. ELIMINAZIONE FOTO DA CLOUD STORAGE
       try {
         final storageRef = storage.ref().child("images/$userId");
         final listResult = await storageRef.listAll();
@@ -106,7 +125,6 @@ class ProfileScreen extends ConsumerWidget {
         debugPrint("ADR: Nessuna foto da eliminare o errore Storage: $e");
       }
 
-      // 2. ELIMINAZIONE DATI NUCLEARE A CHUNK (Sicurezza contro il limite dei 500 doc)
       WriteBatch batch = db.batch();
       int count = 0;
 
@@ -128,16 +146,13 @@ class ProfileScreen extends ConsumerWidget {
         }
       }
 
-      // Elimina il profilo utente
       batch.delete(db.collection('utenti').doc(userId));
       await commitIfNeed();
 
-      // Invia gli ultimi residui
       if (count > 0) {
         await batch.commit();
       }
 
-      // 3. ELIMINAZIONE AUTENTICAZIONE
       await user.delete();
       await AuthManager.shared.signOut();
       await ref.read(scooterListProvider.notifier).refreshScooters();
@@ -158,8 +173,8 @@ class ProfileScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
-      extendBodyBehindAppBar: true,        // FIX: Glass effect
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(l10n.profiloTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
@@ -169,12 +184,10 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          // FIX: Sfondo in vetro
           const GlassBackground(
             primaryColor: AppColors.primaryBlue,
             secondaryColor: AppColors.secondaryCyan,
           ),
-
           SafeArea(
             child: RefreshIndicator(
               onRefresh: () => _onRefresh(ref),
@@ -182,7 +195,6 @@ class ProfileScreen extends ConsumerWidget {
                 stream: FirebaseAuth.instance.authStateChanges(),
                 builder: (context, snapshot) {
                   final user = snapshot.data;
-
                   if (user == null || user.isAnonymous) {
                     return _buildGuestView(context, ref, l10n);
                   } else {
@@ -202,34 +214,40 @@ class ProfileScreen extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16.0),
       children: [
-        GlassCard(
-          padding: const EdgeInsets.all(24.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.1),
-                  shape: BoxShape.circle,
+        CustomGlassCard(
+          borderColors: [
+            Colors.blue.withOpacity(0.4),
+            Colors.cyan.withOpacity(0.15),
+            Colors.transparent,
+          ],
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person, color: AppColors.primaryBlue, size: 36),
                 ),
-                child: const Icon(Icons.person, color: AppColors.primaryBlue, size: 36),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.utenteOspite, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-                    const SizedBox(height: 4),
-                    Text(l10n.datiLocali, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                  ],
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.utenteOspite, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                      const SizedBox(height: 4),
+                      Text(l10n.datiLocali, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 32),
-
         ElevatedButton.icon(
           onPressed: () => _handleLogin(context, ref, AuthManager.shared.signInWithGoogle),
           icon: const Icon(Icons.account_circle),
@@ -239,7 +257,7 @@ class ProfileScreen extends ConsumerWidget {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 2,
+            elevation: 4,
           ),
         ),
         const SizedBox(height: 16),
@@ -253,13 +271,16 @@ class ProfileScreen extends ConsumerWidget {
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 2,
+              elevation: 4,
             ),
           ),
           const SizedBox(height: 16),
         ],
         OutlinedButton.icon(
-          onPressed: () => context.push('/email-auth'),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            context.push('/email-auth');
+          },
           icon: const Icon(Icons.email_outlined),
           label: Text(l10n.accediEmail, style: const TextStyle(fontWeight: FontWeight.bold)),
           style: OutlinedButton.styleFrom(
@@ -297,59 +318,69 @@ class ProfileScreen extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
             children: [
-              GlassCard(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (photoUrl != null && photoUrl.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                fullscreenDialog: true,
-                                builder: (context) => ImageViewerPage(
-                                  imagePath: photoUrl!,
-                                  title: displayName,
-                                  heroTag: 'profile_image_${user.uid}',
+              CustomGlassCard(
+                borderColors: [
+                  Colors.blue.withOpacity(0.4),
+                  Colors.cyan.withOpacity(0.15),
+                  Colors.transparent,
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (photoUrl != null && photoUrl.isNotEmpty) {
+                              HapticFeedback.lightImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  fullscreenDialog: true,
+                                  builder: (context) => ImageViewerPage(
+                                    imagePath: photoUrl!,
+                                    title: displayName,
+                                    heroTag: 'profile_image_${user.uid}',
+                                  ),
                                 ),
+                              );
+                            }
+                          },
+                          child: Hero(
+                            tag: 'profile_image_${user.uid}',
+                            child: ClipOval(
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                color: AppColors.primaryBlue,
+                                child: (photoUrl != null && photoUrl.isNotEmpty)
+                                    ? CloudSyncImage(imagePath: photoUrl, width: 120, height: 120, fit: BoxFit.cover)
+                                    : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold))),
                               ),
-                            );
-                          }
-                        },
-                        child: Hero(
-                          tag: 'profile_image_${user.uid}',
-                          child: ClipOval(
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              color: AppColors.primaryBlue,
-                              child: (photoUrl != null && photoUrl.isNotEmpty)
-                                  ? CloudSyncImage(imagePath: photoUrl, width: 120, height: 120, fit: BoxFit.cover)
-                                  : Center(child: Text(user.email?[0].toUpperCase() ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold))),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      displayName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (user.email != null) ...[
-                      const SizedBox(height: 8),
-                      Text(user.email!, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                      const SizedBox(height: 24),
+                      Text(
+                        displayName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (user.email != null) ...[
+                        const SizedBox(height: 8),
+                        Text(user.email!, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
-
               ElevatedButton.icon(
-                onPressed: () => context.push('/edit-profile'),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/edit-profile');
+                },
                 icon: const Icon(Icons.edit),
                 label: Text(l10n.modificaProfilo, style: const TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
@@ -357,12 +388,13 @@ class ProfileScreen extends ConsumerWidget {
                   backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
+                  elevation: 4,
                 ),
               ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () async {
+                  HapticFeedback.mediumImpact();
                   await AuthManager.shared.signOut();
                   await ref.read(scooterListProvider.notifier).refreshScooters();
                   if (context.mounted) {

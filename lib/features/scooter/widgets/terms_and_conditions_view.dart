@@ -1,9 +1,8 @@
 // lib/features/scooter/widgets/terms_and_conditions_view.dart
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // FIX PRO: Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../../../../core/providers/message_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -34,7 +33,10 @@ class TermsAndConditionsView extends ConsumerWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  HapticFeedback.lightImpact(); // FIX PRO: Vibrazione chiusura
+                  Navigator.pop(context);
+                },
                 child: Text(l10n.fatto, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
@@ -58,16 +60,16 @@ class TermsAndConditionsView extends ConsumerWidget {
                     style: const TextStyle(color: Colors.grey, fontSize: 16, height: 1.5),
                   ),
                   const SizedBox(height: 40),
-
                   // Pulsante per il sito con gestione errori
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton.icon(
                       onPressed: () async {
+                        HapticFeedback.mediumImpact(); // FIX PRO: Vibrazione apertura link
                         final uri = Uri.parse(_urlSito);
                         try {
-                          // Se la configurazione nativa (AndroidManifest/Info.plist) è ok, apre il link
+                          // Se la configurazione nativa (AndroidManifest/Info.plist) ok, apre il link
                           if (await canLaunchUrl(uri)) {
                             await launchUrl(uri, mode: LaunchMode.externalApplication);
                           } else {
@@ -87,7 +89,6 @@ class TermsAndConditionsView extends ConsumerWidget {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 60),
                   Text(
                     l10n.info_dati,

@@ -1,6 +1,8 @@
+import 'dart:ui'; // FIX PRO
 import 'package:flutter/material.dart';
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
+import '../../../core/widgets/custom_glass_card.dart'; // FIX PRO
 
 class MaintenanceSummaryHeader extends StatelessWidget {
   final List<Manutenzione> manutenzioni;
@@ -18,17 +20,30 @@ class MaintenanceSummaryHeader extends StatelessWidget {
     final double costoTotale = manutenzioni.fold(0, (sum, m) => sum + (m.costo ?? 0));
     final int interventiTotali = manutenzioni.length;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      // Corretto il warning con .withValues(alpha: ...)
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildSummaryItem(context, l10n.registroManutenzione, '$interventiTotali', Icons.history),
-          _buildSummaryItem(context, l10n.costoOpzionale.replaceAll(' (Opzionale)', ''),
-              '${costoTotale.toStringAsFixed(2)} $currencySymbol', Icons.account_balance_wallet),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      // FIX PRO: Trasformato in una GlassCard!
+      child: CustomGlassCard(
+        borderColors: [
+          Colors.orange.withOpacity(0.4),
+          Colors.yellow.withOpacity(0.15),
+          Colors.transparent,
         ],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildSummaryItem(context, l10n.registroManutenzione, '$interventiTotali', Icons.history),
+              _buildSummaryItem(
+                  context,
+                  l10n.costoOpzionale.replaceAll(' (Opzionale)', ''),
+                  '${costoTotale.toStringAsFixed(2)} $currencySymbol',
+                  Icons.account_balance_wallet
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -36,9 +51,16 @@ class MaintenanceSummaryHeader extends StatelessWidget {
   Widget _buildSummaryItem(BuildContext context, String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
+        Icon(icon, color: Colors.orange, size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              fontFeatures: [FontFeature.tabularFigures()], // FIX PRO: Numeri allineati
+            )
+        ),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );

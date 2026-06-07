@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // FIX PRO: Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,7 +8,6 @@ import 'package:myscooter/features/manutenzione/providers/manutenzione_provider.
 import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 
-// FIX: Importiamo il Design System
 import 'package:myscooter/core/theme/app_colors.dart';
 import '../../../core/widgets/glass_background.dart';
 
@@ -26,18 +26,19 @@ class MaintenanceListScreen extends ConsumerWidget {
     final currencySymbol = ref.watch(currencyProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
-      extendBodyBehindAppBar: true,        // FIX: Glass effect
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.transparent, // FIX: AppBar invisibile
+        backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle, size: 30),
-            color: AppColors.primaryMaintenance, // FIX: Icona in tema Arancione
+            color: Colors.orange, // FIX PRO: Tema Arancione
             onPressed: () {
+              HapticFeedback.mediumImpact(); // Vibrazione
               context.push('/add-edit-maintenance', extra: {
                 'scooterId': scooter.id!,
                 'manutenzione': null,
@@ -48,10 +49,10 @@ class MaintenanceListScreen extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          // FIX: Sfondo in vetro Arancione
+          // FIX PRO: Sfondo in vetro animato Arancione/Giallo!
           const GlassBackground(
-            primaryColor: AppColors.primaryMaintenance,
-            secondaryColor: AppColors.secondaryMaintenance,
+            primaryColor: Colors.orange,
+            secondaryColor: Colors.yellow,
           ),
 
           SafeArea(
@@ -60,7 +61,17 @@ class MaintenanceListScreen extends ConsumerWidget {
               error: (error, stackTrace) => Center(child: Text('$error')),
               data: (manutenzioni) {
                 if (manutenzioni.isEmpty) {
-                  return const MaintenanceEmptyState();
+                  // FIX PRO: Empty state ora è un pulsante come in Swift
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/add-edit-maintenance', extra: {
+                        'scooterId': scooter.id!,
+                        'manutenzione': null,
+                      });
+                    },
+                    child: const MaintenanceEmptyState(),
+                  );
                 }
 
                 return Column(

@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../model/scooter.dart';
-
-// FIX: Importiamo i Colori e la GlassCard
 import 'package:myscooter/core/theme/app_colors.dart';
-import 'package:myscooter/core/widgets/glass_card.dart';
 
 class RefuelingsActionCard extends StatelessWidget {
   final Scooter scooter;
+
   const RefuelingsActionCard({super.key, required this.scooter});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return GlassCard(
-      padding: EdgeInsets.zero, // Il padding lo gestisce l'InkWell interno
+
+    return Material(
+      color: Colors.transparent, // FIX PRO: Abilita il ripple effect sul vetro
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22.5),
         onTap: () {
+          HapticFeedback.lightImpact();
           context.push('/refuelings/${scooter.id!}', extra: scooter);
         },
         child: Padding(

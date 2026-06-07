@@ -65,6 +65,7 @@ dependencies:
   google_sign_in: ^6.2.1
   sign_in_with_apple: ^7.0.1
   crypto: ^3.0.7
+  fl_chart: ^1.2.0
 
 
 dev_dependencies:

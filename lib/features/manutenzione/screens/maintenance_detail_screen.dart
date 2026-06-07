@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // FIX PRO
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myscooter/features/manutenzione/models/manutenzione.dart';
@@ -6,9 +7,9 @@ import 'package:myscooter/core/providers/currency_provider.dart';
 import 'package:myscooter/l10n/app_localizations.dart';
 import 'package:myscooter/features/scooter/widgets/image_viewer_page.dart';
 
-// FIX: Importiamo il Design System in Vetro
 import 'package:myscooter/core/theme/app_colors.dart';
 import '../../../core/widgets/glass_background.dart';
+import '../../../core/widgets/custom_glass_card.dart'; // FIX PRO
 import '../widgets/maintenance_info_card.dart';
 import '../widgets/maintenance_notes_card.dart';
 import '../widgets/maintenance_photo_card.dart';
@@ -32,6 +33,7 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
 
   void _openImageViewer() {
     if (_currentManutenzione.nomeFoto == null || _currentManutenzione.nomeFoto!.isEmpty) return;
+    HapticFeedback.lightImpact();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -46,6 +48,7 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
   }
 
   Future<void> _navigateToEdit() async {
+    HapticFeedback.lightImpact();
     final result = await context.push('/add-edit-maintenance/${_currentManutenzione.scooterId}', extra: _currentManutenzione);
     if (result != null && result is Manutenzione) {
       setState(() {
@@ -60,8 +63,8 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
     final currencySymbol = ref.watch(currencyProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // FIX: Scaffold trasparente
-      extendBodyBehindAppBar: true,        // FIX: Effetto vetro sotto l'appbar
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(l10n.dettagliIntervento),
         backgroundColor: Colors.transparent,
@@ -69,40 +72,64 @@ class _MaintenanceDetailScreenState extends ConsumerState<MaintenanceDetailScree
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            color: AppColors.primaryMaintenance, // FIX: Icona in tema Arancione
+            color: Colors.orange, // FIX PRO: Tema Arancione
             onPressed: _navigateToEdit,
           ),
         ],
       ),
       body: Stack(
         children: [
-          // FIX: Sfondo in vetro Arancione
           const GlassBackground(
-            primaryColor: AppColors.primaryMaintenance,
-            secondaryColor: AppColors.secondaryMaintenance,
+            primaryColor: Colors.orange,
+            secondaryColor: Colors.yellow,
           ),
 
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                // Nota: Per completare l'effetto, apri maintenance_info_card.dart
-                // e sostituisci il widget "Card" genitore con "GlassCard"
-                MaintenanceInfoCard(
-                  manutenzione: _currentManutenzione,
-                  currencySymbol: currencySymbol,
+                // CARD 1: Dettagli
+                CustomGlassCard(
+                  borderColors: [
+                    Colors.orange.withOpacity(0.4),
+                    Colors.yellow.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                  // ASSICURATI DI RIMUOVERE "Card()" DA DENTRO MaintenanceInfoCard!
+                  child: MaintenanceInfoCard(
+                    manutenzione: _currentManutenzione,
+                    currencySymbol: currencySymbol,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
+                // CARD 2: Note
                 if (_currentManutenzione.note != null && _currentManutenzione.note!.isNotEmpty) ...[
-                  MaintenanceNotesCard(note: _currentManutenzione.note!),
+                  CustomGlassCard(
+                    borderColors: [
+                      Colors.orange.withOpacity(0.4),
+                      Colors.yellow.withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                    // ASSICURATI DI RIMUOVERE "Card()" DA DENTRO MaintenanceNotesCard!
+                    child: MaintenanceNotesCard(note: _currentManutenzione.note!),
+                  ),
                   const SizedBox(height: 16),
                 ],
 
+                // CARD 3: Foto
                 if (_currentManutenzione.nomeFoto != null && _currentManutenzione.nomeFoto!.isNotEmpty) ...[
-                  MaintenancePhotoCard(
-                    manutenzione: _currentManutenzione,
-                    onTap: _openImageViewer,
+                  CustomGlassCard(
+                    borderColors: [
+                      Colors.orange.withOpacity(0.4),
+                      Colors.yellow.withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                    // ASSICURATI DI RIMUOVERE "Card()" DA DENTRO MaintenancePhotoCard!
+                    child: MaintenancePhotoCard(
+                      manutenzione: _currentManutenzione,
+                      onTap: _openImageViewer,
+                    ),
                   ),
                   const SizedBox(height: 40),
                 ],

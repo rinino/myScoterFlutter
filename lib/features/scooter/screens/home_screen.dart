@@ -1,18 +1,16 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:myscooter/features/scooter/providers/scooter_provider.dart';
 import 'package:myscooter/core/theme/theme_service.dart';
 import 'package:myscooter/core/providers/message_provider.dart';
 import 'package:myscooter/core/services/local_image_cache.dart';
-
-// FIX: Aggiunti i widget del Design System
 import 'package:myscooter/core/theme/app_colors.dart';
-
 import '../../../core/widgets/glass_background.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/custom_glass_card.dart'; // FIX PRO: Custom Glass Card
 import '../model/scooter.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -29,7 +27,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<bool?> _confirmDelete(BuildContext context, Scooter scooter) {
     final l10n = AppLocalizations.of(context)!;
-
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -47,6 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _onRefresh() async {
+    HapticFeedback.mediumImpact();
     await ref.read(scooterListProvider.notifier).refreshScooters();
   }
 
@@ -59,7 +57,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final Color? bgColor = next.type == MessageType.error
             ? Colors.red.shade800
             : (next.type == MessageType.success ? Colors.green.shade800 : null);
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.message), backgroundColor: bgColor, behavior: SnackBarBehavior.fixed),
         );
@@ -70,21 +67,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final scooterState = ref.watch(scooterListProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // FIX
-      extendBodyBehindAppBar: true,        // FIX
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(l10n.appTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.transparent, // FIX: AppBar invisibile
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.settings, color: AppColors.primaryBlue),
-          onPressed: (scooterState.isLoading || _isNavigating) ? null : () => context.push('/settings'),
+          onPressed: (scooterState.isLoading || _isNavigating) ? null : () {
+            HapticFeedback.lightImpact();
+            context.push('/settings');
+          },
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle, size: 28, color: AppColors.primaryBlue),
             onPressed: (scooterState.isLoading || _isNavigating) ? null : () async {
+              HapticFeedback.mediumImpact();
               setState(() => _isNavigating = true);
               try {
                 final Scooter? resultScooter = await context.push<Scooter?>('/add-edit-scooter');
@@ -101,12 +102,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // FIX: Background globale
           const GlassBackground(
             primaryColor: AppColors.primaryBlue,
             secondaryColor: AppColors.secondaryCyan,
           ),
-
           SafeArea(
             child: Column(
               children: [
@@ -186,7 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: scooters.length,
-      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16), // Padding globale
+      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
       itemBuilder: (context, index) {
         final scooter = scooters[index];
         bool hasImage = scooter.imgName != null && scooter.imgName!.isNotEmpty;
@@ -208,34 +207,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
-            // FIX: Applicata la GlassCard!
-            child: GlassCard(
-              padding: EdgeInsets.zero, // Il ListTile gestisce il suo padding interno
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  width: 60, height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: hasImage ? AppColors.primaryBlue : Colors.grey.withOpacity(0.3),
-                      width: 2,
+            // FIX PRO: Applicato il bordo rosso!
+            child: CustomGlassCard(
+              borderColors: [
+                Colors.red.withOpacity(0.4),
+                Colors.red.withOpacity(0.05),
+                Colors.transparent,
+              ],
+              child: Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: Container(
+                    width: 60, height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: hasImage ? AppColors.primaryBlue : Colors.grey.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: hasImage
+                          ? CloudSyncImage(imagePath: scooter.imgName!, fit: BoxFit.cover, width: 60, height: 60)
+                          : const Icon(Icons.moped, color: Colors.grey),
                     ),
                   ),
-                  child: ClipOval(
-                    child: hasImage
-                        ? CloudSyncImage(imagePath: scooter.imgName!, fit: BoxFit.cover, width: 60, height: 60)
-                        : const Icon(Icons.moped, color: Colors.grey),
+                  title: Text(
+                    '${scooter.marca} ${scooter.modello}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
+                  subtitle: Text(
+                    '${l10n.licensePlateShort}: ${scooter.targa}',
+                    style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  onTap: () {
+                    HapticFeedback.lightImpact(); // FIX PRO: Feedback aptico
+                    context.push('/scooter-detail', extra: scooter).then((_) {
+                      ref.read(scooterListProvider.notifier).refreshScooters();
+                    });
+                  },
                 ),
-                title: Text('${scooter.marca} ${scooter.modello}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                subtitle: Text('${l10n.licensePlateShort}: ${scooter.targa}'),
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                onTap: () {
-                  context.push('/scooter-detail', extra: scooter).then((_) {
-                    ref.read(scooterListProvider.notifier).refreshScooters();
-                  });
-                },
               ),
             ),
           ),

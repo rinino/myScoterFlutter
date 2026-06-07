@@ -271,7 +271,24 @@
   "apply": "Anwenden",
   "piaggioStandardTitle": "Der Piaggio-Standard",
   "piaggioStandardDesc": "Um die Mechanik und Geschichte klassischer europäischer Roller zu respektieren, verwendet die App ausschließlich das metrische System (Km, Liter und Milliliter für Öl). Wenn du das imperiale System nutzt, verwende den integrierten Taschenrechner, um die Felder auszufüllen!",
-  "ok": "OK"
+  "ok": "OK",
+
+
+  "valuta": "Währung",
+  "valutaEuro": "Euro (€)",
+  "valutaDollaro": "Dollar ($)",
+  "valutaSterlina": "Pfund (£)",
+  "linguaSistema": "System",
+  "linguaItaliano": "Italienisch",
+  "linguaInglese": "Englisch",
+  "linguaSpagnolo": "Spanisch",
+  "linguaFrancese": "Französisch",
+  "linguaTedesco": "Deutsch",
+  "linguaPortoghese": "Portugiesisch",
+  "andamentoConsumi": "Verbrauchsverlauf",
+  "nonDisponibile": "N/V",
+  "documentoGenerico": "Dokument",
+  "errore": "Fehler"
 
 
 
