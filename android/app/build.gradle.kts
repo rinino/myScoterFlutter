@@ -38,7 +38,7 @@ android {
     defaultConfig {
         applicationId = "it.adr.myscooter"
 
-        minSdk = flutter.minSdkVersion // Android 6.0 (Garantisce massima compatibilità con Firebase e NDK)
+        minSdk = flutter.minSdkVersion
         targetSdk = 34 // Requisito obbligatorio Google Play Store per i rilasci
 
         targetSdk = flutter.targetSdkVersion
